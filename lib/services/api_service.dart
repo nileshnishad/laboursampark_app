@@ -45,4 +45,119 @@ class ApiService {
       };
     }
   }
+
+  static Future<Map<String, dynamic>> fetchContractors() async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {
+        'success': false,
+        'message': ErrorMessages.noInternet,
+      };
+    }
+
+    try {
+      final response = await _dio.get('${Env.baseUrl}/api/users/contractors');
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
+    } catch (_) {
+      return {
+        'success': false,
+        'message': ErrorMessages.unknown,
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchLabours() async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {
+        'success': false,
+        'message': ErrorMessages.noInternet,
+      };
+    }
+
+    try {
+      final response = await _dio.get('${Env.baseUrl}/api/users/labours');
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
+    } catch (_) {
+      return {
+        'success': false,
+        'message': ErrorMessages.unknown,
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchProfile(String token) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {
+        'success': false,
+        'message': ErrorMessages.noInternet,
+      };
+    }
+
+    try {
+      final response = await _dio.get(
+        '${Env.baseUrl}/api/users/profile',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
+    } catch (_) {
+      return {
+        'success': false,
+        'message': ErrorMessages.unknown,
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchSubscriptionPlan(
+      String userType, String token) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {
+        'success': false,
+        'message': ErrorMessages.noInternet,
+      };
+    }
+
+    try {
+      final response = await _dio.get(
+        '${Env.baseUrl}/api/subscription/plan?userType=$userType',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
+    } catch (_) {
+      return {
+        'success': false,
+        'message': ErrorMessages.unknown,
+      };
+    }
+  }
 }

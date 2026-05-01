@@ -65,6 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final userController = Get.find<UserController>();
         userController.setUser(user, token);
         ToastUtils.showSuccess(res['message'] ?? 'Login successful');
+        await AuthService.setAuthToken(token);
         await AuthService.setLoggedIn(true);
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
