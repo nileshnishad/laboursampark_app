@@ -1,0 +1,4 @@
+storePassword=<YOUR_KEYSTORE_PASSWORD>
+keyPassword=<YOUR_KEY_PASSWORD>
+keyAlias=<YOUR_KEY_ALIAS>
+storeFile=<PATH_TO_KEYSTORE_FILE e.g. /Users/yourname/laboursampark.jks>
