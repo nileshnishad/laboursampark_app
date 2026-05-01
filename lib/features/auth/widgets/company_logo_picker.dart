@@ -7,16 +7,21 @@ class CompanyLogoPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         GestureDetector(
           onTap: onPick,
           child: CircleAvatar(
             radius: 40,
-            backgroundColor: Colors.grey[200],
+            backgroundColor: theme.colorScheme.surfaceContainerHighest,
             backgroundImage: imagePath != null ? AssetImage(imagePath!) : null,
             child: imagePath == null
-                ? Icon(Icons.add_business, size: 32, color: Colors.grey[600])
+                ? Icon(
+                    Icons.add_business,
+                    size: 32,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                  )
                 : null,
           ),
         ),

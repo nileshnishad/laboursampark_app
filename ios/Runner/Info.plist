@@ -49,5 +49,9 @@
 		<true/>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+		<string>Camera access is required for profile photo and work-site image uploads.</string>
+		<key>NSContactsUsageDescription</key>
+		<string>Contacts access helps users quickly connect with known contractors and workers.</string>
 	</dict>
 </plist>

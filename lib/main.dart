@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 import 'core/app_state.dart';
+import 'core/user_controller.dart';
 import 'theme/app_theme.dart';
 import 'features/splash/splash_screen.dart';
 
 void main() {
+  Get.put(UserController(), permanent: true);
   runApp(const MyApp());
 }
 

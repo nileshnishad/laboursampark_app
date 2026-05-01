@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../utils/app_constants.dart';
 import '../../core/auth_service.dart';
+import '../../core/services/permission_service.dart';
 import '../auth/login_screen.dart';
 import '../dashboard/user_dashboard_screen.dart';
 
@@ -17,11 +16,14 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Future.delayed(const Duration(seconds: 2), () async {
+      if (!mounted) return;
+      await PermissionService.requestStartupPermissionsIfNeeded(context);
+      if (!mounted) return;
       bool loggedIn = await AuthService.isLoggedIn();
       if (!mounted) return;
       if (loggedIn) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => UserDashboardScreen()),
+          MaterialPageRoute(builder: (_) => const UserDashboardScreen()),
         );
       } else {
         Navigator.of(context).pushReplacement(
