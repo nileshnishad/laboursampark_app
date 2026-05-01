@@ -1037,8 +1037,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           automaticallyImplyLeading: false,
-          toolbarHeight: 88,
-          titleSpacing: 16,
+          toolbarHeight: 56,
+          titleSpacing: 10,
           flexibleSpace: Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -1070,19 +1070,19 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                   ],
                 ),
                 child: CircleAvatar(
-                  radius: 22,
+                  radius: 16,
                   backgroundColor: const Color(0xFFF9FAFB),
                   child: Text(
                     initials,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF111827),
-                      fontSize: 15,
+                      fontSize: 12,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1091,18 +1091,18 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                     Text(
                       fullName.isEmpty ? 'Welcome' : fullName,
                       style: const TextStyle(
-                        fontSize: 18,
+                          fontSize: 14,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF111827),
                         letterSpacing: 0.2,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                      const SizedBox(height: 1),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 3,
+                          horizontal: 7,
+                          vertical: 1,
                       ),
                       decoration: BoxDecoration(
                         color: _subscriptionActive
@@ -1118,7 +1118,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                       child: Text(
                         '${_roleLabel(userType)} • ${_subscriptionActive ? 'Visible' : 'Hidden'}',
                         style: TextStyle(
-                          fontSize: 11.5,
+                            fontSize: 10,
                           color: _subscriptionActive
                               ? const Color(0xFF2E7D32)
                               : const Color(0xFFB45309),
@@ -1133,18 +1133,20 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
           ),
           actions: [
             Padding(
-              padding: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.only(right: 8),
               child: Center(
                 child: IconButton(
                   style: IconButton.styleFrom(
                     backgroundColor: const Color(0xFFF9FAFB),
                     foregroundColor: const Color(0xFF374151),
                     side: const BorderSide(color: Color(0xFFE5E7EB)),
+                      padding: const EdgeInsets.all(8),
+                      minimumSize: const Size(32, 32),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(9),
                     ),
                   ),
-                  icon: const Icon(Icons.tune_rounded, size: 20),
+                    icon: const Icon(Icons.tune_rounded, size: 16),
                   tooltip: 'Settings',
                   onPressed: () => _showSettingsSheet(context),
                 ),
