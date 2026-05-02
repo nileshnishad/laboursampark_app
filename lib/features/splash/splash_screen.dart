@@ -35,32 +35,78 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
+      backgroundColor: Color(0xFF2563EB),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(60),
-              child: Image.asset(
-                'assets/logo.jpg',
-                width: 120,
-                height: 120,
-                fit: BoxFit.cover,
+            // LS Logo - matches web app rounded square
+            _LSLogo(),
+            SizedBox(height: 28),
+            Text(
+              'LabourSampark',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                letterSpacing: 0.3,
               ),
             ),
-            const SizedBox(height: 24),
-            const Icon(Icons.person, size: 40, color: Color(0xFF1976D2)),
-            const SizedBox(height: 16),
-            const Text(
-              'Labour Sampark',
+            SizedBox(height: 6),
+            Text(
+              'Connect Labourers & Contractors',
               style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1976D2),
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                color: Color(0xCCFFFFFF),
+                letterSpacing: 0.2,
+              ),
+            ),
+            SizedBox(height: 60),
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2.5,
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LSLogo extends StatelessWidget {
+  const _LSLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 90,
+      height: 90,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 20,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Text(
+          'LS',
+          style: TextStyle(
+            fontSize: 34,
+            fontWeight: FontWeight.w900,
+            color: Color(0xFF2563EB),
+            letterSpacing: 1,
+          ),
         ),
       ),
     );

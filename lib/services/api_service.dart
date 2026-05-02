@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import '../core/env.dart';
 import '../core/errors/app_error.dart';
@@ -160,4 +161,143 @@ class ApiService {
       };
     }
   }
+
+  static Future<Map<String, dynamic>> fetchJobHistory(
+      String token, {int page = 1, int limit = 20}) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+
+    try {
+      final response = await _dio.get(
+        '${Env.baseUrl}/api/job-history/smart/dashboard?page=$page&limit=$limit',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  /// Get a presigned S3 upload URL. Returns { uploadUrl, fileUrl }.
+  static Future<Map<String, dynamic>> getPresignedUploadUrl({
+    required String token,
+    required String filename,
+    required String fileType,
+    required String userType,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/upload/presigned-url',
+        data: jsonEncode({'filename': filename, 'fileType': fileType, 'userType': userType}),
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }),
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['uploadUrl'] != null) {
+        return {'success': true, 'uploadUrl': data['uploadUrl'], 'fileUrl': data['fileUrl']};
+      }
+      return {'success': false, 'message': 'Failed to get upload URL'};
+    } on DioException catch (e) {
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  /// Upload raw bytes directly to S3 via presigned PUT URL.
+  static Future<bool> uploadFileToS3({
+    required String presignedUrl,
+    required Uint8List bytes,
+    required String contentType,
+  }) async {
+    try {
+      final response = await _dio.put(
+        presignedUrl,
+        data: Stream.fromIterable(bytes.map((b) => [b])),
+        options: Options(
+          headers: {
+            'Content-Type': contentType,
+            'Content-Length': bytes.length,
+          },
+          followRedirects: false,
+          validateStatus: (s) => s != null && s < 400,
+        ),
+      );
+      return response.statusCode != null && response.statusCode! < 400;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Create a job posting.
+  static Future<Map<String, dynamic>> createJob({
+    required String token,
+    required Map<String, dynamic> jobData,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/jobs/create-job',
+        data: jsonEncode(jobData),
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  /// GET /api/jobs/my-jobs — fetch jobs posted by the authenticated contractor/sub-contractor.
+  static Future<Map<String, dynamic>> fetchMyJobs(
+    String token, {
+    int page = 1,
+    int limit = 20,
+    String? status, // 'open' | 'closed' | null = all
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'limit': limit,
+        if (status != null && status.isNotEmpty) 'status': status,
+      };
+      final response = await _dio.get(
+        '${Env.baseUrl}/api/jobs/my-jobs',
+        queryParameters: queryParams,
+        options: Options(headers: {
+          'Authorization': 'Bearer $token',
+        }),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
 }
+
