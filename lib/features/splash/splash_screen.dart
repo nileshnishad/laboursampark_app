@@ -55,7 +55,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             SizedBox(height: 6),
             Text(
-              'Connect Labourers & Contractors',
+              'Connect Labour & Contractors',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w400,

@@ -299,5 +299,101 @@ class ApiService {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
+
+  /// GET /api/jobs/getallappliedjobs — pending applications for the current user.
+  static Future<Map<String, dynamic>> fetchAllAppliedJobs(
+    String token, {
+    int page = 1,
+    int limit = 100,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.get(
+        '${Env.baseUrl}/api/jobs/getallappliedjobs',
+        queryParameters: {'page': page, 'limit': limit},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  /// GET /api/jobs/getallacceptedjobs — accepted applications for the current user.
+  static Future<Map<String, dynamic>> fetchAllAcceptedJobs(
+    String token, {
+    int page = 1,
+    int limit = 100,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.get(
+        '${Env.baseUrl}/api/jobs/getallacceptedjobs',
+        queryParameters: {'page': page, 'limit': limit},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  /// GET /api/jobs/getallcompletedjobs — completed jobs for the current user.
+  static Future<Map<String, dynamic>> fetchAllCompletedJobs(
+    String token, {
+    int page = 1,
+    int limit = 100,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.get(
+        '${Env.baseUrl}/api/jobs/getallcompletedjobs',
+        queryParameters: {'page': page, 'limit': limit},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  /// GET /api/jobs/getalljobs — all available jobs for labour / sub_contractor.
+  static Future<Map<String, dynamic>> fetchAllJobs(
+    String token, {
+    int page = 1,
+    int limit = 10,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.get(
+        '${Env.baseUrl}/api/jobs/getalljobs',
+        queryParameters: {'page': page, 'limit': limit},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
 }
 

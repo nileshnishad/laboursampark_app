@@ -134,21 +134,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'LabourSampark',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF111827),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Connect Labourers & Contractors',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF6B7280),
-                      ),
-                    ),
+                   
+                    
+                    
+                    
                   ],
                 ),
               ),
