@@ -17,6 +17,29 @@ class ApiService {
     ),
   )..interceptors.add(AppInterceptor());
 
+  /// POST /auth/register — register a new user (labour / sub_contractor / contractor).
+  static Future<Map<String, dynamic>> registerUser(
+      Map<String, dynamic> body) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/auth/register',
+        data: jsonEncode(body),
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) return body;
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
   static Future<Map<String, dynamic>> login(String email, String password) async {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {

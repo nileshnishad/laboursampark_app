@@ -233,7 +233,11 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
 
     switch (selectedLabel) {
       case 'jobs':
-        return AllJobsView(token: token, userType: userType);
+        return AllJobsView(
+          token: token,
+          userType: userType,
+          subscriptionActive: _subscriptionActive,
+        );
       case 'labours':
         return LabourListView(canViewSensitiveData: _subscriptionActive);
       case 'contractors':

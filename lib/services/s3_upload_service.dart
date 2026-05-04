@@ -23,6 +23,7 @@ class S3UploadService {
     required Uint8List bytes,
     required String filename,
     required String contentType,
+    String folder = 'uploads/jobs', // e.g. 'labour' for profile photos
   }) async {
     final now = DateTime.now().toUtc();
     final dateStamp = _fmtDate(now);   // YYYYMMDD
@@ -31,7 +32,7 @@ class S3UploadService {
     // Unique object key — normalize extension from content-type to avoid mismatch
     final ts  = now.millisecondsSinceEpoch;
     final ext = _extFromContentType(contentType);
-    final key = 'uploads/jobs/$ts.$ext';
+    final key = '$folder/$ts.$ext';
 
     final payloadHash = _sha256Hex(bytes);
 

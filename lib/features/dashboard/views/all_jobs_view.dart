@@ -222,8 +222,14 @@ class _AppliedJobEntry {
 class AllJobsView extends StatefulWidget {
   final String token;
   final String userType;
+  final bool subscriptionActive;
 
-  const AllJobsView({super.key, required this.token, required this.userType});
+  const AllJobsView({
+    super.key,
+    required this.token,
+    required this.userType,
+    this.subscriptionActive = false,
+  });
 
   @override
   State<AllJobsView> createState() => _AllJobsViewState();
@@ -858,7 +864,12 @@ class _AllJobsViewState extends State<AllJobsView> {
         ),
       ];
     }
-    return _jobs.map((job) => _JobCard(job: job)).toList();
+    return _jobs
+        .map((job) => _JobCard(
+              job: job,
+              subscriptionActive: widget.subscriptionActive,
+            ))
+        .toList();
   }
 
   // ── Applied sub-tab content ───────────────────────────────────────────────
@@ -1556,8 +1567,9 @@ class _AppliedJobCard extends StatelessWidget {
 
 class _JobCard extends StatelessWidget {
   final _JobListing job;
+  final bool subscriptionActive;
 
-  const _JobCard({required this.job});
+  const _JobCard({required this.job, this.subscriptionActive = false});
 
   String _fmtDate(DateTime? dt) {
     if (dt == null) return '';
@@ -1875,35 +1887,83 @@ class _JobCard extends StatelessWidget {
 
           // Apply button
           const Divider(height: 1, color: Color(0xFFF3F4F6)),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text(
-                            'Apply for "${job.workTitle}" — coming soon')),
-                  );
-                },
-                icon: const Icon(Icons.send_rounded, size: 16),
-                label: const Text('APPLY NOW',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  elevation: 0,
+          if (subscriptionActive)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(
+                              'Apply for "${job.workTitle}" — coming soon')),
+                    );
+                  },
+                  icon: const Icon(Icons.send_rounded, size: 16),
+                  label: const Text('APPLY NOW',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF7ED),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFFED7AA), width: 1.2),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'Active subscription required to apply for jobs. Go to Profile → Subscription to activate.'),
+                          duration: Duration(seconds: 4),
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.lock_outline_rounded,
+                              size: 15, color: Color(0xFFEA580C)),
+                          SizedBox(width: 6),
+                          Text(
+                            'SUBSCRIPTION REQUIRED TO APPLY',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFFEA580C),
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
