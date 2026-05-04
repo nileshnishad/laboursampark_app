@@ -343,8 +343,10 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
         elevation: 0, scrolledUnderElevation: 1, surfaceTintColor: Colors.transparent,
         title: const Text('Register as Contractor', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         child: Form(
           key: _formKey,
           child: Column(
@@ -629,6 +631,7 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
               const SizedBox(height: 24),
             ],
           ),
+        ),
         ),
       ),
     );

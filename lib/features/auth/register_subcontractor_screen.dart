@@ -344,8 +344,10 @@ class _RegisterSubContractorScreenState
         title: const Text('Register as Sub-Contractor',
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         child: Form(
           key: _formKey,
           child: Column(
@@ -642,6 +644,7 @@ class _RegisterSubContractorScreenState
               const SizedBox(height: 24),
             ],
           ),
+        ),
         ),
       ),
     );

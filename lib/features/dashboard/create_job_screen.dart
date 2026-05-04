@@ -321,7 +321,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+          padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).viewPadding.bottom + 24),
           children: [
             // ── Job Details section ──────────────────────────
             _SectionCard(

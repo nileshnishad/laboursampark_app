@@ -237,8 +237,10 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
         surfaceTintColor: Colors.transparent,
         title: const Text('Register as Labour', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         child: Form(
           key: _formKey,
           child: Column(
@@ -501,6 +503,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
               const SizedBox(height: 24),
             ],
           ),
+        ),
         ),
       ),
     );

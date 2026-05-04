@@ -22,8 +22,10 @@ class UserTypeSelectionScreen extends StatelessWidget {
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -104,6 +106,7 @@ class UserTypeSelectionScreen extends StatelessWidget {
             ),
             const SizedBox(height: 32),
           ],
+        ),
         ),
       ),
     );
