@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'user_type_selection_screen.dart';
 import '../dashboard/user_dashboard_screen.dart';
 import 'package:get/get.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../services/api_service.dart';
 import '../../common/widgets/app_primary_button.dart';
 import '../../common/widgets/app_text_field.dart';
@@ -68,6 +69,11 @@ class _LoginScreenState extends State<LoginScreen> {
         await AuthService.setAuthToken(token);
         await AuthService.setUserData(user);
         await AuthService.setLoggedIn(true);
+        // Register FCM token to backend (non-blocking)
+        final fcmToken = await FirebaseMessaging.instance.getToken();
+        if (fcmToken != null) {
+          ApiService.registerFcmToken(token: token, fcmToken: fcmToken);
+        }
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const UserDashboardScreen()),

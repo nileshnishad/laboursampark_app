@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../core/app_interceptor.dart';
 import '../core/env.dart';
 import '../core/errors/app_error.dart';
@@ -394,6 +395,27 @@ class ApiService {
       return {'success': false, 'message': AppError.fromDioException(e).userMessage};
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  /// Save FCM token to backend after login or on app start.
+  static Future<void> registerFcmToken({
+    required String token,
+    required String fcmToken,
+  }) async {
+    try {
+      await _dio.post(
+        '${Env.baseUrl}/api/users/config-check',
+        data: jsonEncode({'fcmToken': fcmToken}),
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }),
+      );
+      debugPrint('✅ FCM token registered to backend');
+    } catch (e) {
+      // Non-critical — don't block user flow
+      debugPrint('⚠️ FCM token registration failed: $e');
     }
   }
 }

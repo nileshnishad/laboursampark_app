@@ -1,8 +1,10 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/auth_service.dart';
 import '../../core/services/permission_service.dart';
 import '../../core/user_controller.dart';
+import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
 import '../dashboard/user_dashboard_screen.dart';
 
@@ -29,6 +31,13 @@ class _SplashScreenState extends State<SplashScreen> {
         final restored = await userController.restoreSession();
         if (!mounted) return;
         if (restored) {
+          // Refresh FCM token on every app open (token can change)
+          final fcmToken = await FirebaseMessaging.instance.getToken();
+          final authToken = userController.token.value;
+          if (fcmToken != null && authToken != null) {
+            ApiService.registerFcmToken(token: authToken, fcmToken: fcmToken);
+          }
+          if (!mounted) return;
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const UserDashboardScreen()),
           );

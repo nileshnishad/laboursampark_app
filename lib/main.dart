@@ -26,9 +26,11 @@ void main() async {
     final messaging = FirebaseMessaging.instance;
     await messaging.requestPermission();
 
-    // Print FCM token — if token prints, Firebase is working ✅
-    final token = await messaging.getToken();
-    debugPrint('✅ FCM TOKEN: $token');
+    // Subscribe to topics — no backend needed
+    // All devices with app installed will get these notifications
+    await messaging.subscribeToTopic('all_users');
+    await messaging.subscribeToTopic('announcements');
+    debugPrint('✅ Subscribed to FCM topics: all_users, announcements');
 
     // Show notification when app is in FOREGROUND
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
