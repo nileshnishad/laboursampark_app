@@ -6,10 +6,12 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/user_controller.dart';
 import '../../services/api_service.dart';
 import '../../services/s3_upload_service.dart';
+import 'models/my_job.dart';
 
 class CreateJobScreen extends StatefulWidget {
   final String userType; // 'contractor' | 'sub_contractor'
-  const CreateJobScreen({super.key, required this.userType});
+  final MyJob? existingJob; // if set → edit mode
+  const CreateJobScreen({super.key, required this.userType, this.existingJob});
 
   @override
   State<CreateJobScreen> createState() => _CreateJobScreenState();
@@ -33,11 +35,41 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   // State
   String _target = 'labour'; // 'labour' | 'sub_contractor' | 'both'
   final List<String> _skills = [];
-  final List<_PickedImage> _images = [];
+  final List<_NewImageItem> _newImages = []; // newly picked images (auto-uploaded)
+  // Existing remote image URLs (edit mode)
+  List<String> _existingImageUrls = [];
   bool _submitting = false;
 
-  // Upload progress: index → status
-  final Map<int, _UploadStatus> _uploadStatus = {};
+  bool get _isEditMode => widget.existingJob != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final job = widget.existingJob;
+    if (job != null) {
+      _titleController.text = job.workTitle;
+      _workersController.text = job.workersNeeded.toString();
+      _descriptionController.text = job.description;
+      _cityController.text = job.city;
+      _areaController.text = job.area;
+      _stateController.text = job.state;
+      _addressController.text = job.address;
+      _pincodeController.text = job.pincode;
+      if (job.estimatedBudget != null) {
+        _budgetController.text = job.estimatedBudget!.toStringAsFixed(0);
+      }
+      _skills.addAll(job.requiredSkills);
+      _existingImageUrls = List<String>.from(job.images);
+      // Determine target
+      if (job.target.contains('labour') && job.target.contains('sub_contractor')) {
+        _target = 'both';
+      } else if (job.target.contains('sub_contractor')) {
+        _target = 'sub_contractor';
+      } else {
+        _target = 'labour';
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -63,7 +95,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   // ── Image picking ─────────────────────────────────────────────────────────
 
   Future<void> _pickImages() async {
-    if (_images.length >= 5) {
+    final totalImages = _newImages.length + _existingImageUrls.length;
+    if (totalImages >= 5) {
       _showSnack('Maximum 5 images allowed');
       return;
     }
@@ -77,18 +110,41 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     }
     if (picked.isEmpty) return;
 
-    final remaining = 5 - _images.length;
+    final remaining = 5 - totalImages;
     final toAdd = picked.take(remaining).toList();
 
-    // Load bytes eagerly so we can display & upload without dart:io File
     for (final xFile in toAdd) {
       final bytes = await xFile.readAsBytes();
-      if (mounted) {
-        setState(() {
-          _images.add(_PickedImage(xFile: xFile, bytes: bytes, mimeType: _mimeType(xFile.name)));
-        });
-      }
+      if (!mounted) return;
+      final item = _NewImageItem(
+        bytes: bytes,
+        name: xFile.name,
+        mimeType: _mimeType(xFile.name),
+      );
+      setState(() => _newImages.add(item));
+      // Auto-upload immediately in background
+      _uploadSingleImage(item);
     }
+  }
+
+  Future<void> _uploadSingleImage(_NewImageItem item) async {
+    debugPrint('[imgUpload] Uploading ${item.name}...');
+    final url = await S3UploadService.upload(
+      bytes: item.bytes,
+      filename: item.name,
+      contentType: item.mimeType,
+    );
+    if (!mounted) return;
+    setState(() {
+      if (url != null) {
+        item.status = _UploadStatus.done;
+        item.uploadedUrl = url;
+        debugPrint('[imgUpload] Done: $url');
+      } else {
+        item.status = _UploadStatus.failed;
+        debugPrint('[imgUpload] Failed for ${item.name}');
+      }
+    });
   }
 
   String _mimeType(String name) {
@@ -96,6 +152,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     switch (ext) {
       case 'jpg':
       case 'jpeg':
+      case 'heic': // image_picker compresses HEIC → JPEG bytes
+      case 'heif':
         return 'image/jpeg';
       case 'png':
         return 'image/png';
@@ -107,10 +165,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   }
 
   void _removeImage(int index) {
-    setState(() {
-      _images.removeAt(index);
-      _uploadStatus.remove(index);
-    });
+    setState(() => _newImages.removeAt(index));
   }
 
   // ── Skills chip input ─────────────────────────────────────────────────────
@@ -129,32 +184,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
 
   void _removeSkill(String skill) => setState(() => _skills.remove(skill));
 
-  // ── Upload images to S3 ───────────────────────────────────────────────────
-
-  Future<List<String>> _uploadImages() async {
-    final urls = <String>[];
-    for (int i = 0; i < _images.length; i++) {
-      setState(() => _uploadStatus[i] = _UploadStatus.uploading);
-
-      final img = _images[i];
-      final url = await S3UploadService.upload(
-        bytes: img.bytes,
-        filename: img.name,
-        contentType: img.mimeType,
-      );
-
-      if (url == null) {
-        setState(() => _uploadStatus[i] = _UploadStatus.failed);
-        _showSnack('Image ${i + 1} upload failed');
-        return [];
-      }
-
-      setState(() => _uploadStatus[i] = _UploadStatus.done);
-      urls.add(url);
-    }
-    return urls;
-  }
-
   // ── Form submit ───────────────────────────────────────────────────────────
 
   Future<void> _submit() async {
@@ -164,20 +193,35 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       return;
     }
 
+    // Block submit if any image is still uploading
+    if (_newImages.any((img) => img.status == _UploadStatus.uploading)) {
+      _showSnack('Please wait — images are still uploading');
+      return;
+    }
+    // Warn about failed uploads
+    if (_newImages.any((img) => img.status == _UploadStatus.failed)) {
+      _showSnack('Some images failed to upload. Remove them or retry.');
+      return;
+    }
+
     setState(() => _submitting = true);
 
     final token = Get.find<UserController>().token.value ?? '';
 
-    // Upload images first
-    List<String> imageUrls = [];
-    if (_images.isNotEmpty) {
-      imageUrls = await _uploadImages();
-      if (imageUrls.isEmpty && _images.isNotEmpty) {
-        setState(() => _submitting = false);
-        return; // Upload failed — error already shown
-      }
-    }
+    // Images already uploaded — just collect URLs
+    final newImageUrls = _newImages
+        .where((img) => img.uploadedUrl != null)
+        .map((img) => img.uploadedUrl!)
+        .toList();
 
+    // Combine existing remote URLs + newly uploaded URLs
+    final allImageUrls = [..._existingImageUrls, ...newImageUrls];
+
+    debugPrint('══════════ [submit] IMAGE STATE ══════════');
+    debugPrint('[submit] _existingImageUrls (${_existingImageUrls.length}): $_existingImageUrls');
+    debugPrint('[submit] newImageUrls (${newImageUrls.length}): $newImageUrls');
+    debugPrint('[submit] allImageUrls (${allImageUrls.length}): $allImageUrls');
+    debugPrint('══════════════════════════════════════════');
     // Build target array
     final List<String> targetList = _target == 'both'
         ? ['labour', 'sub_contractor']
@@ -194,24 +238,32 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
         'area': _areaController.text.trim(),
         'pincode': _pincodeController.text.trim(),
         'state': _stateController.text.trim(),
-        if (_addressController.text.trim().isNotEmpty)
-          'address': _addressController.text.trim(),
+        'address': _addressController.text.trim(),
       },
       if (_budgetController.text.trim().isNotEmpty)
         'estimatedBudget': double.tryParse(_budgetController.text.trim()),
-      if (imageUrls.isNotEmpty) 'images': imageUrls,
+      'images': allImageUrls,
     };
 
-    final result = await ApiService.createJob(token: token, jobData: jobData);
+    Map<String, dynamic> result;
+    if (_isEditMode) {
+      result = await ApiService.updateJob(
+          token: token, jobId: widget.existingJob!.id, jobData: jobData);
+    } else {
+      result = await ApiService.createJob(token: token, jobData: jobData);
+    }
     if (!mounted) return;
 
     setState(() => _submitting = false);
 
     if (result['success'] == true || result['_id'] != null || result['data'] != null) {
-      _showSnack('Job posted successfully!', isError: false);
-      Navigator.of(context).pop(true); // true = job was created
+      _showSnack(
+          _isEditMode ? 'Job updated successfully!' : 'Job posted successfully!',
+          isError: false);
+      Navigator.of(context).pop(true);
     } else {
-      _showSnack(result['message']?.toString() ?? 'Failed to create job');
+      _showSnack(result['message']?.toString() ??
+          (_isEditMode ? 'Failed to update job' : 'Failed to create job'));
     }
   }
 
@@ -240,7 +292,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
         scrolledUnderElevation: 1,
         surfaceTintColor: Colors.transparent,
         title: Text(
-          isContractor ? 'Create New Job' : 'Post a Job',
+          _isEditMode ? 'Edit Job' : (isContractor ? 'Create New Job' : 'Post a Job'),
           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
         ),
         actions: [
@@ -261,7 +313,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
                     ),
-                    child: const Text('Post Job'),
+                    child: Text(_isEditMode ? 'Save Changes' : 'Post Job'),
                   ),
           ),
         ],
@@ -510,10 +562,12 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                _label('Address', required: false, optional: true),
+                _label('Address'),
                 _field(
                   controller: _addressController,
                   hint: 'Plot 12, Bandra West...',
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Address is required' : null,
                 ),
               ],
             ),
@@ -525,7 +579,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
               title: 'SITE IMAGES',
               color: const Color(0xFFF59E0B),
               children: [
-                if (_images.isEmpty)
+                if (_newImages.isEmpty && _existingImageUrls.isEmpty)
                   const Text(
                     'Add site photos to help applicants understand the work location (max 5).',
                     style: TextStyle(fontSize: 13, color: Color(0xFF6B7280), height: 1.4),
@@ -535,11 +589,51 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    // Existing images
-                    ..._images.asMap().entries.map((entry) {
+                    // ── Existing remote images (edit mode) ──
+                    ..._existingImageUrls.asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final url = entry.value;
+                      return Stack(
+                        children: [
+                          Container(
+                            width: 88,
+                            height: 88,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFF059669), width: 1.5),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(9),
+                              child: Image.network(url, fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                      Icons.broken_image_outlined,
+                                      color: Color(0xFFD1D5DB))),
+                            ),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: GestureDetector(
+                              onTap: () => setState(
+                                  () => _existingImageUrls.removeAt(i)),
+                              child: Container(
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.close,
+                                    size: 13, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
+                    ..._newImages.asMap().entries.map((entry) {
                       final i = entry.key;
                       final img = entry.value;
-                      final status = _uploadStatus[i];
                       return Stack(
                         children: [
                           Container(
@@ -548,9 +642,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: status == _UploadStatus.failed
+                                color: img.status == _UploadStatus.failed
                                     ? const Color(0xFFDC2626)
-                                    : status == _UploadStatus.done
+                                    : img.status == _UploadStatus.done
                                         ? const Color(0xFF059669)
                                         : const Color(0xFFE5E7EB),
                                 width: 1.5,
@@ -563,7 +657,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                                   borderRadius: BorderRadius.circular(9),
                                   child: Image.memory(img.bytes, fit: BoxFit.cover),
                                 ),
-                                if (status == _UploadStatus.uploading)
+                                if (img.status == _UploadStatus.uploading)
                                   Container(
                                     decoration: BoxDecoration(
                                       color: Colors.black.withValues(alpha: 0.4),
@@ -583,8 +677,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                               ],
                             ),
                           ),
-                          // Remove button
-                          if (status != _UploadStatus.uploading)
+                          // Remove button (not while uploading)
+                          if (img.status != _UploadStatus.uploading)
                             Positioned(
                               top: 4,
                               right: 4,
@@ -601,8 +695,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                                 ),
                               ),
                             ),
-                          // Status icon
-                          if (status == _UploadStatus.done)
+                          // Uploaded tick
+                          if (img.status == _UploadStatus.done)
                             Positioned(
                               bottom: 4,
                               right: 4,
@@ -616,25 +710,32 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                                 child: const Icon(Icons.check, size: 12, color: Colors.white),
                               ),
                             ),
-                          if (status == _UploadStatus.failed)
+                          // Failed — tap to retry
+                          if (img.status == _UploadStatus.failed)
                             Positioned(
                               bottom: 4,
                               right: 4,
-                              child: Container(
-                                width: 20,
-                                height: 20,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFDC2626),
-                                  shape: BoxShape.circle,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() => img.status = _UploadStatus.uploading);
+                                  _uploadSingleImage(img);
+                                },
+                                child: Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFDC2626),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.refresh, size: 12, color: Colors.white),
                                 ),
-                                child: const Icon(Icons.error, size: 12, color: Colors.white),
                               ),
                             ),
                         ],
                       );
                     }),
                     // Add button
-                    if (_images.length < 5)
+                    if (_newImages.length + _existingImageUrls.length < 5)
                       GestureDetector(
                         onTap: _pickImages,
                         child: Container(
@@ -660,11 +761,11 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                       ),
                   ],
                 ),
-                if (_images.isNotEmpty)
+                if (_newImages.isNotEmpty || _existingImageUrls.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      '${_images.length}/5 image${_images.length > 1 ? 's' : ''} selected',
+                      '${_newImages.length + _existingImageUrls.length}/5 image${(_newImages.length + _existingImageUrls.length) > 1 ? 's' : ''} selected',
                       style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
                     ),
                   ),
@@ -691,9 +792,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                         height: 22,
                         child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                       )
-                    : const Text(
-                        'Post Job',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.3),
+                    : Text(
+                        _isEditMode ? 'Save Changes' : 'Post Job',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.3),
                       ),
               ),
             ),
@@ -865,14 +966,19 @@ class _DropdownField extends StatelessWidget {
 
 // ── Data models ───────────────────────────────────────────────────────────────
 
-class _PickedImage {
-  final XFile xFile;
+/// Represents a locally-picked image that is auto-uploaded to S3 on pick.
+class _NewImageItem {
   final Uint8List bytes;
+  final String name;
   final String mimeType;
+  _UploadStatus status;
+  String? uploadedUrl; // set when upload succeeds
 
-  _PickedImage({required this.xFile, required this.bytes, required this.mimeType});
-
-  String get name => xFile.name;
+  _NewImageItem({
+    required this.bytes,
+    required this.name,
+    required this.mimeType,
+  }) : status = _UploadStatus.uploading;
 }
 
 enum _UploadStatus { uploading, done, failed }

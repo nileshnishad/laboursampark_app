@@ -243,6 +243,17 @@ class _MyJobsViewState extends State<MyJobsView> {
                       ),
                     );
                   },
+                  onEditTap: () async {
+                    final updated = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => CreateJobScreen(
+                          userType: widget.userType,
+                          existingJob: job,
+                        ),
+                      ),
+                    );
+                    if (updated == true) _load();
+                  },
                 )),
         ],
       ),

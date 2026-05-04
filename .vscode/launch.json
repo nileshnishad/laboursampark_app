@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug (with dart_defines)",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--dart-define-from-file=dart_defines.json"]
+    },
+    {
+      "name": "Release (with dart_defines)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "args": ["--dart-define-from-file=dart_defines.json"]
+    }
+  ]
+}

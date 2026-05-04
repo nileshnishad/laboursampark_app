@@ -431,46 +431,75 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      ('Total', summary['total'] ?? 0, const Color(0xFF2563EB)),
-      ('Pending', summary['pending'] ?? 0, const Color(0xFFF59E0B)),
-      ('Accepted', summary['accepted'] ?? 0, const Color(0xFF059669)),
-      ('Rejected', summary['rejected'] ?? 0, const Color(0xFFDC2626)),
-    ];
-    return Row(
-      children: items
-          .map(
-            (e) => Expanded(
-              child: Container(
-                margin: const EdgeInsets.only(right: 8),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+    Widget chip(IconData icon, String label, dynamic count, Color color) {
+      return Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: color.withValues(alpha: 0.3), width: 1.5),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                      color: (e.$3 as Color).withValues(alpha: 0.3)),
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(9),
                 ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${e.$2}',
+                      '$count',
                       style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: e.$3 as Color),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: color,
+                          height: 1.1),
                     ),
                     Text(
-                      e.$1 as String,
+                      label,
                       style: const TextStyle(
-                          fontSize: 10, color: Color(0xFF6B7280)),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF6B7280)),
                     ),
                   ],
                 ),
               ),
-            ),
-          )
-          .toList(),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Row(children: [
+          chip(Icons.people_outline_rounded, 'Total',
+              summary['total'] ?? 0, const Color(0xFF2563EB)),
+          const SizedBox(width: 8),
+          chip(Icons.hourglass_top_rounded, 'Pending',
+              summary['pending'] ?? 0, const Color(0xFFF59E0B)),
+        ]),
+        const SizedBox(height: 8),
+        Row(children: [
+          chip(Icons.check_circle_rounded, 'Accepted',
+              summary['accepted'] ?? 0, const Color(0xFF059669)),
+          const SizedBox(width: 8),
+          chip(Icons.cancel_rounded, 'Rejected',
+              summary['rejected'] ?? 0, const Color(0xFFDC2626)),
+        ]),
+      ],
     );
   }
 }
@@ -692,6 +721,24 @@ class _ApplicationCardState extends State<_ApplicationCard> {
     );
   }
 
+  static IconData _statusIcon(String s) {
+    switch (s) {
+      case 'accepted':  return Icons.check_circle_rounded;
+      case 'completed': return Icons.verified_rounded;
+      case 'rejected':  return Icons.cancel_rounded;
+      case 'withdrawn': return Icons.undo_rounded;
+      default:          return Icons.hourglass_top_rounded;
+    }
+  }
+
+  static Color _userTypeColor(String t) {
+    switch (t.toLowerCase()) {
+      case 'contractor':     return const Color(0xFF059669);
+      case 'sub_contractor': return const Color(0xFF7C3AED);
+      default:               return const Color(0xFF2563EB);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final application = widget.application;
@@ -746,12 +793,12 @@ class _ApplicationCardState extends State<_ApplicationCard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: statusColor.withValues(alpha: 0.35), width: 1.5),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
+              color: statusColor.withValues(alpha: 0.1),
+              blurRadius: 14,
+              offset: const Offset(0, 4))
         ],
       ),
       child: Column(
@@ -761,21 +808,28 @@ class _ApplicationCardState extends State<_ApplicationCard> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: const Color(0xFFF3F4F6),
-                backgroundImage: profilePhoto.isNotEmpty
-                    ? NetworkImage(profilePhoto)
-                    : null,
-                child: profilePhoto.isEmpty
-                    ? Text(
-                        name.isNotEmpty ? name[0].toUpperCase() : '?',
-                        style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF374151)),
-                      )
-                    : null,
+              Container(
+                padding: const EdgeInsets.all(2.5),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _userTypeColor(userType),
+                ),
+                child: CircleAvatar(
+                  radius: 24,
+                  backgroundColor: const Color(0xFFF0F0F0),
+                  backgroundImage: profilePhoto.isNotEmpty
+                      ? NetworkImage(profilePhoto)
+                      : null,
+                  child: profilePhoto.isEmpty
+                      ? Text(
+                          name.isNotEmpty ? name[0].toUpperCase() : '?',
+                          style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF374151)),
+                        )
+                      : null,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -844,19 +898,26 @@ class _ApplicationCardState extends State<_ApplicationCard> {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 5),
+                    horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
+                  color: statusColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                      color: statusColor.withValues(alpha: 0.4)),
+                      color: statusColor.withValues(alpha: 0.5), width: 1.5),
                 ),
-                child: Text(
-                  statusLabel,
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: statusColor),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(_statusIcon(status), size: 13, color: statusColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      statusLabel,
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: statusColor),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -964,17 +1025,21 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () => _connect(enquiryId),
-                  icon: const Icon(Icons.handshake_outlined, size: 18),
+                  icon: const Icon(Icons.handshake_outlined, size: 20),
                   label: const Text('CONNECT & ACCEPT',
                       style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w800)),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2563EB),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    elevation: 0,
+                        borderRadius: BorderRadius.circular(12)),
+                    elevation: 3,
+                    shadowColor:
+                        const Color(0xFF2563EB).withValues(alpha: 0.4),
                   ),
                 ),
               )
@@ -984,17 +1049,21 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                 child: ElevatedButton.icon(
                   onPressed: () => _showCompleteDialog(enquiryId, name),
                   icon: const Icon(Icons.check_circle_outline_rounded,
-                      size: 18),
+                      size: 20),
                   label: const Text('MARK AS COMPLETED',
                       style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w800)),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF059669),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    elevation: 0,
+                        borderRadius: BorderRadius.circular(12)),
+                    elevation: 3,
+                    shadowColor:
+                        const Color(0xFF059669).withValues(alpha: 0.4),
                   ),
                 ),
               ),
@@ -1015,15 +1084,25 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 4),
-        Text(label,
-            style:
-                const TextStyle(fontSize: 12, color: Color(0xFF374151))),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: color)),
+        ],
+      ),
     );
   }
 }

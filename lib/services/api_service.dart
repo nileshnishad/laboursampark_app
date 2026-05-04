@@ -270,6 +270,43 @@ class ApiService {
     }
   }
 
+  /// PUT /api/jobs/:jobId — update an existing job.
+  static Future<Map<String, dynamic>> updateJob({
+    required String token,
+    required String jobId,
+    required Map<String, dynamic> jobData,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final url = '${Env.baseUrl}/api/jobs/$jobId';
+      debugPrint('══════════════════════════════════════');
+      debugPrint('[updateJob] PUT $url');
+      debugPrint('[updateJob] Payload: ${jsonEncode(jobData)}');
+      debugPrint('══════════════════════════════════════');
+      final response = await _dio.put(
+        url,
+        data: jsonEncode(jobData),
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }),
+      );
+      debugPrint('[updateJob] Response status: ${response.statusCode}');
+      debugPrint('[updateJob] Response data: ${jsonEncode(response.data)}');
+      debugPrint('══════════════════════════════════════');
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      debugPrint('[updateJob] DioException: ${e.response?.statusCode} ${e.response?.data}');
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (e) {
+      debugPrint('[updateJob] Unknown error: $e');
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
   /// GET /api/jobs/my-jobs — fetch jobs posted by the authenticated contractor/sub-contractor.
   static Future<Map<String, dynamic>> fetchMyJobs(
     String token, {

@@ -13,6 +13,8 @@ class MyJob {
   final String city;
   final String area;
   final String state;
+  final String address;
+  final String pincode;
   final DateTime? createdAt;
 
   const MyJob({
@@ -30,6 +32,8 @@ class MyJob {
     required this.city,
     required this.area,
     required this.state,
+    required this.address,
+    required this.pincode,
     required this.createdAt,
   });
 
@@ -58,6 +62,8 @@ class MyJob {
       city: (loc['city'] ?? '').toString(),
       area: (loc['area'] ?? '').toString(),
       state: (loc['state'] ?? '').toString(),
+      address: (loc['address'] ?? '').toString(),
+      pincode: (loc['pincode'] ?? '').toString(),
       createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()),
     );
   }

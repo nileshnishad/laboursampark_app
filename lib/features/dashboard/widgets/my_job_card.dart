@@ -6,12 +6,14 @@ class MyJobCard extends StatelessWidget {
   final MyJob job;
   final Color primaryColor;
   final VoidCallback? onTap;
+  final VoidCallback? onEditTap;
 
   const MyJobCard({
     super.key,
     required this.job,
     required this.primaryColor,
     this.onTap,
+    this.onEditTap,
   });
 
   String _fmtDate(DateTime? dt) {
@@ -316,46 +318,45 @@ class MyJobCard extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
+                  child: ElevatedButton.icon(
                     onPressed: onTap,
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                          color: primaryColor.withValues(alpha: 0.5)),
-                      foregroundColor: primaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    icon: const Icon(Icons.people_rounded, size: 16),
+                    label: Text(
+                        'APPLICATIONS${job.totalApplications > 0 ? ' (${job.totalApplications})' : ''}'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 11),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                          borderRadius: BorderRadius.circular(10)),
+                      elevation: 2,
+                      shadowColor: primaryColor.withValues(alpha: 0.4),
                       textStyle: const TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
                           letterSpacing: 0.3),
                     ),
-                    child: Text(
-                        'APPLICATIONS${job.totalApplications > 0 ? ' (${job.totalApplications})' : ''}'),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Edit job — coming soon')),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: OutlinedButton.icon(
+                    onPressed: onEditTap,
+                    icon: Icon(Icons.edit_outlined,
+                        size: 15, color: primaryColor),
+                    label: const Text('EDIT JOB'),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                          color: primaryColor.withValues(alpha: 0.5)),
+                      foregroundColor: primaryColor,
+                      padding: const EdgeInsets.symmetric(vertical: 11),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      elevation: 0,
+                          borderRadius: BorderRadius.circular(10)),
                       textStyle: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.3),
                     ),
-                    child: const Text('EDIT JOB →'),
                   ),
                 ),
               ],
