@@ -406,16 +406,6 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
         _selectedIndex = 0;
       }
 
-      final initials = fullName.trim().isEmpty
-          ? 'U'
-          : fullName
-              .trim()
-              .split(' ')
-              .where((word) => word.isNotEmpty)
-              .take(2)
-              .map((word) => word[0].toUpperCase())
-              .join();
-
       return Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.white,
@@ -440,34 +430,35 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
           ),
           title: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFFE5E7EB),
-                    width: 1.6,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
+              Builder(
+                builder: (context) {
+                  final isDark = Theme.of(context).brightness == Brightness.dark;
+                  return Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: const Color(0xFFE5E7EB),
+                        width: 1.6,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: CircleAvatar(
-                  radius: 16,
-                  backgroundColor: const Color(0xFFF9FAFB),
-                  child: Text(
-                    initials,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF111827),
-                      fontSize: 12,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(9),
+                      child: Image.asset(
+                        isDark ? 'assets/images/app_logo_dark.png' : 'assets/images/app_logo.png',
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
               const SizedBox(width: 8),
               Expanded(

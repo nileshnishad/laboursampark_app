@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../core/auth_service.dart';
 import '../../core/services/permission_service.dart';
+import '../../core/user_controller.dart';
 import '../auth/login_screen.dart';
 import '../dashboard/user_dashboard_screen.dart';
 
@@ -19,12 +21,25 @@ class _SplashScreenState extends State<SplashScreen> {
       if (!mounted) return;
       await PermissionService.requestStartupPermissionsIfNeeded(context);
       if (!mounted) return;
+      if (!mounted) return;
       bool loggedIn = await AuthService.isLoggedIn();
       if (!mounted) return;
       if (loggedIn) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const UserDashboardScreen()),
-        );
+        final userController = Get.find<UserController>();
+        final restored = await userController.restoreSession();
+        if (!mounted) return;
+        if (restored) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const UserDashboardScreen()),
+          );
+        } else {
+          // Token/user data corrupted — force re-login
+          await AuthService.clearSession();
+          if (!mounted) return;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+          );
+        }
       } else {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -84,12 +99,13 @@ class _LSLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      width: 90,
-      height: 90,
+      width: 110,
+      height: 110,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        color: isDark ? const Color(0xFF1F2937) : Colors.white,
+        borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
             color: Colors.black26,
@@ -98,15 +114,11 @@ class _LSLogo extends StatelessWidget {
           ),
         ],
       ),
-      child: Center(
-        child: Text(
-          'LS',
-          style: TextStyle(
-            fontSize: 34,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFF2563EB),
-            letterSpacing: 1,
-          ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(26),
+        child: Image.asset(
+          isDark ? 'assets/images/app_logo_dark.png' : 'assets/images/app_logo.png',
+          fit: BoxFit.cover,
         ),
       ),
     );

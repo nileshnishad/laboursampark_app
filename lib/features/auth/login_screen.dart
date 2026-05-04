@@ -66,6 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
         userController.setUser(user, token);
         ToastUtils.showSuccess(res['message'] ?? 'Login successful');
         await AuthService.setAuthToken(token);
+        await AuthService.setUserData(user);
         await AuthService.setLoggedIn(true);
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
@@ -112,7 +113,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: 72,
                       height: 72,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB),
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
@@ -122,15 +122,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                       ),
-                      child: const Center(
-                        child: Text(
-                          'LS',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: 1,
-                          ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: Image.asset(
+                          'assets/images/app_logo.png',
+                          width: 72,
+                          height: 72,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),

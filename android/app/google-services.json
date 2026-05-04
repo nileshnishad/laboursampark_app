@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1040537688953",
+    "project_id": "laboursampark-810ef",
+    "storage_bucket": "laboursampark-810ef.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1040537688953:android:1ba04a54f2c40eb6492da8",
+        "android_client_info": {
+          "package_name": "com.laboursamaprk.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBRSU0cd__oukeSwK2JkVVrgbpvK79Dg3k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

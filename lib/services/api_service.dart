@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import '../core/app_interceptor.dart';
 import '../core/env.dart';
 import '../core/errors/app_error.dart';
 import '../core/errors/error_messages.dart';
@@ -13,7 +14,7 @@ class ApiService {
       receiveTimeout: const Duration(seconds: 12),
       sendTimeout: const Duration(seconds: 12),
     ),
-  );
+  )..interceptors.add(AppInterceptor());
 
   static Future<Map<String, dynamic>> login(String email, String password) async {
     final hasInternet = await NetworkService.hasInternet();
