@@ -307,6 +307,35 @@ class ApiService {
     }
   }
 
+  /// POST /api/jobs/:jobId/toggle-activation — toggle job visibility (active/inactive).
+  static Future<Map<String, dynamic>> toggleJobActivation({
+    required String token,
+    required String jobId,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/jobs/$jobId/toggle-activation',
+        data: jsonEncode({}),
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      // Return full body so caller can access 'message', 'activeJobs', etc.
+      if (body is Map<String, dynamic>) return body;
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
   /// GET /api/jobs/my-jobs — fetch jobs posted by the authenticated contractor/sub-contractor.
   static Future<Map<String, dynamic>> fetchMyJobs(
     String token, {

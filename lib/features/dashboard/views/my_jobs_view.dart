@@ -254,6 +254,10 @@ class _MyJobsViewState extends State<MyJobsView> {
                     );
                     if (updated == true) _load();
                   },
+                  onToggleActivation: () => ApiService.toggleJobActivation(
+                    token: widget.token,
+                    jobId: job.id,
+                  ),
                 )),
         ],
       ),

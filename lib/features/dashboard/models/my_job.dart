@@ -9,6 +9,7 @@ class MyJob {
   final num? estimatedBudget;
   final String status;
   final bool visibility;
+  final bool isActive;
   final int totalApplications;
   final String city;
   final String area;
@@ -28,6 +29,7 @@ class MyJob {
     required this.estimatedBudget,
     required this.status,
     required this.visibility,
+    required this.isActive,
     required this.totalApplications,
     required this.city,
     required this.area,
@@ -58,6 +60,7 @@ class MyJob {
       estimatedBudget: json['estimatedBudget'] as num?,
       status: (json['status'] ?? 'open').toString(),
       visibility: (json['visibility'] as bool?) ?? false,
+      isActive: (json['isActive'] as bool?) ?? (json['visibility'] as bool?) ?? false,
       totalApplications: (json['totalApplications'] as num?)?.toInt() ?? 0,
       city: (loc['city'] ?? '').toString(),
       area: (loc['area'] ?? '').toString(),

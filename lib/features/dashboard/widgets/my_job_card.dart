@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../models/my_job.dart';
 
-class MyJobCard extends StatelessWidget {
+class MyJobCard extends StatefulWidget {
   final MyJob job;
   final Color primaryColor;
   final VoidCallback? onTap;
   final VoidCallback? onEditTap;
+  final Future<Map<String, dynamic>> Function()? onToggleActivation;
 
   const MyJobCard({
     super.key,
@@ -14,7 +15,50 @@ class MyJobCard extends StatelessWidget {
     required this.primaryColor,
     this.onTap,
     this.onEditTap,
+    this.onToggleActivation,
   });
+
+  @override
+  State<MyJobCard> createState() => _MyJobCardState();
+}
+
+class _MyJobCardState extends State<MyJobCard> {
+  late bool _isActive;
+  bool _toggling = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isActive = widget.job.isActive;
+  }
+
+  Future<void> _handleToggle() async {
+    if (_toggling || widget.onToggleActivation == null) return;
+    setState(() => _toggling = true);
+    final result = await widget.onToggleActivation!();
+    if (!mounted) return;
+    setState(() => _toggling = false);
+
+    if (result['success'] == true) {
+      final data = result['data'] as Map<String, dynamic>?;
+      final newActive = data?['isActive'] as bool? ?? !_isActive;
+      setState(() => _isActive = newActive);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(newActive ? 'Job is now LIVE ✓' : 'Job hidden from applicants'),
+        backgroundColor: newActive ? const Color(0xFF059669) : const Color(0xFF6B7280),
+        behavior: SnackBarBehavior.floating,
+      ));
+    } else {
+      // Show the backend message (e.g. max active jobs limit)
+      final msg = result['message']?.toString() ?? 'Failed to toggle activation';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(msg),
+        backgroundColor: const Color(0xFFDC2626),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+
 
   String _fmtDate(DateTime? dt) {
     if (dt == null) return '';
@@ -53,25 +97,30 @@ class MyJobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLive = job.visibility;
+    final job = widget.job;
+    final primaryColor = widget.primaryColor;
+    final isLive = _isActive;
     final location = [job.area, job.city].where((s) => s.isNotEmpty).join(', ');
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isLive ? const Color(0xFF86EFAC) : const Color(0xFFE5E7EB),
-          width: isLive ? 1.5 : 1,
+          color: isLive ? const Color(0xFF059669) : const Color(0xFFD1D5DB),
+          width: isLive ? 2 : 1.5,
         ),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 2))
+              color: isLive
+                  ? const Color(0xFF059669).withValues(alpha: 0.12)
+                  : Colors.black.withValues(alpha: 0.06),
+              blurRadius: isLive ? 14 : 10,
+              spreadRadius: isLive ? 1 : 0,
+              offset: const Offset(0, 3)),
         ],
       ),
       child: Column(
@@ -311,6 +360,48 @@ class MyJobCard extends StatelessWidget {
             ),
           ),
 
+          // ── Toggle Activation ──────────────────────────────
+          const Divider(height: 1, color: Color(0xFFF3F4F6)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _toggling ? null : _handleToggle,
+                icon: _toggling
+                    ? SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: isLive ? const Color(0xFFDC2626) : const Color(0xFF059669),
+                        ),
+                      )
+                    : Icon(
+                        isLive ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        size: 16,
+                        color: isLive ? const Color(0xFFDC2626) : const Color(0xFF059669),
+                      ),
+                label: Text(isLive ? 'Deactivate (Hide Job)' : 'Activate (Make Live)'),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                      color: isLive
+                          ? const Color(0xFFDC2626).withValues(alpha: 0.5)
+                          : const Color(0xFF059669).withValues(alpha: 0.5)),
+                  foregroundColor:
+                      isLive ? const Color(0xFFDC2626) : const Color(0xFF059669),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2),
+                ),
+              ),
+            ),
+          ),
+
           // ── Action buttons ─────────────────────────────────────
           const Divider(height: 1, color: Color(0xFFF3F4F6)),
           Padding(
@@ -319,7 +410,7 @@ class MyJobCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: onTap,
+                    onPressed: widget.onTap,
                     icon: const Icon(Icons.people_rounded, size: 16),
                     label: Text(
                         'APPLICATIONS${job.totalApplications > 0 ? ' (${job.totalApplications})' : ''}'),
@@ -341,7 +432,7 @@ class MyJobCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: onEditTap,
+                    onPressed: widget.onEditTap,
                     icon: Icon(Icons.edit_outlined,
                         size: 15, color: primaryColor),
                     label: const Text('EDIT JOB'),
