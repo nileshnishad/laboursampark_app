@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../services/api_service.dart';
 import '../create_job_screen.dart';
+import '../job_applications_screen.dart';
 import '../models/my_job.dart';
 import '../widgets/my_job_card.dart';
 
@@ -228,8 +229,21 @@ class _MyJobsViewState extends State<MyJobsView> {
               ),
             )
           else
-            ..._jobs.map((job) =>
-                MyJobCard(job: job, primaryColor: _primaryColor)),
+            ..._jobs.map((job) => MyJobCard(
+                  job: job,
+                  primaryColor: _primaryColor,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => JobApplicationsScreen(
+                          token: widget.token,
+                          jobId: job.id,
+                          jobTitle: job.workTitle,
+                        ),
+                      ),
+                    );
+                  },
+                )),
         ],
       ),
     );

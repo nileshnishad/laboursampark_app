@@ -418,5 +418,84 @@ class ApiService {
       debugPrint('⚠️ FCM token registration failed: $e');
     }
   }
+
+  /// GET /api/jobs/getApplication?jobId=xxx — fetch all applications for a job.
+  static Future<Map<String, dynamic>> fetchJobApplications({
+    required String token,
+    required String jobId,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.get(
+        '${Env.baseUrl}/api/jobs/getApplication',
+        queryParameters: {'jobId': jobId, 'page': page, 'limit': limit},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  /// POST /api/job-enquiries/:enquiryId/connect — accept a pending application.
+  static Future<Map<String, dynamic>> connectEnquiry({
+    required String token,
+    required String enquiryId,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/job-enquiries/$enquiryId/connect',
+        data: '{}',
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  /// POST /api/job-enquiries/:enquiryId/complete — mark accepted application as completed with review.
+  static Future<Map<String, dynamic>> completeEnquiry({
+    required String token,
+    required String enquiryId,
+    required double rating,
+    required String feedback,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/job-enquiries/$enquiryId/complete',
+        data: jsonEncode({'rating': rating, 'feedback': feedback}),
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
 }
 

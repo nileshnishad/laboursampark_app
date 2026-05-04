@@ -5,8 +5,14 @@ import '../models/my_job.dart';
 class MyJobCard extends StatelessWidget {
   final MyJob job;
   final Color primaryColor;
+  final VoidCallback? onTap;
 
-  const MyJobCard({super.key, required this.job, required this.primaryColor});
+  const MyJobCard({
+    super.key,
+    required this.job,
+    required this.primaryColor,
+    this.onTap,
+  });
 
   String _fmtDate(DateTime? dt) {
     if (dt == null) return '';
@@ -48,7 +54,9 @@ class MyJobCard extends StatelessWidget {
     final isLive = job.visibility;
     final location = [job.area, job.city].where((s) => s.isNotEmpty).join(', ');
 
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -309,13 +317,7 @@ class MyJobCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(
-                          '${job.totalApplications} application${job.totalApplications == 1 ? '' : 's'} — full view coming soon',
-                        ),
-                      ));
-                    },
+                    onPressed: onTap,
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(
                           color: primaryColor.withValues(alpha: 0.5)),
@@ -361,6 +363,7 @@ class MyJobCard extends StatelessWidget {
           ),
         ],
       ),
+      ), // GestureDetector
     );
   }
 }

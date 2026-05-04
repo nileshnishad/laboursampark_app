@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/user_controller.dart';
@@ -406,7 +407,16 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
         _selectedIndex = 0;
       }
 
-      return Scaffold(
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (!didPop) {
+            // Minimize app — don't close it
+            const MethodChannel('com.laboursamaprk.app/navigation')
+                .invokeMethod('moveToBackground');
+          }
+        },
+        child: Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.white,
           foregroundColor: const Color(0xFF1F2937),
@@ -625,7 +635,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
           unselectedFontSize: 11,
           onTap: _onItemTapped,
         ),
-      );
+      ), // Scaffold
+      ); // PopScope
     });
   }
 }
