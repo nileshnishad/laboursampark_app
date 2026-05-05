@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:app_links/app_links.dart';
 
 import '../../core/user_controller.dart';
 import '../../core/auth_service.dart';
@@ -8,6 +10,7 @@ import '../../core/app_state.dart';
 import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // Views
 import 'views/all_jobs_view.dart';
@@ -17,6 +20,7 @@ import 'views/history_view.dart';
 import 'views/labour_list_view.dart';
 import 'views/my_jobs_view.dart';
 import 'views/profile_view.dart';
+import 'payment_webview_screen.dart';
 
 class UserDashboardScreen extends StatefulWidget {
   const UserDashboardScreen({super.key});
@@ -25,18 +29,99 @@ class UserDashboardScreen extends StatefulWidget {
   State<UserDashboardScreen> createState() => _UserDashboardScreenState();
 }
 
-class _UserDashboardScreenState extends State<UserDashboardScreen> {
+class _UserDashboardScreenState extends State<UserDashboardScreen>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
   bool _subscriptionActive = false;
   bool _subscriptionStatusLoaded = false;
   bool _profileLoading = true;
   String? _profileError;
   Map<String, dynamic>? _subscriptionPlan;
+  StreamSubscription<Uri>? _linkSub;
+  bool _paymentPending = false; // true while waiting for user to return from browser
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadProfileStatus();
+    _initDeepLinks();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _paymentPending) {
+      _paymentPending = false;
+      _pollAfterPayment();
+    }
+  }
+
+  Future<void> _pollAfterPayment() async {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(children: [
+          SizedBox(width: 18, height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+          SizedBox(width: 12),
+          Text('Verifying payment...'),
+        ]),
+        duration: Duration(seconds: 45),
+      ),
+    );
+    bool activated = false;
+    for (int i = 0; i < 10; i++) {
+      await Future.delayed(const Duration(seconds: 4));
+      await _loadProfileStatus();
+      if (_subscriptionActive) { activated = true; break; }
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(activated
+            ? 'Subscription activated successfully!'
+            : 'Payment received! If not reflected, check back in a few minutes.'),
+        backgroundColor: activated ? const Color(0xFF059669) : const Color(0xFFF59E0B),
+        duration: const Duration(seconds: 5),
+      ),
+    );
+  }
+
+  void _initDeepLinks() {
+    _linkSub = AppLinks().uriLinkStream.listen((uri) {
+      if (!mounted) return;
+      if (uri.scheme == 'laboursampark' && uri.host == 'payment') {
+        final path = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : '';
+        // Dismiss any open dialogs (e.g. the waiting-for-payment dialog)
+        if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+        if (path == 'success') {
+          _loadProfileStatus();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment successful! Subscription activated.'),
+              backgroundColor: Color(0xFF059669),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        } else if (path == 'failure') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment failed or was cancelled. Please try again.'),
+              backgroundColor: Color(0xFFDC2626),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _linkSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadProfileStatus() async {
@@ -379,20 +464,100 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
               backgroundColor: const Color(0xFF1976D2),
               foregroundColor: Colors.white,
             ),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(dialogContext);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Proceeding to payment for ₹$price...',
-                  ),
-                ),
-              );
-              // TODO: Connect to actual payment gateway
+              await _initiatePayment(context, plan);
             },
             child: const Text('Proceed to Payment'),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _initiatePayment(
+      BuildContext context, Map<String, dynamic> plan) async {
+    final userController = Get.find<UserController>();
+    final token =
+        userController.token.value ?? await AuthService.getAuthToken();
+    if (token == null || token.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Session expired. Please login again.')),
+        );
+      }
+      return;
+    }
+
+    final amount = (plan['price'] as num?)?.toDouble() ?? 99.0;
+    final userType =
+        (userController.user.value?['userType'] ?? 'labour').toString();
+    final productInfo = userType == 'labour'
+        ? 'Labour profile visibility – LabourSampark'
+        : '$userType profile visibility – LabourSampark';
+    final description =
+        '${plan['durationDays'] ?? 90}-day profile visibility subscription for $userType on LabourSampark';
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(children: [
+            SizedBox(width: 18, height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+            SizedBox(width: 12),
+            Text('Creating payment link...'),
+          ]),
+          duration: Duration(seconds: 10),
+        ),
+      );
+    }
+
+    final result = await ApiService.createPaymentLink(
+      amount: amount,
+      productInfo: productInfo,
+      description: description,
+      token: token,
+    );
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    if (result['success'] != true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message']?.toString() ?? 'Could not create payment link')),
+      );
+      return;
+    }
+
+    final paymentLink = result['data']?['paymentLink']?.toString() ?? '';
+    if (paymentLink.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid payment link received')),
+      );
+      return;
+    }
+
+    // Open in Chrome — handles UPI intents, bank OTPs, redirects natively.
+    // When user completes payment and returns to app, didChangeAppLifecycleState
+    // fires and _pollAfterPayment() automatically verifies subscription.
+    final uri = Uri.parse(paymentLink);
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+    if (!context.mounted) return;
+    if (!launched) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open browser. Please try again.')),
+      );
+      return;
+    }
+
+    // Mark payment as pending — polling starts when user returns to app
+    _paymentPending = true;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Complete payment in browser, then return to the app.'),
+        duration: Duration(seconds: 6),
       ),
     );
   }

@@ -187,10 +187,78 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> fetchJobHistory(
-      String token, {int page = 1, int limit = 20}) async {
+  /// POST /api/payments/payu/create-link — create a PayU payment link.
+  static Future<Map<String, dynamic>> createPaymentLink({
+    required double amount,
+    required String productInfo,
+    required String description,
+    required String token,
+  }) async {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/payments/payu/create-link',
+        data: jsonEncode({
+          'amount': amount,
+          'productInfo': productInfo,
+          'purpose': 'subscription',
+          'description': description,
+          'successUrl': 'https://laboursampark.com/payment/success?source=mobile',
+          'failureUrl': 'https://laboursampark.com/payment/failure?source=mobile',
+        }),
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) return body;
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  static Future<Map<String, dynamic>> sendOtp(String phone) async {
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/twilio/send-verification',
+        data: {'to': phone},
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) return body;
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyOtp(String phone, String code) async {
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/twilio/verify-otp',
+        data: {'to': phone, 'code': code},
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) return body;
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchJobHistory(
+      String token, {int page = 1, int limit = 20}) async {
+    final hasInternet = await NetworkService.hasInternet();    if (!hasInternet) {
       return {'success': false, 'message': ErrorMessages.noInternet};
     }
 

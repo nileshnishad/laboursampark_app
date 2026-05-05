@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'user_type_selection_screen.dart';
 import '../dashboard/user_dashboard_screen.dart';
+import 'mobile_verify_screen.dart';
 import 'package:get/get.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../services/api_service.dart';
@@ -75,6 +76,38 @@ class _LoginScreenState extends State<LoginScreen> {
           ApiService.registerFcmToken(token: token, fcmToken: fcmToken);
         }
         if (!mounted) return;
+
+        // Check OTPstatus — from login response first, else fetch profile
+        Map<String, dynamic> profile = user;
+        String otpStatus = (user['OTPstatus'] ?? user['otpStatus'] ?? '').toString();
+
+        if (otpStatus.isEmpty) {
+          // OTPstatus not in login response — fetch profile to get it
+          final profileRes = await ApiService.fetchProfile(token);
+          if (profileRes['success'] == true && profileRes['data'] is Map<String, dynamic>) {
+            profile = profileRes['data'] as Map<String, dynamic>;
+            otpStatus = (profile['OTPstatus'] ?? profile['otpStatus'] ?? '').toString();
+          }
+        }
+
+        debugPrint('>>> OTPstatus: $otpStatus');
+
+        if (!mounted) return;
+
+        if (otpStatus == 'inactive') {
+          final phone = (profile['phone'] ?? profile['mobile'] ?? profile['mobileNumber'] ?? '').toString();
+          final displayPhone = phone.isNotEmpty ? phone : 'your registered number';
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => MobileVerifyScreen(
+                phone: phone.startsWith('+') ? phone : '+91$phone',
+                displayPhone: displayPhone,
+              ),
+            ),
+          );
+          return;
+        }
+
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const UserDashboardScreen()),
         );
