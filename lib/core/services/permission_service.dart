@@ -19,7 +19,6 @@ class PermissionService {
 
     final permissions = <Permission>[
       Permission.notification,
-      Permission.contacts,
       Permission.camera,
       if (_isAndroidMobilePlatform()) Permission.sms,
     ];
@@ -53,7 +52,6 @@ class PermissionService {
   }
 
   static String permissionName(Permission permission) {
-    if (permission == Permission.contacts) return 'Contacts';
     if (permission == Permission.camera) return 'Camera';
     if (permission == Permission.notification) return 'Notifications';
     if (permission == Permission.sms) return 'SMS';
@@ -61,9 +59,6 @@ class PermissionService {
   }
 
   static String permissionReason(Permission permission) {
-    if (permission == Permission.contacts) {
-      return 'Contacts access helps users connect quickly with known contractors and workers.';
-    }
     if (permission == Permission.camera) {
       return 'Camera access is required for profile photo and work-site image uploads.';
     }
@@ -84,7 +79,7 @@ class PermissionService {
         return AlertDialog(
           title: const Text('Permissions Required'),
           content: const Text(
-            'To provide secure login, updates, and profile features, the app will ask for Notifications, Contacts, Camera, and SMS permissions.',
+            'To provide the best experience, the app will ask for Notifications, Camera, and SMS permissions.',
           ),
           actions: [
             TextButton(
