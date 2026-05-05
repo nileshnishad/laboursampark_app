@@ -1,11 +1,11 @@
-package com.laboursamaprk.app
+package com.laboursampark.app
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    private val channel = "com.laboursamaprk.app/navigation"
+    private val channel = "com.laboursampark.app/navigation"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

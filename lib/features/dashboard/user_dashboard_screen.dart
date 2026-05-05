@@ -581,7 +581,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
         onPopInvokedWithResult: (didPop, _) async {
           if (!didPop) {
             // Minimize app — don't close it
-            const MethodChannel('com.laboursamaprk.app/navigation')
+            const MethodChannel('com.laboursampark.app/navigation')
                 .invokeMethod('moveToBackground');
           }
         },

@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1040537688953:android:1ba04a54f2c40eb6492da8",
+        "mobilesdk_app_id": "1:1040537688953:android:a712b0d90ef281f0492da8",
         "android_client_info": {
-          "package_name": "com.laboursamaprk.app"
+          "package_name": "com.laboursampark.app"
         }
       },
       "oauth_client": [],
