@@ -6,6 +6,7 @@ import '../../core/services/permission_service.dart';
 import '../../core/user_controller.dart';
 import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
+import '../auth/mobile_verify_screen.dart';
 import '../dashboard/user_dashboard_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -31,6 +32,24 @@ class _SplashScreenState extends State<SplashScreen> {
         final restored = await userController.restoreSession();
         if (!mounted) return;
         if (restored) {
+          // OTP guard — must be verified before accessing dashboard
+          final otpVerified = await AuthService.isOtpVerified();
+          if (!otpVerified) {
+            final userData = await AuthService.getUserData();
+            final phone = (userData?['phone'] ?? userData?['mobile'] ?? userData?['mobileNumber'] ?? '').toString();
+            final userId = (userData?['_id'] ?? userData?['id'] ?? '').toString();
+            if (!mounted) return;
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => MobileVerifyScreen(
+                  phone: phone.startsWith('+') ? phone : '+91$phone',
+                  displayPhone: phone,
+                  userId: userId,
+                ),
+              ),
+            );
+            return;
+          }
           // Refresh FCM token on every app open (token can change)
           final fcmToken = await FirebaseMessaging.instance.getToken();
           final authToken = userController.token.value;

@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import '../../core/auth_service.dart';
 import '../../services/api_service.dart';
 import '../dashboard/user_dashboard_screen.dart';
 
 class MobileVerifyScreen extends StatefulWidget {
   final String phone; // e.g. "+919876543210"
   final String displayPhone; // e.g. "98765 43210"
+  final String? userId;
 
   const MobileVerifyScreen({
     super.key,
     required this.phone,
     required this.displayPhone,
+    this.userId,
   });
 
   @override
@@ -22,23 +26,51 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
+  late String _currentPhone;
+  bool _editingPhone = false;
+  final TextEditingController _phoneEditController = TextEditingController();
+
   bool _otpSent = false;
   bool _sending = false;
   bool _verifying = false;
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    _currentPhone = widget.phone;
+  }
+
+  @override
   void dispose() {
     for (final c in _controllers) c.dispose();
     for (final f in _focusNodes) f.dispose();
+    _phoneEditController.dispose();
     super.dispose();
   }
 
   String get _otp => _controllers.map((c) => c.text).join();
 
+  void _startEditPhone() {
+    final digits = _currentPhone.replaceAll('+91', '').replaceAll(' ', '');
+    _phoneEditController.text = digits;
+    setState(() { _editingPhone = true; _error = null; });
+  }
+
   Future<void> _sendOtp() async {
+    // If editing, use the edited number directly
+    if (_editingPhone) {
+      final raw = _phoneEditController.text.trim();
+      if (raw.length < 10) {
+        setState(() => _error = 'Enter a valid 10-digit mobile number');
+        return;
+      }
+      _currentPhone = raw.startsWith('+') ? raw : '+91$raw';
+      _editingPhone = false;
+      for (final c in _controllers) c.clear();
+    }
     setState(() { _sending = true; _error = null; });
-    final res = await ApiService.sendOtp(widget.phone);
+    final res = await ApiService.sendOtp(_currentPhone, userId: widget.userId);
     if (!mounted) return;
     if (res['success'] == true) {
       setState(() { _otpSent = true; _sending = false; });
@@ -59,9 +91,11 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
       return;
     }
     setState(() { _verifying = true; _error = null; });
-    final res = await ApiService.verifyOtp(widget.phone, _otp);
+    final res = await ApiService.verifyOtp(_currentPhone, _otp);
     if (!mounted) return;
     if (res['success'] == true) {
+      await AuthService.setOtpVerified(true);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Mobile number verified successfully!'),
@@ -88,10 +122,22 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
   void _onOtpDigit(int index, String value) {
     if (value.isNotEmpty && index < 5) {
       _focusNodes[index + 1].requestFocus();
-    } else if (value.isEmpty && index > 0) {
-      _focusNodes[index - 1].requestFocus();
     }
+    if (value.isNotEmpty) setState(() {});
     if (_otp.length == 6) _verifyOtp();
+  }
+
+  KeyEventResult _handleKeyEvent(int index, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.backspace) {
+      if (_controllers[index].text.isEmpty && index > 0) {
+        _controllers[index - 1].clear();
+        _focusNodes[index - 1].requestFocus();
+        setState(() {});
+        return KeyEventResult.handled;
+      }
+    }
+    return KeyEventResult.ignored;
   }
 
   @override
@@ -108,7 +154,8 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,26 +174,69 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Phone display
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
+              // Phone display / edit
+              if (_editingPhone) ...[
+                Row(
                   children: [
-                    const Icon(Icons.phone, color: Color(0xFF2563EB), size: 20),
-                    const SizedBox(width: 12),
-                    Text(
-                      widget.displayPhone,
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _phoneEditController,
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        maxLength: 10,
+                        decoration: InputDecoration(
+                          counterText: '',
+                          prefixText: '+91 ',
+                          labelText: 'Mobile Number',
+                          filled: true,
+                          fillColor: const Color(0xFFF1F5F9),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
+                          ),
+                        ),
+                        autofocus: true,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () => setState(() { _editingPhone = false; _error = null; }),
+                      child: const Text('Cancel', style: TextStyle(color: Color(0xFF6B7280))),
                     ),
                   ],
                 ),
-              ),
+              ] else ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.phone, color: Color(0xFF2563EB), size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _currentPhone,
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                        ),
+                      ),
+                      if (!_otpSent)
+                        TextButton.icon(
+                          onPressed: _startEditPhone,
+                          icon: const Icon(Icons.edit, size: 16, color: Color(0xFF2563EB)),
+                          label: const Text('Edit',
+                              style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.w600)),
+                          style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 28),
 
               if (!_otpSent) ...[
@@ -177,31 +267,53 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: List.generate(6, (i) {
+                    final isFilled = _controllers[i].text.isNotEmpty;
                     return SizedBox(
                       width: 46,
-                      height: 54,
-                      child: TextFormField(
-                        controller: _controllers[i],
-                        focusNode: _focusNodes[i],
-                        textAlign: TextAlign.center,
-                        keyboardType: TextInputType.number,
-                        maxLength: 1,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        decoration: InputDecoration(
-                          counterText: '',
-                          filled: true,
-                          fillColor: const Color(0xFFF8FAFC),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                      height: 56,
+                      child: Focus(
+                        onKeyEvent: (node, event) => _handleKeyEvent(i, event),
+                        child: TextFormField(
+                          controller: _controllers[i],
+                          focusNode: _focusNodes[i],
+                          textAlign: TextAlign.center,
+                          textAlignVertical: TextAlignVertical.center,
+                          keyboardType: TextInputType.number,
+                          maxLength: 1,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          enableInteractiveSelection: false,
+                          showCursor: true,
+                          decoration: InputDecoration(
+                            counterText: '',
+                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                            filled: true,
+                            fillColor: isFilled
+                                ? const Color(0xFFEFF6FF)
+                                : const Color(0xFFF8FAFC),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(
+                                color: isFilled
+                                    ? const Color(0xFF2563EB)
+                                    : const Color(0xFFCBD5E1),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFF2563EB), width: 2),
+                            ),
                           ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
-                          ),
+                          style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF1E293B)),
+                          onChanged: (v) => _onOtpDigit(i, v),
                         ),
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-                        onChanged: (v) => _onOtpDigit(i, v),
                       ),
                     );
                   }),

@@ -97,17 +97,23 @@ class _LoginScreenState extends State<LoginScreen> {
         if (otpStatus == 'inactive') {
           final phone = (profile['phone'] ?? profile['mobile'] ?? profile['mobileNumber'] ?? '').toString();
           final displayPhone = phone.isNotEmpty ? phone : 'your registered number';
+          final userId = (user['_id'] ?? user['id'] ?? profile['_id'] ?? profile['id'] ?? '').toString();
+          await AuthService.setOtpVerified(false);
+          if (!mounted) return;
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (_) => MobileVerifyScreen(
                 phone: phone.startsWith('+') ? phone : '+91$phone',
                 displayPhone: displayPhone,
+                userId: userId,
               ),
             ),
           );
           return;
         }
 
+        await AuthService.setOtpVerified(true);
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const UserDashboardScreen()),
         );

@@ -6,9 +6,11 @@ import 'package:get/get.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/app_state.dart';
+import 'core/auth_service.dart';
 import 'core/user_controller.dart';
 import 'firebase_options.dart';
 import 'theme/app_theme.dart';
+import 'features/auth/mobile_verify_screen.dart';
 import 'features/splash/splash_screen.dart';
 
 @pragma('vm:entry-point')
@@ -49,8 +51,57 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.resumed) {
+      final loggedIn = await AuthService.isLoggedIn();
+      if (!loggedIn) return;
+      final otpVerified = await AuthService.isOtpVerified();
+      if (!otpVerified) {
+        final userData = await AuthService.getUserData();
+        final phone = (userData?['phone'] ?? userData?['mobile'] ?? userData?['mobileNumber'] ?? '').toString();
+        final userId = (userData?['_id'] ?? userData?['id'] ?? '').toString();
+        final ctx = navigatorKey.currentContext;
+        if (ctx == null) return;
+        // Only push if not already on MobileVerifyScreen
+        final currentRoute = ModalRoute.of(ctx);
+        if (currentRoute?.settings.name == '/mobile_verify') return;
+        navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(
+            settings: const RouteSettings(name: '/mobile_verify'),
+            builder: (_) => MobileVerifyScreen(
+              phone: phone.startsWith('+') ? phone : '+91$phone',
+              displayPhone: phone,
+              userId: userId,
+            ),
+          ),
+          (route) => false,
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,18 +115,16 @@ class MyApp extends StatelessWidget {
             splitScreenMode: true,
             builder: (context, child) {
               return MaterialApp(
+                navigatorKey: navigatorKey,
                 title: 'Labour Sampark',
                 theme: AppTheme.lightTheme,
                 darkTheme: AppTheme.darkTheme,
                 themeMode: appState.themeMode,
                 home: const SplashScreen(),
                 debugShowCheckedModeBanner: false,
-                localizationsDelegates: const [
-                  // Add localization delegates here
-                ],
+                localizationsDelegates: const [],
                 supportedLocales: const [
                   Locale('en', ''),
-                  // Add more locales if needed
                 ],
               );
             },
@@ -85,5 +134,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-      

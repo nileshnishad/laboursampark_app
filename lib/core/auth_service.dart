@@ -5,6 +5,7 @@ class AuthService {
   static const String _keyIsLoggedIn = 'is_logged_in';
   static const String _keyAuthToken = 'auth_token';
   static const String _keyUserData = 'user_data';
+  static const String _keyOtpVerified = 'otp_verified';
 
   static Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
@@ -47,5 +48,16 @@ class AuthService {
     await prefs.remove(_keyIsLoggedIn);
     await prefs.remove(_keyAuthToken);
     await prefs.remove(_keyUserData);
+    await prefs.remove(_keyOtpVerified);
+  }
+
+  static Future<bool> isOtpVerified() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_keyOtpVerified) ?? false;
+  }
+
+  static Future<void> setOtpVerified(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyOtpVerified, value);
   }
 }

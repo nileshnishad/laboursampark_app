@@ -224,11 +224,13 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> sendOtp(String phone) async {
+  static Future<Map<String, dynamic>> sendOtp(String phone, {String? userId}) async {
     try {
+      final payload = <String, dynamic>{'to': phone};
+      if (userId != null && userId.isNotEmpty) payload['userId'] = userId;
       final response = await _dio.post(
         '${Env.baseUrl}/api/twilio/send-verification',
-        data: {'to': phone},
+        data: payload,
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
