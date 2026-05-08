@@ -1,6 +1,8 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'package:in_app_update/in_app_update.dart';
 import '../../core/auth_service.dart';
 import '../../core/services/permission_service.dart';
 import '../../core/user_controller.dart';
@@ -21,6 +23,23 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Future.delayed(const Duration(seconds: 2), () async {
+      if (!mounted) return;
+      // Check for Play Store update (Android only, release builds only)
+      if (!kIsWeb) {
+        try {
+          final updateInfo = await InAppUpdate.checkForUpdate();
+          if (updateInfo.updateAvailability == UpdateAvailability.updateAvailable) {
+            if (updateInfo.immediateUpdateAllowed) {
+              await InAppUpdate.performImmediateUpdate();
+            } else if (updateInfo.flexibleUpdateAllowed) {
+              await InAppUpdate.startFlexibleUpdate();
+              await InAppUpdate.completeFlexibleUpdate();
+            }
+          }
+        } catch (_) {
+          // Ignore update check errors (e.g. not on Play Store / debug build)
+        }
+      }
       if (!mounted) return;
       await PermissionService.requestStartupPermissionsIfNeeded(context);
       if (!mounted) return;

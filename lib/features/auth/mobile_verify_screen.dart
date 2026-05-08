@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import 'package:get/get.dart';
 import '../../core/auth_service.dart';
+import '../../core/user_controller.dart';
 import '../../services/api_service.dart';
 import '../dashboard/user_dashboard_screen.dart';
+import 'login_screen.dart';
 
 class MobileVerifyScreen extends StatefulWidget {
   final String phone; // e.g. "+919876543210"
@@ -119,6 +122,36 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
     }
   }
 
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFDC2626)),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final userController = Get.find<UserController>();
+    userController.clearUser();
+    await AuthService.clearSession();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
   void _onOtpDigit(int index, String value) {
     if (value.isNotEmpty && index < 5) {
       _focusNodes[index + 1].requestFocus();
@@ -152,6 +185,13 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
           'Verify Mobile Number',
           style: TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w700, fontSize: 18),
         ),
+        actions: [
+          IconButton(
+            onPressed: _logout,
+            icon: const Icon(Icons.logout, color: Color(0xFFDC2626)),
+            tooltip: 'Logout',
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
