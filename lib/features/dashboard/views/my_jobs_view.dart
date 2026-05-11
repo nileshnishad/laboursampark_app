@@ -23,10 +23,21 @@ class _MyJobsViewState extends State<MyJobsView> {
   bool _loading = true;
   String? _error;
   int _total = 0;
+  String _filter = 'all'; // 'all' | 'live' | 'hidden'
+
+  // Cache filtered list so it is computed once per build, not multiple times.
+  late List<MyJob> _filtered;
+
+  List<MyJob> _applyFilter() {
+    if (_filter == 'live') return _jobs.where((j) => j.isActive).toList();
+    if (_filter == 'hidden') return _jobs.where((j) => !j.isActive).toList();
+    return List.of(_jobs);
+  }
 
   @override
   void initState() {
     super.initState();
+    _filtered = [];
     _load();
   }
 
@@ -41,13 +52,12 @@ class _MyJobsViewState extends State<MyJobsView> {
       final data = result['data'] as Map<String, dynamic>?;
       final jobs = (data?['jobs'] as List? ?? []);
       final pagination = data?['pagination'] as Map<String, dynamic>?;
-      setState(() {
-        _jobs = jobs
-            .map((j) => MyJob.fromJson(j as Map<String, dynamic>))
-            .toList();
-        _total = (pagination?['total'] as num?)?.toInt() ?? _jobs.length;
-        _loading = false;
-      });
+      _jobs = jobs
+          .map((j) => MyJob.fromJson(j as Map<String, dynamic>))
+          .toList();
+      _total = (pagination?['total'] as num?)?.toInt() ?? _jobs.length;
+      _filtered = _applyFilter();
+      setState(() => _loading = false);
     } else {
       setState(() {
         _error = (result['message'] ?? 'Failed to load jobs').toString();
@@ -56,9 +66,18 @@ class _MyJobsViewState extends State<MyJobsView> {
     }
   }
 
+  void _setFilter(String f) {
+    setState(() {
+      _filter = f;
+      _filtered = _applyFilter();
+    });
+  }
+
   Color get _primaryColor => widget.userType == 'sub_contractor'
       ? const Color(0xFF7C3AED)
       : const Color(0xFF059669);
+
+  // ── Build ───────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +97,7 @@ class _MyJobsViewState extends State<MyJobsView> {
               const SizedBox(height: 12),
               Text(_error!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Color(0xFF374151))),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8))),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: _load,
@@ -98,168 +117,299 @@ class _MyJobsViewState extends State<MyJobsView> {
     return RefreshIndicator(
       color: _primaryColor,
       onRefresh: _load,
-      child: ListView(
+      child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2))
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Post New',
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF111827))),
-                      Text('Requirement',
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: _primaryColor)),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$_total published job${_total == 1 ? '' : 's'}',
-                        style: const TextStyle(
-                            fontSize: 12, color: Color(0xFF6B7280)),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    final created = await Navigator.of(context).push<bool>(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            CreateJobScreen(userType: widget.userType),
-                      ),
-                    );
-                    if (created == true) _load();
-                  },
-                  icon: const Icon(Icons.upload_rounded, size: 16),
-                  label: const Text('CREATE JOB',
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    elevation: 0,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
+        // slots: 0=header, 1=gap, 2=section row, 3=gap, 4..N=cards (or 1 empty state)
+        itemCount: 4 + (_filtered.isEmpty ? 1 : _filtered.length),
+        itemBuilder: (context, index) {
+          if (index == 0) return _buildHeader();
+          if (index == 1) return const SizedBox(height: 12);
+          if (index == 2) return _buildSectionRow();
+          if (index == 3) return const SizedBox(height: 10);
+          if (_filtered.isEmpty) return _buildEmptyState();
+          return _buildJobCard(_filtered[index - 4]);
+        },
+      ),
+    );
+  }
 
-          // Section label
-          Row(
-            children: [
-              Container(
-                width: 4,
-                height: 20,
-                decoration: BoxDecoration(
-                    color: _primaryColor,
-                    borderRadius: BorderRadius.circular(4)),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'PUBLISHED JOBS (${_jobs.length})',
-                style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF111827),
-                    letterSpacing: 0.5),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
+  // ── Header ──────────────────────────────────────────────────────────────────
 
-          // Empty state
-          if (_jobs.isEmpty)
-            Container(
-              margin: const EdgeInsets.only(top: 24),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: _primaryColor.withValues(alpha: 0.08),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.post_add_rounded,
-                          size: 36, color: _primaryColor),
-                    ),
-                    const SizedBox(height: 14),
-                    const Text('No Jobs Posted Yet',
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF111827))),
-                    const SizedBox(height: 6),
-                    const Text('Tap CREATE JOB to post your first requirement.',
-                        style: TextStyle(
-                            fontSize: 13, color: Color(0xFF6B7280)),
-                        textAlign: TextAlign.center),
-                  ],
-                ),
-              ),
-            )
-          else
-            ..._jobs.map((job) => MyJobCard(
-                  job: job,
-                  primaryColor: _primaryColor,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => JobApplicationsScreen(
-                          token: widget.token,
-                          jobId: job.id,
-                          jobTitle: job.workTitle,
-                        ),
-                      ),
-                    );
-                  },
-                  onEditTap: () async {
-                    final updated = await Navigator.of(context).push<bool>(
-                      MaterialPageRoute(
-                        builder: (_) => CreateJobScreen(
-                          userType: widget.userType,
-                          existingJob: job,
-                        ),
-                      ),
-                    );
-                    if (updated == true) _load();
-                  },
-                  onToggleActivation: () => ApiService.toggleJobActivation(
-                    token: widget.token,
-                    jobId: job.id,
-                  ),
-                )),
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2))
         ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Post New',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).colorScheme.onSurface)),
+                Text('Requirement',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: _primaryColor)),
+                const SizedBox(height: 4),
+                Text(
+                  '$_total published job${_total == 1 ? '' : 's'}',
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          ElevatedButton.icon(
+            onPressed: () async {
+              final created = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(
+                  builder: (_) => CreateJobScreen(userType: widget.userType),
+                ),
+              );
+              if (created == true) _load();
+            },
+            icon: const Icon(Icons.upload_rounded, size: 16),
+            label: const Text('CREATE JOB',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primaryColor,
+              foregroundColor: Colors.white,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Section row with filter chips ───────────────────────────────────────────
+
+  static const _filterHints = {
+    'all':    '● All your posted jobs are listed here.',
+    'live':   '✓ Live jobs are visible to applicants & accepting applications.',
+    'hidden': '⊘ Hidden jobs are only visible to you — applicants cannot see or apply.',
+  };
+
+  Widget _buildSectionRow() {
+    final hint = _filterHints[_filter]!;
+    final hintColor = _filter == 'live'
+        ? const Color(0xFF059669)
+        : _filter == 'hidden'
+            ? const Color(0xFF6B7280)
+            : _primaryColor;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 20,
+              decoration: BoxDecoration(
+                  color: _primaryColor, borderRadius: BorderRadius.circular(4)),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'PUBLISHED JOBS (${_filtered.length})',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  letterSpacing: 0.5),
+            ),
+            const Spacer(),
+            _FilterChip(
+              label: 'All',
+              active: _filter == 'all',
+              color: _primaryColor,
+              onTap: () => _setFilter('all'),
+            ),
+            const SizedBox(width: 6),
+            _FilterChip(
+              label: 'Live',
+              active: _filter == 'live',
+              color: const Color(0xFF059669),
+              onTap: () => _setFilter('live'),
+            ),
+            const SizedBox(width: 6),
+            _FilterChip(
+              label: 'Hidden',
+              active: _filter == 'hidden',
+              color: const Color(0xFF6B7280),
+              onTap: () => _setFilter('hidden'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          child: Text(
+            hint,
+            key: ValueKey(_filter),
+            style: TextStyle(
+              fontSize: 11,
+              color: hintColor.withValues(alpha: 0.85),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Empty state ─────────────────────────────────────────────────────────────
+
+  Widget _buildEmptyState() {
+    final isAll = _filter == 'all';
+    final isLive = _filter == 'live';
+    return Container(
+      margin: const EdgeInsets.only(top: 24),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: _primaryColor.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isAll
+                    ? Icons.post_add_rounded
+                    : isLive
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
+                size: 36,
+                color: _primaryColor,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              isAll
+                  ? 'No Jobs Posted Yet'
+                  : isLive
+                      ? 'No Live Jobs'
+                      : 'No Hidden Jobs',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Theme.of(context).colorScheme.onSurface),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isAll
+                  ? 'Tap CREATE JOB to post your first requirement.'
+                  : 'No jobs match this filter.',
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55)),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Job card ─────────────────────────────────────────────────────────────────
+
+  Widget _buildJobCard(MyJob job) {
+    return MyJobCard(
+      key: ValueKey(job.id),
+      job: job,
+      primaryColor: _primaryColor,
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => JobApplicationsScreen(
+              token: widget.token,
+              jobId: job.id,
+              jobTitle: job.workTitle,
+            ),
+          ),
+        );
+      },
+      onEditTap: () async {
+        final updated = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder: (_) => CreateJobScreen(
+              userType: widget.userType,
+              existingJob: job,
+            ),
+          ),
+        );
+        if (updated == true) _load();
+      },
+      onToggleActivation: () => ApiService.toggleJobActivation(
+        token: widget.token,
+        jobId: job.id,
+      ),
+    );
+  }
+}
+
+// ── Filter chip ───────────────────────────────────────────────────────────────
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool active;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _FilterChip({
+    required this.label,
+    required this.active,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: active ? color : color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: active ? color : color.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: active ? Colors.white : color,
+            letterSpacing: 0.3,
+          ),
+        ),
       ),
     );
   }

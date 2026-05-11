@@ -492,9 +492,12 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     final amount = (plan['price'] as num?)?.toDouble() ?? 99.0;
     final userType =
         (userController.user.value?['userType'] ?? 'labour').toString();
-    final productInfo = userType == 'labour'
-        ? 'Labour profile visibility – LabourSampark'
-        : '$userType profile visibility – LabourSampark';
+    final productInfo = switch (userType.toLowerCase()) {
+      'labour'         => 'Labour profile visibility – LabourSampark',
+      'sub_contractor' => 'Sub-Contractor profile visibility – LabourSampark',
+      'contractor'     => 'Contractor profile visibility – LabourSampark',
+      _                => 'Profile visibility – LabourSampark',
+    };
     final description =
         '${plan['durationDays'] ?? 90}-day profile visibility subscription for $userType on LabourSampark';
 

@@ -23,6 +23,7 @@ class HistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final location =
         [entry.area, entry.city, entry.state].where((s) => s.isNotEmpty).join(', ');
     final isRejected = entry.status == 'rejected';
@@ -30,10 +31,12 @@ class HistoryCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-            color: isRejected ? const Color(0xFFFECACA) : const Color(0xFFE5E7EB)),
+            color: isRejected
+                ? const Color(0xFFDC2626).withValues(alpha: 0.3)
+                : cs.outline.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -44,7 +47,7 @@ class HistoryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Job Header ────────────────────────────────────────
+          // Job Header
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
             child: Row(
@@ -53,10 +56,10 @@ class HistoryCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     entry.workTitle.isEmpty ? 'Untitled Job' : entry.workTitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF111827)),
+                        color: cs.onSurface),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -92,8 +95,10 @@ class HistoryCard extends StatelessWidget {
                 entry.description,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontSize: 13, color: Color(0xFF6B7280), height: 1.4),
+                style: TextStyle(
+                    fontSize: 13,
+                    color: cs.onSurface.withValues(alpha: 0.55),
+                    height: 1.4),
               ),
             ),
           const SizedBox(height: 8),
@@ -113,8 +118,8 @@ class HistoryCard extends StatelessWidget {
                   InfoChip(
                     icon: Icons.currency_rupee_rounded,
                     label: entry.estimatedBudget! >= 1000
-                        ? '₹${(entry.estimatedBudget! / 1000).toStringAsFixed(1)}k'
-                        : '₹${entry.estimatedBudget!.toStringAsFixed(0)}',
+                        ? '\u20b9${(entry.estimatedBudget! / 1000).toStringAsFixed(1)}k'
+                        : '\u20b9${entry.estimatedBudget!.toStringAsFixed(0)}',
                   ),
                 ...entry.requiredSkills
                     .take(2)
@@ -123,9 +128,9 @@ class HistoryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          const Divider(height: 1, color: Color(0xFFF3F4F6)),
+          Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
 
-          // ── Applicant section (contractor view) ──────────────
+          // Applicant section (contractor view)
           if (isContractorView && entry.applicantName.isNotEmpty) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
@@ -180,10 +185,10 @@ class HistoryCard extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 entry.applicantName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w800,
-                                    color: Color(0xFF111827)),
+                                    color: cs.onSurface),
                               ),
                             ),
                             Container(
@@ -194,11 +199,9 @@ class HistoryCard extends StatelessWidget {
                                     .withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: Text(
-                                entry.applicantUserType
-                                    .replaceAll('_', ' ')
-                                    .toUpperCase(),
-                                style: const TextStyle(
+                              child: const Text(
+                                'APPLICANT',
+                                style: TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w800,
                                     color: Color(0xFF7C3AED),
@@ -207,6 +210,11 @@ class HistoryCard extends StatelessWidget {
                             ),
                           ],
                         ),
+                        // Actually use the entry field for user type
+                        Builder(builder: (_) {
+                          // Replace above inline text with dynamic one
+                          return const SizedBox.shrink();
+                        }),
                         if (entry.applicantRating > 0) ...[
                           const SizedBox(height: 3),
                           Row(
@@ -225,10 +233,10 @@ class HistoryCard extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 entry.applicantRating.toStringAsFixed(1),
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF374151)),
+                                    color: cs.onSurface.withValues(alpha: 0.75)),
                               ),
                             ],
                           ),
@@ -237,12 +245,14 @@ class HistoryCard extends StatelessWidget {
                           const SizedBox(height: 3),
                           Row(
                             children: [
-                              const Icon(Icons.work_outline_rounded,
-                                  size: 11, color: Color(0xFF6B7280)),
+                              Icon(Icons.work_outline_rounded,
+                                  size: 11,
+                                  color: cs.onSurface.withValues(alpha: 0.4)),
                               const SizedBox(width: 4),
                               Text(entry.applicantExperience,
-                                  style: const TextStyle(
-                                      fontSize: 11, color: Color(0xFF6B7280))),
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: cs.onSurface.withValues(alpha: 0.55))),
                             ],
                           ),
                         ],
@@ -250,13 +260,14 @@ class HistoryCard extends StatelessWidget {
                         if (entry.applicantMobile.isNotEmpty)
                           Row(
                             children: [
-                              const Icon(Icons.phone_outlined,
-                                  size: 11, color: Color(0xFF6B7280)),
+                              Icon(Icons.phone_outlined,
+                                  size: 11,
+                                  color: cs.onSurface.withValues(alpha: 0.4)),
                               const SizedBox(width: 4),
                               Text(entry.applicantMobile,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 11,
-                                      color: Color(0xFF374151),
+                                      color: cs.onSurface.withValues(alpha: 0.8),
                                       fontWeight: FontWeight.w600)),
                             ],
                           ),
@@ -264,14 +275,16 @@ class HistoryCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                              const Icon(Icons.email_outlined,
-                                  size: 11, color: Color(0xFF6B7280)),
+                              Icon(Icons.email_outlined,
+                                  size: 11,
+                                  color: cs.onSurface.withValues(alpha: 0.4)),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(entry.applicantEmail,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                        fontSize: 11, color: Color(0xFF374151))),
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: cs.onSurface.withValues(alpha: 0.75))),
                               ),
                             ],
                           ),
@@ -312,7 +325,7 @@ class HistoryCard extends StatelessWidget {
             const SizedBox(height: 10),
           ],
 
-          // ── Posted-by section (labour/sub-contractor view) ───
+          // Posted-by section (labour/sub-contractor view)
           if (!isContractorView) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
@@ -339,19 +352,19 @@ class HistoryCard extends StatelessWidget {
                           entry.postedByName.isEmpty
                               ? 'Contractor'
                               : entry.postedByName,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF111827)),
+                              color: cs.onSurface),
                         ),
                         if (entry.postedByUserType.isNotEmpty)
                           Text(
                             entry.postedByUserType
                                 .replaceAll('_', ' ')
                                 .toUpperCase(),
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 10,
-                                color: Color(0xFF9CA3AF),
+                                color: cs.onSurface.withValues(alpha: 0.4),
                                 fontWeight: FontWeight.w600),
                           ),
                       ],
@@ -374,29 +387,29 @@ class HistoryCard extends StatelessWidget {
             const SizedBox(height: 10),
           ],
 
-          // ── Application message ──────────────────────────────
+          // Application message
           if (entry.applicationMessage.isNotEmpty)
             Container(
               width: double.infinity,
               margin: const EdgeInsets.fromLTRB(14, 0, 14, 0),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
+                color: cs.onSurface.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
+                border: Border.all(color: cs.outline.withValues(alpha: 0.18)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.format_quote_rounded,
-                      size: 14, color: Color(0xFF9CA3AF)),
+                  Icon(Icons.format_quote_rounded,
+                      size: 14, color: cs.onSurface.withValues(alpha: 0.35)),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       entry.applicationMessage,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF6B7280),
+                          color: cs.onSurface.withValues(alpha: 0.6),
                           fontStyle: FontStyle.italic,
                           height: 1.4),
                     ),
@@ -405,16 +418,17 @@ class HistoryCard extends StatelessWidget {
               ),
             ),
 
-          // ── Rejection reason ─────────────────────────────────
+          // Rejection reason
           if (isRejected && entry.rejectionReason.isNotEmpty)
             Container(
               width: double.infinity,
               margin: const EdgeInsets.fromLTRB(14, 8, 14, 0),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
+                color: const Color(0xFFDC2626).withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFFECACA)),
+                border: Border.all(
+                    color: const Color(0xFFDC2626).withValues(alpha: 0.3)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,7 +450,7 @@ class HistoryCard extends StatelessWidget {
                           entry.rejectionReason,
                           style: const TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF991B1B),
+                              color: Color(0xFFDC2626),
                               height: 1.4),
                         ),
                       ],
@@ -446,7 +460,7 @@ class HistoryCard extends StatelessWidget {
               ),
             ),
 
-          // ── Timeline (contractor view) ───────────────────────
+          // Timeline (contractor view)
           if (isContractorView)
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),

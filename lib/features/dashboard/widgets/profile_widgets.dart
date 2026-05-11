@@ -9,11 +9,14 @@ class ProfileBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg =
-        color != null ? color!.withValues(alpha: 0.1) : const Color(0xFFF3F4F6);
-    final border =
-        color != null ? color!.withValues(alpha: 0.3) : const Color(0xFFD1D5DB);
-    final text = color ?? const Color(0xFF374151);
+    final cs = Theme.of(context).colorScheme;
+    final bg = color != null
+        ? color!.withValues(alpha: 0.1)
+        : cs.onSurface.withValues(alpha: 0.07);
+    final border = color != null
+        ? color!.withValues(alpha: 0.3)
+        : cs.outline.withValues(alpha: 0.4);
+    final text = color ?? cs.onSurface.withValues(alpha: 0.8);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -39,14 +42,15 @@ class ProfileStatusItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(label,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF9CA3AF),
+                color: cs.onSurface.withValues(alpha: 0.4),
                 letterSpacing: 0.5)),
         const SizedBox(height: 4),
         Text(value,
@@ -79,6 +83,7 @@ class ProfileInfoGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -88,18 +93,18 @@ class ProfileInfoGrid extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF9FAFB),
+              color: cs.onSurface.withValues(alpha: 0.04),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
+              border: Border.all(color: cs.outline.withValues(alpha: 0.18)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(item.label,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF9CA3AF),
+                        color: cs.onSurface.withValues(alpha: 0.4),
                         letterSpacing: 0.5)),
                 const SizedBox(height: 4),
                 Text(item.value,
@@ -108,7 +113,7 @@ class ProfileInfoGrid extends StatelessWidget {
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: item.valueColor ?? const Color(0xFF111827),
+                        color: item.valueColor ?? cs.onSurface,
                         height: 1.3)),
               ],
             ),
@@ -143,11 +148,12 @@ class _ProfileSectionCardState extends State<ProfileSectionCard> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
@@ -176,10 +182,10 @@ class _ProfileSectionCardState extends State<ProfileSectionCard> {
                   Expanded(
                     child: Text(
                       widget.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF111827),
+                          color: cs.onSurface,
                           letterSpacing: 0.4),
                     ),
                   ),
@@ -187,14 +193,14 @@ class _ProfileSectionCardState extends State<ProfileSectionCard> {
                       _expanded
                           ? Icons.keyboard_arrow_up_rounded
                           : Icons.keyboard_arrow_down_rounded,
-                      color: const Color(0xFF9CA3AF),
+                      color: cs.onSurface.withValues(alpha: 0.35),
                       size: 20),
                 ],
               ),
             ),
           ),
           if (_expanded) ...[
-            const Divider(height: 1, color: Color(0xFFE5E7EB)),
+            Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
             Padding(padding: const EdgeInsets.all(14), child: widget.child),
           ],
         ],
@@ -220,7 +226,8 @@ class ProfileActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? const Color(0xFF374151);
+    final cs = Theme.of(context).colorScheme;
+    final c = color ?? cs.onSurface.withValues(alpha: 0.8);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -242,7 +249,7 @@ class ProfileActionTile extends StatelessWidget {
                     style: TextStyle(
                         fontSize: 14, fontWeight: FontWeight.w600, color: c))),
             Icon(Icons.chevron_right_rounded,
-                color: const Color(0xFFD1D5DB), size: 20),
+                color: cs.outline.withValues(alpha: 0.6), size: 20),
           ],
         ),
       ),

@@ -95,12 +95,14 @@ class _HistoryViewState extends State<HistoryView> {
   }
 
   String _formatShortDate(DateTime? dt) {
-    if (dt == null) return '—';
+    if (dt == null) return '\u2014';
     return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     if (_loading) {
       return const Center(
           child: CircularProgressIndicator(color: Color(0xFF2563EB)));
@@ -118,7 +120,8 @@ class _HistoryViewState extends State<HistoryView> {
               const SizedBox(height: 12),
               Text(_error!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Color(0xFF374151))),
+                  style: TextStyle(
+                      color: cs.onSurface.withValues(alpha: 0.8))),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: _load,
@@ -151,14 +154,16 @@ class _HistoryViewState extends State<HistoryView> {
                   size: 36, color: Color(0xFF2563EB)),
             ),
             const SizedBox(height: 14),
-            const Text('No History Yet',
+            Text('No History Yet',
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF111827))),
+                    color: cs.onSurface)),
             const SizedBox(height: 6),
-            const Text('Your job applications will appear here.',
-                style: TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
+            Text('Your job applications will appear here.',
+                style: TextStyle(
+                    fontSize: 14,
+                    color: cs.onSurface.withValues(alpha: 0.55))),
           ],
         ),
       );
@@ -249,10 +254,10 @@ class _HistoryViewState extends State<HistoryView> {
                 isContractorView
                     ? 'APPLICATIONS RECEIVED (${_entries.length})'
                     : 'JOB APPLICATIONS (${_entries.length})',
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF111827),
+                    color: cs.onSurface,
                     letterSpacing: 0.5),
               ),
             ],
@@ -271,4 +276,3 @@ class _HistoryViewState extends State<HistoryView> {
     );
   }
 }
-

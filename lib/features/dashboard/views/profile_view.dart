@@ -68,6 +68,8 @@ class ProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     final profilePhotoUrl = (profileData?['profilePhotoUrl'] ?? '').toString();
     final companyLogoUrl = (profileData?['companyLogoUrl'] ?? '').toString();
     final companyName = (profileData?['companyName'] ?? '').toString();
@@ -127,9 +129,9 @@ class ProfileView extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFEE2E2),
+              color: const Color(0xFFDC2626).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFFCA5A5)),
+              border: Border.all(color: const Color(0xFFDC2626).withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -138,8 +140,8 @@ class ProfileView extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                     child: Text(profileError!,
-                        style: const TextStyle(
-                            color: Color(0xFF991B1B), fontSize: 13))),
+                        style: TextStyle(
+                            color: cs.onSurface.withValues(alpha: 0.8), fontSize: 13))),
                 TextButton(
                   onPressed: onRetry,
                   style: TextButton.styleFrom(
@@ -157,40 +159,44 @@ class ProfileView extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
             decoration: BoxDecoration(
-              color: const Color(0xFFFEF9C3),
+              color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFFDE047)),
+              border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Icon(Icons.warning_amber_rounded,
-                    color: Color(0xFFB45309), size: 20),
+                    color: Color(0xFFF59E0B), size: 20),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Attention Required',
+                      Text('Attention Required',
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF92400E),
+                              color: cs.onSurface,
                               fontSize: 14)),
                       const SizedBox(height: 4),
                       RichText(
-                        text: const TextSpan(
+                        text: TextSpan(
                           style: TextStyle(
-                              color: Color(0xFF92400E), fontSize: 13, height: 1.4),
+                              color: cs.onSurface.withValues(alpha: 0.75),
+                              fontSize: 13,
+                              height: 1.4),
                           children: [
-                            TextSpan(text: 'Your profile is currently '),
-                            TextSpan(
+                            const TextSpan(text: 'Your profile is currently '),
+                            const TextSpan(
                                 text: 'hidden',
                                 style: TextStyle(
                                     fontWeight: FontWeight.w700,
                                     color: Color(0xFFDC2626))),
                             TextSpan(
                                 text:
-                                    '. To make your account visible and access all features, please pay the subscription amount.'),
+                                    '. To make your account visible and access all features, please pay the subscription amount.',
+                                style: TextStyle(
+                                    color: cs.onSurface.withValues(alpha: 0.75))),
                           ],
                         ),
                       ),
@@ -220,9 +226,9 @@ class ProfileView extends StatelessWidget {
         // Profile hero card
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: cs.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
             boxShadow: [
               BoxShadow(
                   color: Colors.black.withValues(alpha: 0.04),
@@ -278,15 +284,15 @@ class ProfileView extends StatelessWidget {
                           bottom: 0,
                           child: Container(
                             padding: const EdgeInsets.all(2),
-                            decoration: const BoxDecoration(
-                                color: Colors.white, shape: BoxShape.circle),
+                            decoration: BoxDecoration(
+                                color: cs.surface, shape: BoxShape.circle),
                             child: Container(
                               width: 20,
                               height: 20,
                               decoration: BoxDecoration(
                                 color: displayVerified
                                     ? const Color(0xFF059669)
-                                    : const Color(0xFF9CA3AF),
+                                    : cs.onSurface.withValues(alpha: 0.35),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.check,
@@ -303,10 +309,10 @@ class ProfileView extends StatelessWidget {
                         children: [
                           Text(
                             fullName.isEmpty ? 'User' : fullName,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF111827)),
+                                color: cs.onSurface),
                           ),
                           if ((isContractor || isSubContractor) &&
                               companyName.isNotEmpty) ...[
@@ -372,9 +378,9 @@ class ProfileView extends StatelessWidget {
                 margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAFB),
+                  color: cs.onSurface.withValues(alpha: 0.04),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
@@ -387,7 +393,7 @@ class ProfileView extends StatelessWidget {
                     Container(
                         width: 1,
                         height: 36,
-                        color: const Color(0xFFE5E7EB)),
+                        color: cs.outline.withValues(alpha: 0.2)),
                     Expanded(
                       child: ProfileStatusItem(
                         label: 'VISIBLE',
@@ -400,7 +406,7 @@ class ProfileView extends StatelessWidget {
                     Container(
                         width: 1,
                         height: 36,
-                        color: const Color(0xFFE5E7EB)),
+                        color: cs.outline.withValues(alpha: 0.2)),
                     Expanded(
                       child: ProfileStatusItem(
                         label: isContractor ? 'HIRING' : 'AVAILABILITY',
@@ -409,7 +415,7 @@ class ProfileView extends StatelessWidget {
                             : (isContractor ? 'NOT HIRING' : 'BUSY'),
                         valueColor: availability
                             ? const Color(0xFF059669)
-                            : const Color(0xFF6B7280),
+                            : cs.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -482,36 +488,39 @@ class ProfileView extends StatelessWidget {
               ]),
               if (about.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF9FAFB),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        (isContractor || isSubContractor)
-                            ? 'ABOUT COMPANY'
-                            : 'ABOUT',
-                        style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF6B7280),
-                            letterSpacing: 0.5),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(about,
-                          style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF374151),
-                              height: 1.5)),
-                    ],
-                  ),
-                ),
+                Builder(builder: (ctx) {
+                  final ics = Theme.of(ctx).colorScheme;
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: ics.onSurface.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: ics.outline.withValues(alpha: 0.2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          (isContractor || isSubContractor)
+                              ? 'ABOUT COMPANY'
+                              : 'ABOUT',
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: ics.onSurface.withValues(alpha: 0.45),
+                              letterSpacing: 0.5),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(about,
+                            style: TextStyle(
+                                fontSize: 13,
+                                color: ics.onSurface.withValues(alpha: 0.8),
+                                height: 1.5)),
+                      ],
+                    ),
+                  );
+                }),
               ],
             ],
           ),
@@ -541,17 +550,17 @@ class ProfileView extends StatelessWidget {
           child: ProfileInfoGrid(items: [
             ProfileInfoItem(
                 label: 'EMAIL',
-                value: emailVerified ? '✓ Verified' : '✗ Not Verified',
+                value: emailVerified ? '\u2713 Verified' : '\u2717 Not Verified',
                 valueColor:
                     emailVerified ? const Color(0xFF059669) : const Color(0xFFDC2626)),
             ProfileInfoItem(
                 label: 'MOBILE',
-                value: mobileVerified ? '✓ Verified' : '✗ Not Verified',
+                value: mobileVerified ? '\u2713 Verified' : '\u2717 Not Verified',
                 valueColor:
                     mobileVerified ? const Color(0xFF059669) : const Color(0xFFDC2626)),
             ProfileInfoItem(
                 label: 'AADHAR',
-                value: aadharVerified ? '✓ Verified' : '✗ Not Verified',
+                value: aadharVerified ? '\u2713 Verified' : '\u2717 Not Verified',
                 valueColor:
                     aadharVerified ? const Color(0xFF059669) : const Color(0xFFDC2626)),
             ProfileInfoItem(label: 'ACCOUNT CREATED', value: createdAt),
@@ -569,94 +578,102 @@ class ProfileView extends StatelessWidget {
           color: subscriptionActive
               ? const Color(0xFF059669)
               : const Color(0xFFF59E0B),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (subscriptionPlan != null) ...[
-                ProfileInfoGrid(items: [
-                  ProfileInfoItem(
-                      label: 'PLAN AMOUNT',
-                      value: '₹${subscriptionPlan!['price']}'),
-                  ProfileInfoItem(
-                      label: 'DURATION',
-                      value: '${subscriptionPlan!['durationDays']} days'),
-                  if ((subscriptionPlan!['pricePerDay'] as num?) != null)
+          child: Builder(builder: (ctx) {
+            final ics = Theme.of(ctx).colorScheme;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (subscriptionPlan != null) ...[
+                  ProfileInfoGrid(items: [
                     ProfileInfoItem(
-                        label: 'PER DAY',
-                        value:
-                            '₹${(subscriptionPlan!['pricePerDay'] as num).toStringAsFixed(2)}'),
-                ]),
-                const SizedBox(height: 12),
-              ] else ...[
-                Text(
-                  subscriptionActive
-                      ? 'You are visible to contractors and can apply for jobs freely.'
-                      : 'Get more interactions and find more job opportunities.',
-                  style: const TextStyle(
-                      fontSize: 13, color: Color(0xFF374151), height: 1.5),
-                ),
-                const SizedBox(height: 12),
-              ],
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => onShowSubscription(subscriptionPlan),
-                  icon: Icon(
-                      subscriptionActive
-                          ? Icons.manage_accounts_rounded
-                          : Icons.payment_rounded,
-                      size: 18),
-                  label: Text(subscriptionActive
-                      ? 'Manage Subscription'
-                      : 'Pay Now — Get Visible'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: subscriptionActive
-                        ? const Color(0xFF059669)
-                        : const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    textStyle: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w700),
+                        label: 'PLAN AMOUNT',
+                        value: '\u20b9${subscriptionPlan!['price']}'),
+                    ProfileInfoItem(
+                        label: 'DURATION',
+                        value: '${subscriptionPlan!['durationDays']} days'),
+                    if ((subscriptionPlan!['pricePerDay'] as num?) != null)
+                      ProfileInfoItem(
+                          label: 'PER DAY',
+                          value:
+                              '\u20b9${(subscriptionPlan!['pricePerDay'] as num).toStringAsFixed(2)}'),
+                  ]),
+                  const SizedBox(height: 12),
+                ] else ...[
+                  Text(
+                    subscriptionActive
+                        ? 'You are visible to contractors and can apply for jobs freely.'
+                        : 'Get more interactions and find more job opportunities.',
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: ics.onSurface.withValues(alpha: 0.75),
+                        height: 1.5),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => onShowSubscription(subscriptionPlan),
+                    icon: Icon(
+                        subscriptionActive
+                            ? Icons.manage_accounts_rounded
+                            : Icons.payment_rounded,
+                        size: 18),
+                    label: Text(subscriptionActive
+                        ? 'Manage Subscription'
+                        : 'Pay Now \u2014 Get Visible'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: subscriptionActive
+                          ? const Color(0xFF059669)
+                          : const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      textStyle: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w700),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            );
+          }),
         ),
         const SizedBox(height: 10),
 
         // Actions
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-          ),
-          child: Column(
-            children: [
-              ProfileActionTile(
-                icon: Icons.settings_outlined,
-                label: 'Settings',
-                onTap: onSettings,
-              ),
-              const Divider(height: 1, indent: 56),
-              ProfileActionTile(
-                icon: Icons.refresh_rounded,
-                label: 'Refresh Profile',
-                onTap: onRetry,
-              ),
-              const Divider(height: 1, indent: 56),
-              ProfileActionTile(
-                icon: Icons.logout_rounded,
-                label: 'Logout',
-                color: const Color(0xFFDC2626),
-                onTap: onLogout,
-              ),
-            ],
-          ),
-        ),
+        Builder(builder: (ctx) {
+          final ics = Theme.of(ctx).colorScheme;
+          return Container(
+            decoration: BoxDecoration(
+              color: ics.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: ics.outline.withValues(alpha: 0.2)),
+            ),
+            child: Column(
+              children: [
+                ProfileActionTile(
+                  icon: Icons.settings_outlined,
+                  label: 'Settings',
+                  onTap: onSettings,
+                ),
+                Divider(height: 1, indent: 56, color: ics.outline.withValues(alpha: 0.2)),
+                ProfileActionTile(
+                  icon: Icons.refresh_rounded,
+                  label: 'Refresh Profile',
+                  onTap: onRetry,
+                ),
+                Divider(height: 1, indent: 56, color: ics.outline.withValues(alpha: 0.2)),
+                ProfileActionTile(
+                  icon: Icons.logout_rounded,
+                  label: 'Logout',
+                  color: const Color(0xFFDC2626),
+                  onTap: onLogout,
+                ),
+              ],
+            ),
+          );
+        }),
       ],
     );
   }

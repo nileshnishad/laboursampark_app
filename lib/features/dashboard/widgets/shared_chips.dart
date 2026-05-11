@@ -9,21 +9,24 @@ class InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
+        color: cs.onSurface.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 11, color: const Color(0xFF6B7280)),
+          Icon(icon, size: 11, color: cs.onSurface.withValues(alpha: 0.45)),
           const SizedBox(width: 4),
           Text(label,
-              style: const TextStyle(
-                  fontSize: 11, color: Color(0xFF374151), fontWeight: FontWeight.w600)),
+              style: TextStyle(
+                  fontSize: 11,
+                  color: cs.onSurface.withValues(alpha: 0.75),
+                  fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -39,14 +42,18 @@ class DateLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text('$label: ',
-            style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF))),
+            style: TextStyle(
+                fontSize: 10, color: cs.onSurface.withValues(alpha: 0.4))),
         Text(date,
-            style: const TextStyle(
-                fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+            style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface.withValues(alpha: 0.75))),
       ],
     );
   }
