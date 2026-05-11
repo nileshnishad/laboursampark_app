@@ -8,9 +8,9 @@ import '../../core/user_controller.dart';
 import '../../core/auth_service.dart';
 import '../../core/app_state.dart';
 import '../../services/api_service.dart';
+import '../../services/payu_checkout_service.dart';
 import '../auth/login_screen.dart';
 import 'package:get/get.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 // Views
 import 'views/all_jobs_view.dart';
@@ -20,7 +20,6 @@ import 'views/history_view.dart';
 import 'views/labour_list_view.dart';
 import 'views/my_jobs_view.dart';
 import 'views/profile_view.dart';
-import 'payment_webview_screen.dart';
 
 class UserDashboardScreen extends StatefulWidget {
   const UserDashboardScreen({super.key});
@@ -38,7 +37,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
   String? _profileError;
   Map<String, dynamic>? _subscriptionPlan;
   StreamSubscription<Uri>? _linkSub;
-  bool _paymentPending = false; // true while waiting for user to return from browser
+  bool _paymentPending = false; // kept for deep-link fallback
 
   @override
   void initState() {
@@ -495,71 +494,50 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     final productInfo = userType == 'labour'
         ? 'Labour profile visibility – LabourSampark'
         : '$userType profile visibility – LabourSampark';
-    final description =
-        '${plan['durationDays'] ?? 90}-day profile visibility subscription for $userType on LabourSampark';
+    final visibilityDays = (plan['durationDays'] as int?) ?? 90;
 
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(children: [
-            SizedBox(width: 18, height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-            SizedBox(width: 12),
-            Text('Creating payment link...'),
-          ]),
-          duration: Duration(seconds: 10),
-        ),
-      );
-    }
-
-    final result = await ApiService.createPaymentLink(
+    final service = PayUCheckoutService(
+      context: context,
       amount: amount,
       productInfo: productInfo,
-      description: description,
-      token: token,
+      visibilityDays: visibilityDays,
+      userController: userController,
+      onSuccess: (response) {
+        _loadProfileStatus();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment successful! Subscription activated.'),
+              backgroundColor: Color(0xFF059669),
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      },
+      onFailure: (response) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment failed. Please try again.'),
+              backgroundColor: Color(0xFFDC2626),
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      },
+      onCancel: (response) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment cancelled.'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      },
     );
 
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-    if (result['success'] != true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message']?.toString() ?? 'Could not create payment link')),
-      );
-      return;
-    }
-
-    final paymentLink = result['data']?['paymentLink']?.toString() ?? '';
-    if (paymentLink.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid payment link received')),
-      );
-      return;
-    }
-
-    // Open in Chrome — handles UPI intents, bank OTPs, redirects natively.
-    // When user completes payment and returns to app, didChangeAppLifecycleState
-    // fires and _pollAfterPayment() automatically verifies subscription.
-    final uri = Uri.parse(paymentLink);
-    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-
-    if (!context.mounted) return;
-    if (!launched) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open browser. Please try again.')),
-      );
-      return;
-    }
-
-    // Mark payment as pending — polling starts when user returns to app
-    _paymentPending = true;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Complete payment in browser, then return to the app.'),
-        duration: Duration(seconds: 6),
-      ),
-    );
+    await service.launch();
   }
 
   @override

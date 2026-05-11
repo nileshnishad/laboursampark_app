@@ -55,6 +55,7 @@ dependencies:
   url_launcher: ^6.3.0
   app_links: ^6.3.4
   in_app_update: ^4.2.3
+  payu_checkoutpro_flutter: ^1.4.3
 
   # Firebase
   firebase_core: ^3.6.0

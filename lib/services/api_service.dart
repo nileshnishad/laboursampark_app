@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../core/app_interceptor.dart';
@@ -184,6 +183,67 @@ class ApiService {
         'success': false,
         'message': ErrorMessages.unknown,
       };
+    }
+  }
+
+  /// POST /api/payments/payu/hash — compute sha512(hashString + salt) server-side.
+  /// The salt never leaves the backend.
+  static Future<Map<String, dynamic>> computePayUHash({
+    required String hashString,
+    required String token,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/payments/payu/hash',
+        data: jsonEncode({'hashString': hashString}),
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) return body;
+      return {'success': false, 'hash': '', 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'hash': '', 'message': ErrorMessages.unknown};
+    }
+  }
+
+  /// POST /api/payments/payu/init — get raw PayU params for native SDK checkout.
+  static Future<Map<String, dynamic>> createPaymentInit({
+    required double amount,
+    required String productInfo,
+    required String token,
+    String purpose = 'visibility',
+    int visibilityDays = 90,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/payments/payu/init',
+        data: jsonEncode({
+          'amount': amount,
+          'productInfo': productInfo,
+          'purpose': purpose,
+          'metadata': {'visibilityDays': visibilityDays},
+        }),
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) return body;
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
 
