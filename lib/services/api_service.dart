@@ -187,6 +187,34 @@ class ApiService {
     }
   }
 
+  /// PUT /api/users/profile — update the authenticated user's profile fields.
+  static Future<Map<String, dynamic>> updateProfile({
+    required Map<String, dynamic> fields,
+    required String token,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.put(
+        '${Env.baseUrl}/api/users/profile',
+        data: jsonEncode(fields),
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) return body;
+      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
   /// POST /api/payments/payu/create-link — create a PayU payment link.
   static Future<Map<String, dynamic>> createPaymentLink({
     required double amount,

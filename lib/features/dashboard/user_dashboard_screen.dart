@@ -16,7 +16,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'views/all_jobs_view.dart';
 import 'views/contractor_list_view.dart';
 import 'views/dashboard_home_view.dart';
+import 'views/edit_profile_screen.dart';
 import 'views/history_view.dart';
+import 'views/id_card_screen.dart';
 import 'views/labour_list_view.dart';
 import 'views/my_jobs_view.dart';
 import 'views/profile_view.dart';
@@ -238,6 +240,20 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     );
   }
 
+  void _openEditProfile(BuildContext context, Map<String, dynamic>? profileData, String userType) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(
+          profileData: profileData,
+          userType: userType,
+          onSaved: (_) {
+            _loadProfileStatus();
+          },
+        ),
+      ),
+    );
+  }
+
   void _showSettingsSheet(BuildContext context) {
     final appState = context.read<AppState>();
     showModalBottomSheet<void>(
@@ -344,6 +360,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
           onShowSubscription: (plan) => _showSubscriptionDetails(context, plan),
           onSettings: () => _showSettingsSheet(context),
           onLogout: _logout,
+          onUpdateProfile: () => _openEditProfile(context, profileData, userType),
         );
       default:
         return DashboardHomeView(
@@ -615,13 +632,17 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
               Builder(
                 builder: (context) {
                   final isDark = Theme.of(context).brightness == Brightness.dark;
+                  final photoUrl = (user?['profilePhotoUrl'] ?? '').toString().trim();
+                  final hasPhoto = photoUrl.isNotEmpty;
                   return Container(
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(hasPhoto ? 18 : 10),
                       border: Border.all(
-                        color: const Color(0xFFE5E7EB),
+                        color: hasPhoto
+                            ? const Color(0xFF2563EB).withValues(alpha: 0.35)
+                            : const Color(0xFFE5E7EB),
                         width: 1.6,
                       ),
                       boxShadow: [
@@ -633,11 +654,24 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                       ],
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(9),
-                      child: Image.asset(
-                        isDark ? 'assets/images/app_logo_dark.png' : 'assets/images/app_logo.png',
-                        fit: BoxFit.cover,
-                      ),
+                      borderRadius: BorderRadius.circular(hasPhoto ? 18 : 9),
+                      child: hasPhoto
+                          ? Image.network(
+                              photoUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Image.asset(
+                                isDark
+                                    ? 'assets/images/app_logo_dark.png'
+                                    : 'assets/images/app_logo.png',
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : Image.asset(
+                              isDark
+                                  ? 'assets/images/app_logo_dark.png'
+                                  : 'assets/images/app_logo.png',
+                              fit: BoxFit.cover,
+                            ),
                     ),
                   );
                 },
@@ -692,6 +726,29 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             ],
           ),
           actions: [
+            // ID Card button
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Center(
+                child: IconButton(
+                  style: IconButton.styleFrom(
+                    backgroundColor: const Color(0xFFEFF6FF),
+                    foregroundColor: const Color(0xFF2563EB),
+                    side: const BorderSide(color: Color(0xFFBFDBFE)),
+                    padding: const EdgeInsets.all(8),
+                    minimumSize: const Size(32, 32),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                  ),
+                  icon: const Icon(Icons.badge_rounded, size: 16),
+                  tooltip: 'My ID Card',
+                  onPressed: () {
+                    final u = Get.find<UserController>().user.value;
+                    IdCardScreen.show(context, u, (u?['userType'] ?? '').toString());
+                  },
+                ),
+              ),
+            ),
             Padding(
                 padding: const EdgeInsets.only(right: 8),
               child: Center(

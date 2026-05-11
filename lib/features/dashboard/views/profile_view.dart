@@ -14,6 +14,7 @@ class ProfileView extends StatelessWidget {
   final void Function(Map<String, dynamic>? plan) onShowSubscription;
   final VoidCallback onSettings;
   final VoidCallback onLogout;
+  final VoidCallback onUpdateProfile;
 
   const ProfileView({
     super.key,
@@ -28,6 +29,7 @@ class ProfileView extends StatelessWidget {
     required this.onShowSubscription,
     required this.onSettings,
     required this.onLogout,
+    required this.onUpdateProfile,
   });
 
   String _roleLabel(String ut) {
@@ -350,7 +352,7 @@ class ProfileView extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     GestureDetector(
-                      onTap: onSettings,
+                      onTap: onUpdateProfile,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 8),
