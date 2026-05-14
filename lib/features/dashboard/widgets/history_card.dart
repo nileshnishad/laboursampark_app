@@ -60,6 +60,8 @@ class HistoryCard extends StatelessWidget {
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                         color: cs.onSurface),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: 8),

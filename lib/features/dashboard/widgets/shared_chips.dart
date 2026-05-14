@@ -22,11 +22,15 @@ class InfoChip extends StatelessWidget {
         children: [
           Icon(icon, size: 11, color: cs.onSurface.withValues(alpha: 0.45)),
           const SizedBox(width: 4),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11,
-                  color: cs.onSurface.withValues(alpha: 0.75),
-                  fontWeight: FontWeight.w600)),
+          Flexible(
+            child: Text(label,
+                style: TextStyle(
+                    fontSize: 11,
+                    color: cs.onSurface.withValues(alpha: 0.75),
+                    fontWeight: FontWeight.w600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ),
         ],
       ),
     );

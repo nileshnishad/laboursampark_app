@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'user_type_selection_screen.dart';
 import '../dashboard/user_dashboard_screen.dart';
 import 'mobile_verify_screen.dart';
+import 'forgot_password_screen.dart';
 import 'package:get/get.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../services/api_service.dart';
@@ -10,6 +12,33 @@ import '../../common/widgets/app_text_field.dart';
 import '../../core/user_controller.dart';
 import '../../core/auth_service.dart';
 import '../../utils/toast_utils.dart';
+
+/// Custom formatter to restrict mobile number input to 10 digits max
+class MobileOrEmailInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final text = newValue.text;
+    
+    // If input contains @ (email), allow normal input
+    if (text.contains('@')) {
+      return newValue;
+    }
+    
+    // Check if input is numeric (mobile number)
+    final cleanedInput = text.replaceAll(RegExp(r'[^0-9]'), '');
+    final isNumeric = RegExp(r'^[0-9+\s-]*$').hasMatch(text);
+    
+    // If numeric and cleaned digits exceed 10, reject the change
+    if (isNumeric && cleanedInput.length > 10) {
+      return oldValue;
+    }
+    
+    return newValue;
+  }
+}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -36,6 +65,24 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     _emailOrMobileController.addListener(_onFieldChanged);
     _passwordController.addListener(_onFieldChanged);
+    _loadRememberedCredentials();
+  }
+
+  Future<void> _loadRememberedCredentials() async {
+    final rememberMe = await AuthService.getRememberMe();
+    if (rememberMe) {
+      final credentials = await AuthService.getRememberedCredentials();
+      final emailOrMobile = credentials['emailOrMobile'];
+      final password = credentials['password'];
+      
+      if (emailOrMobile != null && password != null) {
+        setState(() {
+          _emailOrMobileController.text = emailOrMobile;
+          _passwordController.text = password;
+          _rememberMe = true;
+        });
+      }
+    }
   }
 
   void _onFieldChanged() {
@@ -50,18 +97,40 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    // Validate mobile number format
+    final input = _emailOrMobileController.text.trim();
+    final cleanedInput = input.replaceAll(RegExp(r'[^0-9]'), '');
+    final isNumeric = RegExp(r'^[0-9+\s-]+$').hasMatch(input);
+    
+    if (isNumeric && cleanedInput.length > 10) {
+      ToastUtils.showError('Mobile number must be exactly 10 digits');
+      return;
+    }
+    
+    if (isNumeric && cleanedInput.length < 10) {
+      ToastUtils.showError('Mobile number must be 10 digits');
+      return;
+    }
+
     FocusScope.of(context).unfocus();
     setState(() {
       _isSubmitting = true;
     });
 
     try {
-      final res = await ApiService.login(
-        _emailOrMobileController.text.trim(),
-        _passwordController.text.trim(),
-      );
+      final emailOrMobile = _emailOrMobileController.text.trim();
+      final password = _passwordController.text.trim();
+      
+      final res = await ApiService.login(emailOrMobile, password);
 
       if (res['success'] == true && res['data'] != null) {
+        // Save or clear remembered credentials based on checkbox
+        if (_rememberMe) {
+          await AuthService.setRememberMe(true);
+          await AuthService.saveRememberedCredentials(emailOrMobile, password);
+        } else {
+          await AuthService.clearRememberedCredentials();
+        }
         final user = res['data']['user'] as Map<String, dynamic>;
         final token = res['data']['token'] as String;
         final userController = Get.find<UserController>();
@@ -208,6 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 prefixIcon: Icons.person_outline_rounded,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
+                inputFormatters: [MobileOrEmailInputFormatter()],
                 errorText:
                     _autoValidate &&
                         _emailOrMobileController.text.trim().isEmpty
@@ -264,8 +334,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   TextButton(
                     onPressed: () {
-                      ToastUtils.showError(
-                        'Forgot password feature coming soon',
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ForgotPasswordScreen(),
+                        ),
                       );
                     },
                     style: TextButton.styleFrom(

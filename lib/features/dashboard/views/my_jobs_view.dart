@@ -73,9 +73,15 @@ class _MyJobsViewState extends State<MyJobsView> {
     });
   }
 
-  Color get _primaryColor => widget.userType == 'sub_contractor'
-      ? const Color(0xFF7C3AED)
-      : const Color(0xFF059669);
+  Color get _primaryColor {
+    if (widget.userType == 'sub_contractor') {
+      return const Color(0xFF7C3AED); // Purple for sub-contractor
+    } else if (widget.userType == 'labour') {
+      return const Color(0xFF2563EB); // Blue for labour
+    } else {
+      return const Color(0xFF059669); // Green for contractor
+    }
+  }
 
   // ── Build ───────────────────────────────────────────────────────────────────
 

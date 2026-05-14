@@ -300,6 +300,8 @@ class _MyJobCardState extends State<MyJobCard> {
                                     fontWeight: FontWeight.w600,
                                     color: primaryColor,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ))
                           .toList(),
@@ -531,11 +533,15 @@ class _MyJobCardState extends State<MyJobCard> {
         children: [
           Icon(icon, size: 12, color: textColor),
           const SizedBox(width: 4),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: textColor)),
+          Flexible(
+            child: Text(label,
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: textColor),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ),
         ],
       ),
     );

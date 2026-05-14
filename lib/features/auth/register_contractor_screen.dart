@@ -80,6 +80,19 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
 
   bool _submitting = false;
 
+  // Password validation helpers
+  bool _hasMinLength(String password) => password.length >= 8;
+  bool _hasUppercase(String password) => password.contains(RegExp(r'[A-Z]'));
+  bool _hasLowercase(String password) => password.contains(RegExp(r'[a-z]'));
+  bool _hasNumber(String password) => password.contains(RegExp(r'[0-9]'));
+  
+  bool _isPasswordValid(String password) {
+    return _hasMinLength(password) &&
+           _hasUppercase(password) &&
+           _hasLowercase(password) &&
+           _hasNumber(password);
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -94,6 +107,40 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
     _addressController.dispose();
     _aboutController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  Widget _buildPasswordRequirement(String text, bool isMet) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            isMet ? Icons.check_circle : Icons.circle_outlined,
+            size: 16,
+            color: isMet ? Colors.green[700] : Colors.grey[600],
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                color: isMet ? Colors.green[700] : Colors.grey[700],
+                fontWeight: isMet ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────
@@ -189,7 +236,7 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
       'fullName':        _nameController.text.trim(),
       'businessName':    _businessNameController.text.trim(),
       'mobile':          normalizedMobile,
-      'email':           _emailController.text.trim(),
+      'email':           _emailController.text.trim().toLowerCase(),
       'password':        _passwordController.text.trim(),
       'experienceRange': _experienceRange,
       'teamSize':        _teamSize,
@@ -431,9 +478,54 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
               _sectionCard(
                 title: 'Account Security', icon: Icons.lock_outline_rounded, color: const Color(0xFF7C3AED),
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.security, size: 16, color: Colors.blue[700]),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Password Requirements:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue[900],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        _buildPasswordRequirement(
+                          'At least 8 characters',
+                          _hasMinLength(_passwordController.text),
+                        ),
+                        _buildPasswordRequirement(
+                          'One uppercase letter (A-Z)',
+                          _hasUppercase(_passwordController.text),
+                        ),
+                        _buildPasswordRequirement(
+                          'One lowercase letter (a-z)',
+                          _hasLowercase(_passwordController.text),
+                        ),
+                        _buildPasswordRequirement(
+                          'One number (0-9)',
+                          _hasNumber(_passwordController.text),
+                        ),
+                      ],
+                    ),
+                  ),
                   TextFormField(
                     controller: _passwordController, obscureText: _obscurePassword,
-                    decoration: _dec('Password *', hint: 'Minimum 6 characters',
+                    decoration: _dec('Password *', hint: 'Minimum 8 characters with uppercase, lowercase & number',
                         prefix: const Icon(Icons.lock_outline_rounded, size: 20),
                         suffix: IconButton(
                           icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 20),
@@ -441,7 +533,7 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
                         )),
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) return 'Password is required';
-                      if (v.trim().length < 6) return 'Minimum 6 characters';
+                      if (!_isPasswordValid(v.trim())) return 'Password does not meet requirements';
                       return null;
                     },
                   ),

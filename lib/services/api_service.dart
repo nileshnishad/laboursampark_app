@@ -40,7 +40,52 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> login(String email, String password) async {
+  static Future<Map<String, dynamic>> login(String emailOrMobile, String password) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {
+        'success': false,
+        'message': ErrorMessages.noInternet,
+      };
+    }
+
+    try {
+      // Detect if input is a 10-digit mobile number
+      final cleanedInput = emailOrMobile.replaceAll(RegExp(r'[^0-9]'), '');
+      final isMobileNumber = cleanedInput.length == 10 && RegExp(r'^[0-9]{10}$').hasMatch(cleanedInput);
+      
+      // Build request data with appropriate key
+      final Map<String, dynamic> requestData = {
+        if (isMobileNumber)
+          'mobile': '+91$cleanedInput'  // Add +91 prefix for mobile numbers
+        else
+          'email': emailOrMobile.toLowerCase(),  // Convert email to lowercase
+        'password': password,
+      };
+
+      debugPrint('>>> Login Payload: ${jsonEncode(requestData)}');
+
+      final response = await _dio.post(
+        '${Env.baseUrl}/auth/login',
+        data: jsonEncode(requestData),
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
+    } catch (_) {
+      return {
+        'success': false,
+        'message': ErrorMessages.unknown,
+      };
+    }
+  }
+
+  /// POST /api/users/send-otp — send OTP to email for password reset
+  static Future<Map<String, dynamic>> sendPasswordResetOtp(String email) async {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {
       return {
@@ -51,15 +96,82 @@ class ApiService {
 
     try {
       final response = await _dio.post(
-        '${Env.baseUrl}/auth/login',
+        '${Env.baseUrl}/api/users/send-otp',
+        data: jsonEncode({'email': email.toLowerCase()}),
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) return body;
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
+    } catch (_) {
+      return {
+        'success': false,
+        'message': ErrorMessages.unknown,
+      };
+    }
+  }
+
+  /// POST /api/users/verify-otp — verify OTP for password reset
+  static Future<Map<String, dynamic>> verifyPasswordResetOtp(String email, String otp) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {
+        'success': false,
+        'message': ErrorMessages.noInternet,
+      };
+    }
+
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/users/verify-otp',
+        data: jsonEncode({'email': email.toLowerCase(), 'otp': otp}),
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) return body;
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
+    } catch (_) {
+      return {
+        'success': false,
+        'message': ErrorMessages.unknown,
+      };
+    }
+  }
+
+  /// POST /api/users/reset-password-otp — reset password with userId
+  static Future<Map<String, dynamic>> resetPassword(String userId, String newPassword, String confirmPassword) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {
+        'success': false,
+        'message': ErrorMessages.noInternet,
+      };
+    }
+
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/users/reset-password-otp',
         data: jsonEncode({
-          'email': email,
-          'password': password,
+          'userId': userId,
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
         }),
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) return body;
       return {
         'success': false,
         'message': AppError.fromDioException(e).userMessage,
