@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
-
 import '../../common/models/skill_model.dart';
 import '../../services/api_service.dart';
 import '../../services/s3_upload_service.dart';
 import '../../services/skills_service.dart';
 import '../../utils/toast_utils.dart';
 import 'login_screen.dart';
+import 'package:flutter/services.dart';
 
 // ── Experience options ─────────────────────────────────────────────────────
 const _experienceOptions = [

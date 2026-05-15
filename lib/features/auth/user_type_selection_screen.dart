@@ -35,25 +35,23 @@ class UserTypeSelectionScreen extends StatelessWidget {
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB),
+                  color: Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                      color: const Color(0xFF2563EB).withOpacity(0.15),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
                   ],
                 ),
-                child: const Center(
-                  child: Text(
-                    'LS',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: 1,
-                    ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.asset(
+                    Theme.of(context).brightness == Brightness.dark
+                        ? 'assets/images/app_logo_dark.png'
+                        : 'assets/images/app_logo.png',
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
