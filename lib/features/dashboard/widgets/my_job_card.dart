@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/my_job.dart';
 import '../../../common/models/skill_model.dart';
+import '../../../common/models/business_type_model.dart';
 
 class MyJobCard extends StatefulWidget {
   final MyJob job;
   final Color primaryColor;
   final List<SkillModel> skills;
+  final List<BusinessTypeModel> businessTypes;
   final VoidCallback? onTap;
   final VoidCallback? onEditTap;
   final Future<Map<String, dynamic>> Function()? onToggleActivation;
@@ -15,6 +17,7 @@ class MyJobCard extends StatefulWidget {
     required this.job,
     required this.primaryColor,
     required this.skills,
+    required this.businessTypes,
     this.onTap,
     this.onEditTap,
     this.onToggleActivation,
@@ -25,14 +28,28 @@ class MyJobCard extends StatefulWidget {
 }
 
 class _MyJobCardState extends State<MyJobCard> {
-  late bool _isActive;
-  bool _toggling = false;
+    String _targetLabel(String t) {
+      switch (t) {
+        case 'sub_contractor':
+          return 'Sub-Contractor';
+        case 'labour':
+          return 'Labour';
+        default:
+          return t;
+      }
+    }
 
-  @override
-  void initState() {
-    super.initState();
-    _isActive = widget.job.isActive;
-  }
+    String _fmtDate(DateTime? dt) {
+      if (dt == null) return '';
+      return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+    }
+  late bool _isActive;
+    @override
+    void initState() {
+      super.initState();
+      _isActive = widget.job.isActive;
+    }
+  bool _toggling = false;
 
   Future<void> _handleToggle() async {
     if (_toggling || widget.onToggleActivation == null) return;
@@ -62,22 +79,6 @@ class _MyJobCardState extends State<MyJobCard> {
     }
   }
 
-  String _fmtDate(DateTime? dt) {
-    if (dt == null) return '';
-    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
-  }
-
-  String _targetLabel(String t) {
-    switch (t) {
-      case 'sub_contractor':
-        return 'Sub-Contractor';
-      case 'labour':
-        return 'Labour';
-      default:
-        return t;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -86,8 +87,9 @@ class _MyJobCardState extends State<MyJobCard> {
     final skillsList = widget.skills;
     final isLive = _isActive;
     final location =
-        [job.area, job.city].where((s) => s.isNotEmpty).join(', ');
+      [job.area, job.city].where((s) => s.isNotEmpty).join(', ');
     final hasImages = job.images.isNotEmpty;
+    final businessTypeList = widget.businessTypes;
 
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
@@ -122,7 +124,7 @@ class _MyJobCardState extends State<MyJobCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // \u2500\u2500 Header row \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+            // ── Header row ──
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
               child: Row(
@@ -227,7 +229,7 @@ class _MyJobCardState extends State<MyJobCard> {
 
             const SizedBox(height: 12),
 
-            // \u2500\u2500 Info chips \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+            // ── Info chips ──
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Wrap(
@@ -256,7 +258,90 @@ class _MyJobCardState extends State<MyJobCard> {
               ),
             ),
 
-            // \u2500\u2500 Skills \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+            // ── Business Types chips ──
+            if (job.businessTypes.isNotEmpty)
+              ...[
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.business_center_outlined,
+                              size: 13,
+                              color: primaryColor.withValues(alpha: 0.7)),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Business Types',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: primaryColor.withValues(alpha: 0.8),
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: job.businessTypes
+                            .map((id) {
+                              final bt = businessTypeList.firstWhere(
+                                (b) => b.id == id,
+                                orElse: () => BusinessTypeModel(id: id, enName: id, hiName: '', mrName: '', category: ''),
+                              );
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: primaryColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      bt.enName,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: primaryColor,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (bt.hiName.isNotEmpty)
+                                      Text(
+                                        bt.hiName,
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w600,
+                                          color: primaryColor.withOpacity(0.7),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                  ],
+                                ),
+                              );
+                            })
+                            .toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+                      
+
+            const SizedBox(height: 12),
+
+            
+
             if (job.requiredSkills.isNotEmpty) ...[
               const SizedBox(height: 10),
               Padding(
@@ -375,7 +460,6 @@ class _MyJobCardState extends State<MyJobCard> {
               ),
             ],
 
-            // \u2500\u2500 Images strip \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
             if (hasImages) ...[
               const SizedBox(height: 10),
               SizedBox(
@@ -571,7 +655,6 @@ class _MyJobCardState extends State<MyJobCard> {
   }
 }
 
-// \u2500\u2500 Job Detail Screen \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
 class _MyJobDetailScreen extends StatelessWidget {
   final MyJob job;
@@ -951,7 +1034,6 @@ class _MyJobDetailScreen extends StatelessWidget {
   }
 }
 
-// \u2500\u2500 Inline swipeable image gallery (detail screen) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
 class _JobImageGallery extends StatefulWidget {
   final List<String> images;
@@ -1047,7 +1129,6 @@ class _JobImageGalleryState extends State<_JobImageGallery> {
   }
 }
 
-// \u2500\u2500 Full-screen image viewer with dots \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
 class _ImageGalleryViewer extends StatefulWidget {
   final List<String> images;

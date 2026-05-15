@@ -7,6 +7,8 @@ import '../job_applications_screen.dart';
 import '../models/my_job.dart';
 import '../widgets/my_job_card.dart';
 import '../../../common/models/skill_model.dart';
+import '../../../common/models/business_type_model.dart';
+import '../../../services/business_type_service.dart';
 
 // ── View ──────────────────────────────────────────────────────────────────────
 
@@ -27,6 +29,7 @@ class _MyJobsViewState extends State<MyJobsView> {
   int _total = 0;
   String _filter = 'all'; // 'all' | 'live' | 'hidden'
   List<SkillModel> _skills = [];
+  List<BusinessTypeModel> _businessTypes = [];
 
   // Cache filtered list so it is computed once per build, not multiple times.
   late List<MyJob> _filtered;
@@ -53,6 +56,17 @@ class _MyJobsViewState extends State<MyJobsView> {
     _filtered = [];
     _load();
     _loadSkills();
+    _loadBusinessTypes();
+  }
+
+  Future<void> _loadBusinessTypes() async {
+    final result = await BusinessTypeService.getAllBusinessTypes();
+    if (!mounted) return;
+    if (result['success'] == true) {
+      setState(() {
+        _businessTypes = result['businessTypes'] as List<BusinessTypeModel>;
+      });
+    }
   }
 
   Future<void> _load() async {
@@ -61,6 +75,8 @@ class _MyJobsViewState extends State<MyJobsView> {
       _error = null;
     });
     final result = await ApiService.fetchMyJobs(widget.token);
+
+    debugPrint('[MyJobsView] fetchMyJobs result: $result');
     if (!mounted) return;
     if (result['success'] == true) {
       final data = result['data'] as Map<String, dynamic>?;
@@ -362,6 +378,7 @@ class _MyJobsViewState extends State<MyJobsView> {
       job: job,
       primaryColor: _primaryColor,
       skills: _skills,
+      businessTypes: _businessTypes,
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(

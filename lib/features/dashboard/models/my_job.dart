@@ -17,6 +17,7 @@ class MyJob {
   final String address;
   final String pincode;
   final DateTime? createdAt;
+  final List<String> businessTypes;
 
   const MyJob({
     required this.id,
@@ -37,6 +38,7 @@ class MyJob {
     required this.address,
     required this.pincode,
     required this.createdAt,
+    required this.businessTypes,
   });
 
   factory MyJob.fromJson(Map<String, dynamic> json) {
@@ -68,6 +70,7 @@ class MyJob {
       address: (loc['address'] ?? '').toString(),
       pincode: (loc['pincode'] ?? '').toString(),
       createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()),
+      businessTypes: (json['businessTypes'] as List? ?? []).map((e) => e.toString()).toList(),
     );
   }
 }
