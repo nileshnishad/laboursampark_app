@@ -94,13 +94,13 @@ class S3UploadService {
       if (response.statusCode != null && response.statusCode! < 400) {
         return 'https://$_host/$key';
       }
-      debugPrint('[S3] Upload failed — status: ${response.statusCode}, body: ${response.data}');
+      // ...existing code...
       return null;
     } on DioException catch (e) {
-      debugPrint('[S3] DioException: ${e.response?.statusCode} ${e.response?.data} | ${e.message}');
+      // ...existing code...
       return null;
     } catch (e) {
-      debugPrint('[S3] Unknown error: $e');
+      // ...existing code...
       return null;
     }
   }

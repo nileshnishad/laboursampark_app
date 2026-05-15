@@ -24,7 +24,7 @@ class SkillsService {
     // Return cached data if valid and not forcing refresh
     if (!forceRefresh && _cachedSkills != null && _lastFetchTime != null) {
       if (DateTime.now().difference(_lastFetchTime!) < _cacheValidityDuration) {
-        debugPrint('>>> Returning cached skills (${_cachedSkills!.length} items)');
+        // ...existing code...
         return {
           'success': true,
           'skills': _cachedSkills,
@@ -39,7 +39,7 @@ class SkillsService {
     if (!hasInternet) {
       // Return cached data if available even if expired
       if (_cachedSkills != null) {
-        debugPrint('>>> No internet, returning cached skills');
+        // ...existing code...
         return {
           'success': true,
           'skills': _cachedSkills,
@@ -51,7 +51,7 @@ class SkillsService {
     }
 
     try {
-      debugPrint('>>> Fetching skills from API...');
+      // ...existing code...
       final response = await _dio.get(
         'https://laboursampark-backend.vercel.app/api/public/getallskillsname',
         options: Options(
@@ -73,7 +73,7 @@ class SkillsService {
         _cachedSkills = skillsList;
         _lastFetchTime = DateTime.now();
 
-        debugPrint('>>> Skills fetched successfully: ${skillsList.length} items');
+        // ...existing code...
         
         return {
           'success': true,
@@ -88,11 +88,11 @@ class SkillsService {
         'message': data['message'] ?? 'Failed to fetch skills',
       };
     } on DioException catch (e) {
-      debugPrint('>>> Skills API Error: ${e.message}');
+      // ...existing code...
       
       // Return cached data if available on error
       if (_cachedSkills != null) {
-        debugPrint('>>> API error, returning cached skills');
+        // ...existing code...
         return {
           'success': true,
           'skills': _cachedSkills,
@@ -106,7 +106,7 @@ class SkillsService {
         'message': AppError.fromDioException(e).userMessage,
       };
     } catch (e) {
-      debugPrint('>>> Skills fetch error: $e');
+      // ...existing code...
       
       // Return cached data if available on error
       if (_cachedSkills != null) {
@@ -134,6 +134,6 @@ class SkillsService {
   static void clearCache() {
     _cachedSkills = null;
     _lastFetchTime = null;
-    debugPrint('>>> Skills cache cleared');
+    // ...existing code...
   }
 }

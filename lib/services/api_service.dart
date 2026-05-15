@@ -63,7 +63,7 @@ class ApiService {
         'password': password,
       };
 
-      debugPrint('>>> Login Payload: ${jsonEncode(requestData)}');
+      // ...existing code...
 
       final response = await _dio.post(
         '${Env.baseUrl}/auth/login',
@@ -515,10 +515,7 @@ class ApiService {
     }
     try {
       final url = '${Env.baseUrl}/api/jobs/$jobId';
-      debugPrint('══════════════════════════════════════');
-      debugPrint('[updateJob] PUT $url');
-      debugPrint('[updateJob] Payload: ${jsonEncode(jobData)}');
-      debugPrint('══════════════════════════════════════');
+      // ...existing code...
       final response = await _dio.put(
         url,
         data: jsonEncode(jobData),
@@ -527,9 +524,7 @@ class ApiService {
           'Authorization': 'Bearer $token',
         }),
       );
-      debugPrint('[updateJob] Response status: ${response.statusCode}');
-      debugPrint('[updateJob] Response data: ${jsonEncode(response.data)}');
-      debugPrint('══════════════════════════════════════');
+      // ...existing code...
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       debugPrint('[updateJob] DioException: ${e.response?.statusCode} ${e.response?.data}');

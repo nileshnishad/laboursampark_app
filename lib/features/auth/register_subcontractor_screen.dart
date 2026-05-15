@@ -205,7 +205,6 @@ class _RegisterSubContractorScreenState extends State<RegisterSubContractorScree
   Future<void> _fetchBusinessTypes() async {
     setState(() => _businessTypesLoading = true);
     final result = await BusinessTypeService.getAllBusinessTypes();
-    print('>>> Business types fetch result: $result');
     if (!mounted) return;
     if (result['success'] == true) {
       setState(() {
