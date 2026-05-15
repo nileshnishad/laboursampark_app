@@ -2,7 +2,9 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../common/models/business_type_model.dart';
 import '../../services/api_service.dart';
+import '../../services/business_type_service.dart';
 import '../../services/s3_upload_service.dart';
 import '../../utils/toast_utils.dart';
 import 'login_screen.dart';
@@ -93,6 +95,10 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
            _hasNumber(password);
   }
 
+  bool _businessTypesLoading = false;
+  List<BusinessTypeModel> _availableBusinessTypes = [];
+  final Set<String> _selectedBusinessTypeIds = {};
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -115,6 +121,22 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
     _passwordController.addListener(() {
       if (mounted) setState(() {});
     });
+    _fetchBusinessTypes();
+  }
+
+  Future<void> _fetchBusinessTypes() async {
+    setState(() => _businessTypesLoading = true);
+    final result = await BusinessTypeService.getAllBusinessTypes();
+    if (!mounted) return;
+    if (result['success'] == true) {
+      setState(() {
+        _availableBusinessTypes = result['businessTypes'] as List<BusinessTypeModel>;
+        _businessTypesLoading = false;
+      });
+    } else {
+      setState(() => _businessTypesLoading = false);
+      ToastUtils.showError(result['message']?.toString() ?? 'Failed to load business types');
+    }
   }
 
   Widget _buildPasswordRequirement(String text, bool isMet) {
@@ -571,7 +593,7 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // Business types
+                  // Business types (multi-select dropdown style)
                   Row(children: [
                     Container(
                       padding: const EdgeInsets.all(5),
@@ -582,31 +604,269 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
                     const Text('Business Types *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF374151))),
                   ]),
                   const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8, runSpacing: 8,
-                    children: _allBusinessTypes.map((type) {
-                      final selected = _businessTypes.contains(type);
-                      return GestureDetector(
-                        onTap: () => setState(() {
-                          selected ? _businessTypes.remove(type) : _businessTypes.add(type);
-                        }),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: selected ? _primary : const Color(0xFFF9FAFB),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: selected ? _primary : const Color(0xFFD1D5DB)),
+                  InkWell(
+                    onTap: _businessTypesLoading ? null : () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => StatefulBuilder(
+                          builder: (context, setModalState) => Container(
+                            height: MediaQuery.of(context).size.height * 0.75,
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                            ),
+                            child: Column(
+                              children: [
+                                // Header
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: _primary.withValues(alpha: 0.05),
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.category_outlined, color: _primary),
+                                      const SizedBox(width: 12),
+                                      const Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Select Business Types',
+                                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                                            ),
+                                            SizedBox(height: 2),
+                                            Text(
+                                              'Choose all business types that apply',
+                                              style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.close),
+                                        onPressed: () => Navigator.pop(context),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Business Types List
+                                Expanded(
+                                  child: _businessTypesLoading
+                                      ? const Center(child: CircularProgressIndicator())
+                                      : _availableBusinessTypes.isEmpty
+                                          ? const Center(
+                                              child: Text(
+                                                'No business types available',
+                                                style: TextStyle(color: Color(0xFF6B7280)),
+                                              ),
+                                            )
+                                          : ListView.builder(
+                                              padding: const EdgeInsets.all(16),
+                                              itemCount: _availableBusinessTypes.length,
+                                              itemBuilder: (context, index) {
+                                                final type = _availableBusinessTypes[index];
+                                                final isSelected = _selectedBusinessTypeIds.contains(type.id);
+                                                return InkWell(
+                                                  onTap: () {
+                                                    setState(() {
+                                                      if (isSelected) {
+                                                        _selectedBusinessTypeIds.remove(type.id);
+                                                      } else {
+                                                        _selectedBusinessTypeIds.add(type.id);
+                                                      }
+                                                    });
+                                                    setModalState(() {});
+                                                  },
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  child: Container(
+                                                    margin: const EdgeInsets.only(bottom: 12),
+                                                    padding: const EdgeInsets.all(14),
+                                                    decoration: BoxDecoration(
+                                                      color: isSelected
+                                                          ? _primary.withValues(alpha: 0.08)
+                                                          : const Color(0xFFF9FAFB),
+                                                      borderRadius: BorderRadius.circular(12),
+                                                      border: Border.all(
+                                                        color: isSelected
+                                                            ? _primary
+                                                            : const Color(0xFFE5E7EB),
+                                                        width: isSelected ? 1.5 : 1,
+                                                      ),
+                                                    ),
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          isSelected
+                                                              ? Icons.check_circle
+                                                              : Icons.circle_outlined,
+                                                          color: isSelected
+                                                              ? _primary
+                                                              : const Color(0xFF9CA3AF),
+                                                          size: 22,
+                                                        ),
+                                                        const SizedBox(width: 12),
+                                                        Expanded(
+                                                          child: Column(
+                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                            children: [
+                                                              Text(
+                                                                type.enName,
+                                                                style: TextStyle(
+                                                                  fontSize: 14,
+                                                                  fontWeight: FontWeight.w600,
+                                                                  color: isSelected
+                                                                      ? _primary
+                                                                      : const Color(0xFF111827),
+                                                                ),
+                                                              ),
+                                                              const SizedBox(height: 2),
+                                                              Text(
+                                                                type.hiName,
+                                                                style: const TextStyle(
+                                                                  fontSize: 12,
+                                                                  color: Color(0xFF6B7280),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                ),
+                                // Footer
+                                Container(
+                                  padding: EdgeInsets.only(
+                                    left: 16,
+                                    right: 16,
+                                    top: 16,
+                                    bottom: 16 + MediaQuery.of(context).padding.bottom,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.05),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, -3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '${_selectedBusinessTypeIds.length} selected',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF6B7280),
+                                          ),
+                                        ),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: _primary,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'Done',
+                                          style: TextStyle(fontWeight: FontWeight.w600),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          child: Text(type, style: TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w600,
-                            color: selected ? Colors.white : const Color(0xFF6B7280),
-                          )),
                         ),
                       );
-                    }).toList(),
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFAFAFA),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _selectedBusinessTypeIds.isEmpty
+                              ? const Color(0xFFD1D5DB)
+                              : _primary,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.category_outlined, size: 20, color: Color(0xFF6B7280)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _businessTypesLoading
+                                ? const Text(
+                                    'Loading business types...',
+                                    style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+                                  )
+                                : _availableBusinessTypes.isEmpty
+                                    ? const Text('No business types available', style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)))
+                                    : _selectedBusinessTypeIds.isEmpty
+                                        ? const Text(
+                                            'Select Business Types *',
+                                            style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+                                          )
+                                        : Text(
+                                            '${_selectedBusinessTypeIds.length} selected',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: _primary,
+                                            ),
+                                          ),
+                          ),
+                          Icon(
+                            Icons.arrow_drop_down,
+                            color: _businessTypesLoading ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 14),
+                  if (_selectedBusinessTypeIds.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: _selectedBusinessTypeIds.map((id) {
+                        final type = _availableBusinessTypes.firstWhere(
+                          (t) => t.id == id,
+                          orElse: () => BusinessTypeModel(id: id, enName: id, hiName: '', mrName: '', category: ''),
+                        );
+                        return Chip(
+                          label: Text(
+                            type.hiName.isNotEmpty
+                                ? '${type.enName} (${type.hiName})'
+                                : type.enName,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          backgroundColor: _primary.withValues(alpha: 0.1),
+                          deleteIcon: const Icon(Icons.close, size: 16),
+                          onDeleted: () => setState(() => _selectedBusinessTypeIds.remove(type.id)),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+
+                  const SizedBox(height: 10),
 
                   TextFormField(
                     controller: _aboutController, maxLines: 3,
