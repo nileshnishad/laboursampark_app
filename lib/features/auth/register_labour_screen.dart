@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../common/models/skill_model.dart';
@@ -55,6 +57,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
   String?    _photoUrl;
   bool       _photoUploading = false;
   bool       _submitting     = false;
+  bool       _fetchingLocation = false;
 
   // Password validation helpers
   bool _hasMinLength(String password) => password.length >= 8;
@@ -106,6 +109,92 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
     } else {
       setState(() => _skillsLoading = false);
       ToastUtils.showError(result['message']?.toString() ?? 'Failed to load skills');
+    }
+  }
+
+  Future<void> _fetchCurrentLocation() async {
+    setState(() => _fetchingLocation = true);
+
+    try {
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (!mounted) return;
+        setState(() => _fetchingLocation = false);
+        ToastUtils.showError('Please enable location services');
+        return;
+      }
+
+      // Check location permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (!mounted) return;
+          setState(() => _fetchingLocation = false);
+          ToastUtils.showError('Location permission denied');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        setState(() => _fetchingLocation = false);
+        ToastUtils.showError('Location permission permanently denied. Enable from settings.');
+        return;
+      }
+
+      // Get current position
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      // Get address from coordinates
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty && mounted) {
+        Placemark place = placemarks[0];
+        
+        setState(() {
+          // Fill the location fields
+          if (place.locality != null && place.locality!.isNotEmpty) {
+            _cityController.text = place.locality!;
+          }
+          if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+            _stateController.text = place.administrativeArea!;
+          }
+          if (place.postalCode != null && place.postalCode!.isNotEmpty) {
+            _pincodeController.text = place.postalCode!;
+          }
+          
+          // Construct full address
+          String address = '';
+          if (place.subLocality != null && place.subLocality!.isNotEmpty) {
+            address += '${place.subLocality}, ';
+          }
+          if (place.street != null && place.street!.isNotEmpty) {
+            address += '${place.street}, ';
+          }
+          if (place.subAdministrativeArea != null && place.subAdministrativeArea!.isNotEmpty) {
+            address += place.subAdministrativeArea!;
+          }
+          
+          if (address.isNotEmpty) {
+            _addressController.text = address;
+          }
+          
+          _fetchingLocation = false;
+        });
+
+        ToastUtils.showSuccess('Location fetched successfully');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _fetchingLocation = false);
+      ToastUtils.showError('Failed to fetch location: ${e.toString()}');
     }
   }
 
@@ -664,6 +753,28 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
               _sectionCard(
                 title: 'Location', icon: Icons.location_on_outlined, color: const Color(0xFFF59E0B),
                 children: [
+                  // Use Current Location Button
+                  OutlinedButton.icon(
+                    onPressed: _fetchingLocation ? null : _fetchCurrentLocation,
+                    icon: _fetchingLocation
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.my_location, size: 18),
+                    label: Text(
+                      _fetchingLocation ? 'Fetching Location...' : 'Use Current Location',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFF59E0B),
+                      side: const BorderSide(color: Color(0xFFF59E0B), width: 1.5),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _cityController,
                     decoration: _dec('City *', hint: 'e.g. Mumbai', prefix: const Icon(Icons.location_city_outlined, size: 20)),
