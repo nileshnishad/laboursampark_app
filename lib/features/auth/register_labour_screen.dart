@@ -672,10 +672,19 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: _mobileController,
-                    decoration: _dec('Mobile Number *', hint: '+91 XXXXX XXXXX',
+                    decoration: _dec('Mobile Number *', hint: 'XXXXX XXXXX',
                         prefix: const Icon(Icons.phone_outlined, size: 20)),
                     keyboardType: TextInputType.phone,
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Mobile number is required' : null,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
+                    ],
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Mobile number is required';
+                      final digits = v.trim();
+                      if (digits.length != 10) return 'Enter a valid 10-digit mobile number';
+                      return null;
+                    },
                   ),
                 ],
               ),

@@ -1,6 +1,9 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+
 import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 import '../../common/models/business_type_model.dart';
 import '../../services/api_service.dart';
@@ -8,6 +11,7 @@ import '../../services/business_type_service.dart';
 import '../../services/s3_upload_service.dart';
 import '../../utils/toast_utils.dart';
 import 'login_screen.dart';
+import 'package:flutter/services.dart';
 
 // ── Static options ─────────────────────────────────────────────────────────
 
@@ -46,6 +50,71 @@ class RegisterContractorScreen extends StatefulWidget {
 }
 
 class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
+    bool _fetchingLocation = false;
+
+    Future<void> _fetchCurrentLocation() async {
+      setState(() => _fetchingLocation = true);
+      try {
+        bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          if (!mounted) return;
+          setState(() => _fetchingLocation = false);
+          ToastUtils.showError('Please enable location services');
+          return;
+        }
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+          if (permission == LocationPermission.denied) {
+            if (!mounted) return;
+            setState(() => _fetchingLocation = false);
+            ToastUtils.showError('Location permission denied');
+            return;
+          }
+        }
+        if (permission == LocationPermission.deniedForever) {
+          if (!mounted) return;
+          setState(() => _fetchingLocation = false);
+          ToastUtils.showError('Location permission permanently denied. Enable from settings.');
+          return;
+        }
+        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+        List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+        if (placemarks.isNotEmpty && mounted) {
+          Placemark place = placemarks[0];
+          setState(() {
+            if (place.locality != null && place.locality!.isNotEmpty) {
+              _cityController.text = place.locality!;
+            }
+            if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+              _stateController.text = place.administrativeArea!;
+            }
+            if (place.postalCode != null && place.postalCode!.isNotEmpty) {
+              _pincodeController.text = place.postalCode!;
+            }
+            String address = '';
+            if (place.subLocality != null && place.subLocality!.isNotEmpty) {
+              address += '${place.subLocality}, ';
+            }
+            if (place.street != null && place.street!.isNotEmpty) {
+              address += '${place.street}, ';
+            }
+            if (place.subAdministrativeArea != null && place.subAdministrativeArea!.isNotEmpty) {
+              address += place.subAdministrativeArea!;
+            }
+            if (address.isNotEmpty) {
+              _addressController.text = address;
+            }
+            _fetchingLocation = false;
+          });
+          ToastUtils.showSuccess('Location fetched successfully');
+        }
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _fetchingLocation = false);
+        ToastUtils.showError('Failed to fetch location: e.toString()}');
+      }
+    }
   static const _primary = Color(0xFF059669);
 
   final _formKey = GlobalKey<FormState>();
@@ -488,9 +557,18 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: _mobileController,
-                    decoration: _dec('Mobile Number *', hint: '+91 XXXXX XXXXX', prefix: const Icon(Icons.phone_outlined, size: 20)),
+                    decoration: _dec('Mobile Number *', hint: 'XXXXX XXXXX', prefix: const Icon(Icons.phone_outlined, size: 20)),
                     keyboardType: TextInputType.phone,
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Mobile number is required' : null,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
+                    ],
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Mobile number is required';
+                      final digits = v.trim();
+                      if (digits.length != 10) return 'Enter a valid 10-digit mobile number';
+                      return null;
+                    },
                   ),
                 ],
               ),
@@ -575,7 +653,15 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: _regNumberController,
-                    decoration: _dec('Registration Number', hint: 'e.g. AUXPN3456TC (optional)', prefix: const Icon(Icons.numbers_rounded, size: 20)),
+                    decoration: _dec(
+                      'Business Reg. / GST / PAN Number',
+                      hint: 'e.g. 27AAEPM1234C1Z5, AAAPL1234C, or any business reg. number',
+                      prefix: const Icon(Icons.numbers_rounded, size: 20),
+                    ),
+                    textCapitalization: TextCapitalization.characters,
+                    inputFormatters: [
+                      UpperCaseTextFormatter(),
+                    ],
                   ),
                   const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
@@ -881,6 +967,29 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
               _sectionCard(
                 title: 'Location', icon: Icons.location_on_outlined, color: const Color(0xFFF59E0B),
                 children: [
+                  // Use Current Location Button
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: ElevatedButton.icon(
+                      onPressed: _fetchingLocation ? null : _fetchCurrentLocation,
+                      icon: _fetchingLocation
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.my_location, size: 18),
+                      label: Text(
+                        _fetchingLocation ? 'Fetching Location...' : 'Use Current Location',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF59E0B),
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: const Color(0xFFF59E0B).withOpacity(0.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
                   TextFormField(
                     controller: _cityController,
                     decoration: _dec('City *', hint: 'e.g. Mumbai', prefix: const Icon(Icons.location_city_outlined, size: 20)),
@@ -915,8 +1024,8 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
                 title: 'Documents', icon: Icons.folder_outlined, color: const Color(0xFF2563EB),
                 children: [
                   _uploadTile(
-                    label: 'Business License',
-                    hint: 'Tap to upload license image',
+                    label: 'Business License / GST / PAN',
+                    hint: 'Tap to upload license, GST, or PAN image',
                     icon: Icons.description_outlined,
                     hasFile: _licenseBytes != null,
                     uploading: _licenseUploading,
@@ -986,6 +1095,17 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
         ),
         ),
       ),
+    );
+  }
+}
+
+// Helper to force uppercase input in TextFormField
+class UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    return newValue.copyWith(
+      text: newValue.text.toUpperCase(),
+      selection: newValue.selection,
     );
   }
 }
