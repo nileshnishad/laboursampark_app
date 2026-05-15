@@ -5,8 +5,13 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/user_controller.dart';
 import '../../services/api_service.dart';
+import '../../services/skills_service.dart';
+import '../../common/models/skill_model.dart';
+import '../../services/business_type_service.dart';
+import '../../common/models/business_type_model.dart';
 import '../../services/s3_upload_service.dart';
 import 'models/my_job.dart';
+import 'package:laboursampark_app/features/dashboard/_business_types_bottom_sheet.dart';
 
 class CreateJobScreen extends StatefulWidget {
   final String userType; // 'contractor' | 'sub_contractor'
@@ -18,6 +23,38 @@ class CreateJobScreen extends StatefulWidget {
 }
 
 class _CreateJobScreenState extends State<CreateJobScreen> {
+    void _showBusinessTypesBottomSheet() {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setModalState) => BusinessTypesBottomSheet(
+            availableBusinessTypes: _availableBusinessTypes,
+            selectedBusinessTypeIds: _selectedBusinessTypeIds,
+            primaryColor: _primaryColor,
+            onSelectionChanged: (selected) {
+              setState(() {
+                _selectedBusinessTypeIds
+                  ..clear()
+                  ..addAll(selected);
+              });
+              setModalState(() {});
+            },
+          ),
+        ),
+      );
+    }
+  // For business name and business types (sub_contractor)
+  final TextEditingController _businessNameController = TextEditingController();
+  bool _businessTypesLoading = false;
+  List<BusinessTypeModel> _availableBusinessTypes = [];
+  // For multi-select business types
+  final List<String> _selectedBusinessTypeIds = [];
+  // For API-driven skills
+  List<dynamic> _availableSkills = [];
+  final List<String> _selectedSkillIds = [];
+  bool _skillsLoading = false;
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -45,6 +82,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('initState: initial _target = $_target');
     final job = widget.existingJob;
     if (job != null) {
       _titleController.text = job.workTitle;
@@ -68,11 +106,24 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       } else {
         _target = 'labour';
       }
+      debugPrint('initState: job loaded, _target set to $_target');
+    }
+    // Now fetch based on _target
+    debugPrint('initState: after job check, _target = $_target');
+    if (_target == 'sub_contractor') {
+      debugPrint('initState: Fetching business types for sub_contractor target');
+      _fetchBusinessTypes();
+    }
+    if (_target == 'labour') {
+      debugPrint('initState: Fetching skills for labour target');
+      _fetchSkills();
     }
   }
 
   @override
   void dispose() {
+        _businessNameController.dispose();
+      // ...existing code...
     _titleController.dispose();
     _workersController.dispose();
     _skillsInputController.dispose();
@@ -169,6 +220,195 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   }
 
   // ── Skills chip input ─────────────────────────────────────────────────────
+ 
+      Future<void> _fetchSkills() async {
+        setState(() => _skillsLoading = true);
+        final result = await SkillsService.getAllSkills();
+        if (!mounted) return;
+        if (result['success'] == true) {
+          final list = result['skills'] ?? result['data'];
+          if (list != null && list is List) {
+            setState(() {
+              _availableSkills = List<SkillModel>.from(list);
+              _skillsLoading = false;
+            });
+          } else {
+            setState(() => _skillsLoading = false);
+            _showSnack('No skills found');
+          }
+        } else {
+          setState(() => _skillsLoading = false);
+          _showSnack(result['message']?.toString() ?? 'Failed to load skills');
+        }
+      }
+    // ── Business types (sub_contractor) ───────────────────────────────────────
+    Future<void> _fetchBusinessTypes() async {
+    setState(() => _businessTypesLoading = true);
+    final result = await BusinessTypeService.getAllBusinessTypes();
+    print('>>> Business types fetch result: $result');
+    if (!mounted) return;
+    if (result['success'] == true) {
+      final list = result['businessTypes'] ?? result['businesses'];
+      if (list != null && list is List) {
+        setState(() {
+          _availableBusinessTypes = List<BusinessTypeModel>.from(list);
+          _businessTypesLoading = false;
+        });
+      } else {
+        setState(() => _businessTypesLoading = false);
+        _showSnack('No business types found');
+      }
+    } else {
+      setState(() => _businessTypesLoading = false);
+      _showSnack(result['message']?.toString() ?? 'Failed to load business types');
+    }
+  }
+
+  void _showSkillsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _primaryColor.withOpacity(0.05),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.handyman_outlined, color: Color(0xFF2563EB)),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Select Skills', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                          SizedBox(height: 2),
+                          Text('Choose multiple skills for this job', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: _skillsLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _availableSkills.isEmpty
+                        ? const Center(child: Text('No skills available', style: TextStyle(color: Color(0xFF6B7280))))
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _availableSkills.length,
+                            itemBuilder: (context, index) {
+                              final skill = _availableSkills[index];
+                              final skillId = skill.id;
+                              final isSelected = _selectedSkillIds.contains(skillId);
+                              return InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    if (isSelected) {
+                                      _selectedSkillIds.remove(skillId);
+                                    } else {
+                                      _selectedSkillIds.add(skillId);
+                                    }
+                                  });
+                                  setModalState(() {});
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? _primaryColor.withOpacity(0.08) : const Color(0xFFF9FAFB),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isSelected ? _primaryColor : const Color(0xFFE5E7EB),
+                                      width: isSelected ? 1.5 : 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        isSelected ? Icons.check_circle : Icons.circle_outlined,
+                                        color: isSelected ? _primaryColor : const Color(0xFF9CA3AF),
+                                        size: 22,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          skill.enName,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: isSelected ? _primaryColor : const Color(0xFF111827),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+              ),
+              Container(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 16,
+                  bottom: 16 + MediaQuery.of(context).padding.bottom,
+                ),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 10,
+                      offset: Offset(0, -3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${_selectedSkillIds.length} selected',
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)),
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Done', style: TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   void _addSkill(String value) {
     final trimmed = value.trim();
@@ -187,9 +427,29 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   // ── Form submit ───────────────────────────────────────────────────────────
 
   Future<void> _submit() async {
+  debugPrint('══════════ [submit] FORM STATE ══════════');
+  debugPrint('[submit] _target: \'$_target\'');
+  debugPrint('[submit] _selectedSkillIds: \'$_selectedSkillIds\'');
+  debugPrint('[submit] _selectedBusinessTypeIds: \'$_selectedBusinessTypeIds\'');
+  debugPrint('[submit] _titleController: \'${_titleController.text}\'');
+  debugPrint('[submit] _descriptionController: \'${_descriptionController.text}\'');
+  debugPrint('[submit] _workersController: \'${_workersController.text}\'');
+  debugPrint('[submit] _cityController: \'${_cityController.text}\'');
+  debugPrint('[submit] _areaController: \'${_areaController.text}\'');
+  debugPrint('[submit] _pincodeController: \'${_pincodeController.text}\'');
+  debugPrint('[submit] _stateController: \'${_stateController.text}\'');
+  debugPrint('[submit] _addressController: \'${_addressController.text}\'');
+  debugPrint('[submit] _budgetController: \'${_budgetController.text}\'');
+  debugPrint('[submit] _existingImageUrls: $_existingImageUrls');
+  debugPrint('[submit] _newImages: ${_newImages.map((img) => img.uploadedUrl).toList()}');
+
     if (!_formKey.currentState!.validate()) return;
-    if (_skills.isEmpty) {
+    if (_target == 'labour' && _selectedSkillIds.isEmpty) {
       _showSnack('Add at least one required skill');
+      return;
+    }
+    if (_target == 'sub_contractor' && _selectedBusinessTypeIds.isEmpty) {
+      _showSnack('Select at least one business type');
       return;
     }
 
@@ -206,7 +466,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
 
     setState(() => _submitting = true);
 
-    final token = Get.find<UserController>().token.value ?? '';
+    final token = Get.find<UserController>().token.value ?? ''; 
+    debugPrint('[submit] token: $token');
 
     // Images already uploaded — just collect URLs
     final newImageUrls = _newImages
@@ -230,8 +491,12 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     final jobData = <String, dynamic>{
       'workTitle': _titleController.text.trim(),
       'description': _descriptionController.text.trim(),
-      'workersNeeded': int.tryParse(_workersController.text.trim()) ?? 1,
-      'requiredSkills': _skills,
+      if (_target == 'labour')
+        'workersNeeded': int.tryParse(_workersController.text.trim()) ?? 1,
+      if (_target == 'labour')
+        'requiredSkills': _selectedSkillIds,
+      if (_target == 'sub_contractor')
+        'businessTypes': _selectedBusinessTypeIds,
       'target': targetList,
       'location': {
         'city': _cityController.text.trim(),
@@ -244,6 +509,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
         'estimatedBudget': double.tryParse(_budgetController.text.trim()),
       'images': allImageUrls,
     };
+    debugPrint('[submit] jobData payload: ' + jobData.toString());
 
     Map<String, dynamic> result;
     if (_isEditMode) {
@@ -347,109 +613,206 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                           _label('Target', required: true),
                           _DropdownField(
                             value: _target,
-                            items: const [
-                              DropdownMenuItem(value: 'labour', child: Text('Labour')),
-                              DropdownMenuItem(value: 'sub_contractor', child: Text('Sub-Contractor')),
-                              DropdownMenuItem(value: 'both', child: Text('Both')),
-                            ],
-                            onChanged: (v) => setState(() => _target = v ?? _target),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Workers
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _label('Workers Needed', required: true),
-                          _field(
-                            controller: _workersController,
-                            hint: 'e.g., 5',
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                            validator: (v) {
-                              if (v == null || v.trim().isEmpty) return 'Required';
-                              final n = int.tryParse(v.trim());
-                              if (n == null || n < 1) return 'Min 1';
-                              return null;
+                            items: widget.userType == 'contractor'
+                                ? const [
+                                    DropdownMenuItem(value: 'labour', child: Text('Labour')),
+                                    DropdownMenuItem(value: 'sub_contractor', child: Text('Sub-Contractor')),
+                                  ]
+                                : const [
+                                    DropdownMenuItem(value: 'labour', child: Text('Labour')),
+                                  ],
+                            onChanged: (v) {
+                              final newTarget = v ?? _target;
+                              debugPrint('Dropdown: Target changed to $newTarget');
+                              setState(() {
+                                _target = newTarget;
+                                if (_target == 'sub_contractor') {
+                                  debugPrint('Dropdown: Fetching business types for sub_contractor target');
+                                  _fetchBusinessTypes();
+                                } else if (_target == 'labour') {
+                                  debugPrint('Dropdown: Fetching skills for labour target');
+                                  _fetchSkills();
+                                }
+                              });
                             },
                           ),
                         ],
                       ),
                     ),
+                    if (_target == 'labour') ...[
+                      const SizedBox(width: 12),
+                      // Workers
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _label('Workers Needed', required: true),
+                            _field(
+                              controller: _workersController,
+                              hint: 'e.g., 5',
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) return 'Required';
+                                final n = int.tryParse(v.trim());
+                                if (n == null || n < 1) return 'Min 1';
+                                return null;
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 14),
-                _label('Required Skills', required: true),
-                // Chip display
-                if (_skills.isNotEmpty) ...[
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: _skills.map((s) => Chip(
-                      label: Text(s, style: TextStyle(fontSize: 12, color: primary, fontWeight: FontWeight.w600)),
-                      deleteIcon: Icon(Icons.close, size: 14, color: primary),
-                      onDeleted: () => _removeSkill(s),
-                      backgroundColor: primary.withValues(alpha: 0.08),
-                      side: BorderSide(color: primary.withValues(alpha: 0.3)),
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    )).toList(),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _skillsInputController,
-                        decoration: InputDecoration(
-                          hintText: 'e.g., Mason, Carpenter (comma-separated)',
-                          hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
-                          filled: true,
-                          fillColor: const Color(0xFFF9FAFB),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: primary, width: 1.5),
-                          ),
+                if (_target == 'labour') ...[
+                  _label('Required Skills', required: true),
+                  InkWell(
+                    onTap: _skillsLoading ? null : _showSkillsBottomSheet,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFAFAFA),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _selectedSkillIds.isEmpty ? const Color(0xFFD1D5DB) : _primaryColor,
                         ),
-                        onFieldSubmitted: _addSkill,
-                        textInputAction: TextInputAction.done,
                       ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.handyman_outlined, size: 20, color: Color(0xFF6B7280)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _skillsLoading
+                                ? const Text('Loading skills...', style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)))
+                                : _selectedSkillIds.isEmpty
+                                    ? const Text('Select Skills *', style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)))
+                                    : Text('${_selectedSkillIds.length} skill${_selectedSkillIds.length == 1 ? '' : 's'} selected',
+                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: _primaryColor)),
+                          ),
+                          Icon(Icons.arrow_drop_down, color: _skillsLoading ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_selectedSkillIds.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: _selectedSkillIds.map((skillId) {
+                        final skill = _availableSkills.firstWhere(
+                          (s) => s.id == skillId,
+                          orElse: () => SkillModel(id: skillId, enName: skillId, hiName: '', mrName: ''),
+                        );
+                        return Chip(
+                          label: Text(skill.enName, style: TextStyle(fontWeight: FontWeight.w600, color: _primaryColor)),
+                          backgroundColor: _primaryColor.withOpacity(0.1),
+                          deleteIcon: const Icon(Icons.close, size: 16),
+                          onDeleted: () => setState(() => _selectedSkillIds.remove(skill.id)),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                  if (_selectedSkillIds.isEmpty && _target == 'labour')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text('Select at least one skill', style: TextStyle(fontSize: 11, color: Colors.red.shade400)),
+                    ),
+                ] else if (_target == 'sub_contractor') ...[
+                  Row(children: [
+                    Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(color: _primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                      child: Icon(Icons.category_outlined, size: 14, color: _primaryColor),
                     ),
                     const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () => _addSkill(_skillsInputController.text),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: primary,
-                          borderRadius: BorderRadius.circular(10),
+                    const Text('Business Types *',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF374151))),
+                  ]),
+                  const SizedBox(height: 10),
+                  InkWell(
+                    onTap: _businessTypesLoading ? null : _showBusinessTypesBottomSheet,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFAFAFA),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _selectedBusinessTypeIds.isEmpty
+                              ? const Color(0xFFD1D5DB)
+                              : _primaryColor,
                         ),
-                        child: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.category_outlined, size: 20, color: Color(0xFF6B7280)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _businessTypesLoading
+                                ? const Text(
+                                    'Loading business types...',
+                                    style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+                                  )
+                                : _availableBusinessTypes.isEmpty
+                                    ? const Text('No business types available', style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)))
+                                    : _selectedBusinessTypeIds.isEmpty
+                                        ? const Text(
+                                            'Select Business Types *',
+                                            style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+                                          )
+                                        : Text(
+                                            '${_selectedBusinessTypeIds.length} selected',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: _primaryColor,
+                                            ),
+                                          ),
+                          ),
+                          Icon(
+                            Icons.arrow_drop_down,
+                            color: _businessTypesLoading ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-                if (_skills.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text('Add at least one skill',
-                        style: TextStyle(fontSize: 11, color: Colors.red.shade400)),
                   ),
+                  if (_selectedBusinessTypeIds.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: _selectedBusinessTypeIds.map((id) {
+                        final type = _availableBusinessTypes.firstWhere(
+                          (t) => t.id == id,
+                          orElse: () => BusinessTypeModel(id: id, enName: id, hiName: '', mrName: '', category: ''),
+                        );
+                        return Chip(
+                          label: Text(
+                            type.hiName.isNotEmpty
+                                ? '${type.enName} (${type.hiName})'
+                                : type.enName,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          backgroundColor: _primaryColor.withOpacity(0.1),
+                          deleteIcon: const Icon(Icons.close, size: 16),
+                          onDeleted: () => setState(() => _selectedBusinessTypeIds.remove(type.id)),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                  if (!_businessTypesLoading && _selectedBusinessTypeIds.isEmpty && _target == 'sub_contractor')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text('Select at least one business type', style: TextStyle(fontSize: 11, color: Colors.red.shade400)),
+                    ),
+                ],
                 const SizedBox(height: 14),
-                _label('Description', required: true),
+                _label('Description', required: true), 
                 TextFormField(
                   controller: _descriptionController,
                   maxLines: 4,
@@ -475,14 +838,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                   validator: (v) => v == null || v.trim().isEmpty ? 'Description is required' : null,
                 ),
                 const SizedBox(height: 14),
-                _label('Estimated Budget (Optional)'),
-                _field(
-                  controller: _budgetController,
-                  hint: 'e.g., 50000',
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                  prefixText: '₹ ',
-                ),
+                // Estimated Budget field removed as per request
               ],
             ),
             const SizedBox(height: 14),

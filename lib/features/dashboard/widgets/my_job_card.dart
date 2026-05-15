@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-
 import '../models/my_job.dart';
+import '../../../common/models/skill_model.dart';
 
 class MyJobCard extends StatefulWidget {
   final MyJob job;
   final Color primaryColor;
+  final List<SkillModel> skills;
   final VoidCallback? onTap;
   final VoidCallback? onEditTap;
   final Future<Map<String, dynamic>> Function()? onToggleActivation;
@@ -13,6 +14,7 @@ class MyJobCard extends StatefulWidget {
     super.key,
     required this.job,
     required this.primaryColor,
+    required this.skills,
     this.onTap,
     this.onEditTap,
     this.onToggleActivation,
@@ -81,6 +83,7 @@ class _MyJobCardState extends State<MyJobCard> {
     final cs = Theme.of(context).colorScheme;
     final job = widget.job;
     final primaryColor = widget.primaryColor;
+    final skillsList = widget.skills;
     final isLive = _isActive;
     final location =
         [job.area, job.city].where((s) => s.isNotEmpty).join(', ');
@@ -236,12 +239,13 @@ class _MyJobCardState extends State<MyJobCard> {
                         label: 'For: ${_targetLabel(t)}',
                         textColor: const Color(0xFF0369A1),
                       )),
-                  _chip(
-                    icon: Icons.groups_rounded,
-                    label:
-                        'Need: ${job.workersNeeded} Worker${job.workersNeeded == 1 ? '' : 's'}',
-                    textColor: const Color(0xFF15803D),
-                  ),
+                  if (job.workersNeeded != null && job.workersNeeded > 0)
+                    _chip(
+                      icon: Icons.groups_rounded,
+                      label:
+                          'Need: ${job.workersNeeded} Worker${job.workersNeeded == 1 ? '' : 's'}',
+                      textColor: const Color(0xFF15803D),
+                    ),
                   if (job.createdAt != null)
                     _chip(
                       icon: Icons.calendar_today_outlined,
@@ -283,27 +287,47 @@ class _MyJobCardState extends State<MyJobCard> {
                       runSpacing: 4,
                       children: job.requiredSkills
                           .take(5)
-                          .map((s) => Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: primaryColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                      color:
-                                          primaryColor.withValues(alpha: 0.3)),
-                                ),
-                                child: Text(
-                                  s,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: primaryColor,
+                          .map((id) {
+                            final skill = skillsList.firstWhere(
+                              (s) => s.id == id,
+                              orElse: () => SkillModel(id: id, enName: id, hiName: '', mrName: ''),
+                            );
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: primaryColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    skill.enName,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: primaryColor,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ))
+                                  if (skill.hiName.isNotEmpty)
+                                    Text(
+                                      skill.hiName,
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w600,
+                                        color: primaryColor.withOpacity(0.7),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                ],
+                              ),
+                            );
+                          })
                           .toList(),
                     ),
                   ],
@@ -311,7 +335,6 @@ class _MyJobCardState extends State<MyJobCard> {
               ),
             ],
 
-            // \u2500\u2500 Description \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
             if (job.description.isNotEmpty) ...[
               const SizedBox(height: 10),
               Padding(

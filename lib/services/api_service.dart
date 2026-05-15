@@ -59,11 +59,11 @@ class ApiService {
         if (isMobileNumber)
           'mobile': '+91$cleanedInput'  // Add +91 prefix for mobile numbers
         else
-          'email': emailOrMobile.toLowerCase(),  // Convert email to lowercase
+          'email': emailOrMobile,
         'password': password,
       };
 
-      // ...existing code...
+      debugPrint('>>> Login Payload: ${jsonEncode(requestData)}');
 
       final response = await _dio.post(
         '${Env.baseUrl}/auth/login',
@@ -97,7 +97,7 @@ class ApiService {
     try {
       final response = await _dio.post(
         '${Env.baseUrl}/api/users/send-otp',
-        data: jsonEncode({'email': email.toLowerCase()}),
+        data: jsonEncode({'email': email}),
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
       return response.data as Map<String, dynamic>;
@@ -129,7 +129,7 @@ class ApiService {
     try {
       final response = await _dio.post(
         '${Env.baseUrl}/api/users/verify-otp',
-        data: jsonEncode({'email': email.toLowerCase(), 'otp': otp}),
+        data: jsonEncode({'email': email, 'otp': otp}),
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
       return response.data as Map<String, dynamic>;
@@ -515,7 +515,10 @@ class ApiService {
     }
     try {
       final url = '${Env.baseUrl}/api/jobs/$jobId';
-      // ...existing code...
+      debugPrint('══════════════════════════════════════');
+      debugPrint('[updateJob] PUT $url');
+      debugPrint('[updateJob] Payload: ${jsonEncode(jobData)}');
+      debugPrint('══════════════════════════════════════');
       final response = await _dio.put(
         url,
         data: jsonEncode(jobData),
@@ -524,7 +527,9 @@ class ApiService {
           'Authorization': 'Bearer $token',
         }),
       );
-      // ...existing code...
+      debugPrint('[updateJob] Response status: ${response.statusCode}');
+      debugPrint('[updateJob] Response data: ${jsonEncode(response.data)}');
+      debugPrint('══════════════════════════════════════');
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       debugPrint('[updateJob] DioException: ${e.response?.statusCode} ${e.response?.data}');

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../../services/api_service.dart';
+import '../../../services/skills_service.dart';
 import '../create_job_screen.dart';
 import '../job_applications_screen.dart';
 import '../models/my_job.dart';
 import '../widgets/my_job_card.dart';
+import '../../../common/models/skill_model.dart';
 
 // ── View ──────────────────────────────────────────────────────────────────────
 
@@ -24,6 +26,7 @@ class _MyJobsViewState extends State<MyJobsView> {
   String? _error;
   int _total = 0;
   String _filter = 'all'; // 'all' | 'live' | 'hidden'
+  List<SkillModel> _skills = [];
 
   // Cache filtered list so it is computed once per build, not multiple times.
   late List<MyJob> _filtered;
@@ -34,11 +37,22 @@ class _MyJobsViewState extends State<MyJobsView> {
     return List.of(_jobs);
   }
 
+  Future<void> _loadSkills() async {
+    final result = await SkillsService.getAllSkills();
+    if (!mounted) return;
+    if (result['success'] == true) {
+      setState(() {
+        _skills = result['skills'] as List<SkillModel>;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _filtered = [];
     _load();
+    _loadSkills();
   }
 
   Future<void> _load() async {
@@ -347,6 +361,7 @@ class _MyJobsViewState extends State<MyJobsView> {
       key: ValueKey(job.id),
       job: job,
       primaryColor: _primaryColor,
+      skills: _skills,
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
