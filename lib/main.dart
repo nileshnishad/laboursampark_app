@@ -12,6 +12,8 @@ import 'firebase_options.dart';
 import 'theme/app_theme.dart';
 import 'features/auth/mobile_verify_screen.dart';
 import 'features/splash/splash_screen.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:logger/logger.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -20,8 +22,23 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Logger.level = Level.debug;
+  final logger = Logger();
   if (!kIsWeb) {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    // Initialize Crashlytics
+    FlutterError.onError = (FlutterErrorDetails details) async {
+      FlutterError.presentError(details);
+      await FirebaseCrashlytics.instance.recordFlutterError(details);
+      logger.e('Flutter error', error: details.exception, stackTrace: details.stack);
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      logger.e('Platform error', error: error, stackTrace: stack);
+      return true;
+    };
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     // Request notification permission

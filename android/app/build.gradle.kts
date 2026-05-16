@@ -83,4 +83,7 @@ dependencies {
 
     // Firebase Cloud Messaging (Push Notifications)
     implementation("com.google.firebase:firebase-messaging")
+
+    // Firebase Crashlytics
+    implementation("com.google.firebase:firebase-crashlytics")
 }
