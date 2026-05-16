@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import '../../core/user_controller.dart';
 import '../../core/auth_service.dart';
 import '../../services/api_service.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Result returned when the WebView closes.
 enum PaymentResult { success, failure, cancelled }
@@ -43,8 +44,9 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen>
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setUserAgent(
-          'Mozilla/5.0 (Linux; Android 12; Mobile) AppleWebKit/537.36 '
-          '(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36')
+        'Mozilla/5.0 (Linux; Android 12; Mobile) AppleWebKit/537.36 '
+        '(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (progress) {
@@ -67,8 +69,10 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen>
                 url.startsWith('phonepe://') ||
                 url.startsWith('paytmmp://')) {
               _upiLaunched = true;
-              launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)
-                  .catchError((_) {
+              launchUrl(
+                Uri.parse(url),
+                mode: LaunchMode.externalApplication,
+              ).catchError((_) {
                 return false;
               });
               return NavigationDecision.prevent;
@@ -117,7 +121,9 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen>
   /// Instead, poll our backend directly to check payment status.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _upiLaunched && !_paymentResolved) {
+    if (state == AppLifecycleState.resumed &&
+        _upiLaunched &&
+        !_paymentResolved) {
       _upiLaunched = false;
       _pollPaymentStatus();
     }
@@ -207,12 +213,13 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen>
                     children: [
                       const CircularProgressIndicator(color: Colors.white),
                       const SizedBox(height: 20),
-                      const Text(
-                        'Verifying payment...',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600),
+                      Text(
+                        AppLocalizations.of(context).verifyingPayment,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       const Text(

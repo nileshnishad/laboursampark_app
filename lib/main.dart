@@ -6,6 +6,9 @@ import 'package:get/get.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/app_state.dart';
+import 'features/settings/settings_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations.dart';
 import 'core/auth_service.dart';
 import 'core/user_controller.dart';
 import 'firebase_options.dart';
@@ -25,12 +28,18 @@ void main() async {
   Logger.level = Level.debug;
   final logger = Logger();
   if (!kIsWeb) {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     // Initialize Crashlytics
     FlutterError.onError = (FlutterErrorDetails details) async {
       FlutterError.presentError(details);
       await FirebaseCrashlytics.instance.recordFlutterError(details);
-      logger.e('Flutter error', error: details.exception, stackTrace: details.stack);
+      logger.e(
+        'Flutter error',
+        error: details.exception,
+        stackTrace: details.stack,
+      );
     };
     PlatformDispatcher.instance.onError = (error, stack) {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
@@ -55,7 +64,9 @@ void main() async {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       final notification = message.notification;
       if (notification != null) {
-        debugPrint('📬 Foreground notification: ${notification.title} — ${notification.body}');
+        debugPrint(
+          '📬 Foreground notification: ${notification.title} — ${notification.body}',
+        );
       }
     });
 
@@ -98,7 +109,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       final otpVerified = await AuthService.isOtpVerified();
       if (!otpVerified) {
         final userData = await AuthService.getUserData();
-        final phone = (userData?['phone'] ?? userData?['mobile'] ?? userData?['mobileNumber'] ?? '').toString();
+        final phone =
+            (userData?['phone'] ??
+                    userData?['mobile'] ??
+                    userData?['mobileNumber'] ??
+                    '')
+                .toString();
         final userId = (userData?['_id'] ?? userData?['id'] ?? '').toString();
         final ctx = navigatorKey.currentContext;
         if (ctx == null) return;
@@ -137,12 +153,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 theme: AppTheme.lightTheme,
                 darkTheme: AppTheme.darkTheme,
                 themeMode: appState.themeMode,
+                locale: appState.locale,
                 home: const SplashScreen(),
                 debugShowCheckedModeBanner: false,
-                localizationsDelegates: const [],
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
                 supportedLocales: const [
                   Locale('en', ''),
+                  Locale('hi', ''),
+                  Locale('mr', ''),
                 ],
+                routes: {'/settings': (_) => const SettingsScreen()},
               );
             },
           );
