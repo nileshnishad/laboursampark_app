@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/my_job.dart';
 import '../../../common/models/skill_model.dart';
 import '../../../common/models/business_type_model.dart';
+import 'my_Job_Detail_Screen.dart';
 
 class MyJobCard extends StatefulWidget {
   final MyJob job;
@@ -28,27 +29,29 @@ class MyJobCard extends StatefulWidget {
 }
 
 class _MyJobCardState extends State<MyJobCard> {
-    String _targetLabel(String t) {
-      switch (t) {
-        case 'sub_contractor':
-          return 'Sub-Contractor';
-        case 'labour':
-          return 'Labour';
-        default:
-          return t;
-      }
+  String _targetLabel(String t) {
+    switch (t) {
+      case 'sub_contractor':
+        return 'Sub-Contractor';
+      case 'labour':
+        return 'Labour';
+      default:
+        return t;
     }
+  }
 
-    String _fmtDate(DateTime? dt) {
-      if (dt == null) return '';
-      return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
-    }
+  String _fmtDate(DateTime? dt) {
+    if (dt == null) return '';
+    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+  }
+
   late bool _isActive;
-    @override
-    void initState() {
-      super.initState();
-      _isActive = widget.job.isActive;
-    }
+  @override
+  void initState() {
+    super.initState();
+    _isActive = widget.job.isActive;
+  }
+
   bool _toggling = false;
 
   Future<void> _handleToggle() async {
@@ -62,20 +65,27 @@ class _MyJobCardState extends State<MyJobCard> {
       final data = result['data'] as Map<String, dynamic>?;
       final newActive = data?['isActive'] as bool? ?? !_isActive;
       setState(() => _isActive = newActive);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(newActive ? 'Job is now LIVE \u2713' : 'Job hidden from applicants'),
-        backgroundColor:
-            newActive ? const Color(0xFF059669) : const Color(0xFF6B7280),
-        behavior: SnackBarBehavior.floating,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            newActive ? 'Job is now LIVE \u2713' : 'Job hidden from applicants',
+          ),
+          backgroundColor: newActive
+              ? const Color(0xFF059669)
+              : const Color(0xFF6B7280),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } else {
       final msg =
           result['message']?.toString() ?? 'Failed to toggle activation';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(msg),
-        backgroundColor: const Color(0xFFDC2626),
-        behavior: SnackBarBehavior.floating,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -86,17 +96,19 @@ class _MyJobCardState extends State<MyJobCard> {
     final primaryColor = widget.primaryColor;
     final skillsList = widget.skills;
     final isLive = _isActive;
-    final location =
-      [job.area, job.city].where((s) => s.isNotEmpty).join(', ');
+    final location = [job.area, job.city].where((s) => s.isNotEmpty).join(', ');
     final hasImages = job.images.isNotEmpty;
     final businessTypeList = widget.businessTypes;
 
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => _MyJobDetailScreen(
+          builder: (_) => MyJobDetailScreen(
             job: widget.job,
             primaryColor: widget.primaryColor,
+            skills: widget.skills,
+            businessTypes: widget.businessTypes,
+            skillsList: widget.skills,
           ),
         ),
       ),
@@ -138,8 +150,11 @@ class _MyJobCardState extends State<MyJobCard> {
                       color: primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.work_outline_rounded,
-                        color: primaryColor, size: 22),
+                    child: Icon(
+                      Icons.work_outline_rounded,
+                      color: primaryColor,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -147,7 +162,9 @@ class _MyJobCardState extends State<MyJobCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          job.workTitle.isEmpty ? 'Untitled Job' : job.workTitle,
+                          job.workTitle.isEmpty
+                              ? 'Untitled Job'
+                              : job.workTitle,
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
@@ -160,17 +177,19 @@ class _MyJobCardState extends State<MyJobCard> {
                           const SizedBox(height: 3),
                           Row(
                             children: [
-                              Icon(Icons.location_on_outlined,
-                                  size: 12,
-                                  color: cs.onSurface.withValues(alpha: 0.4)),
+                              Icon(
+                                Icons.location_on_outlined,
+                                size: 12,
+                                color: cs.onSurface.withValues(alpha: 0.4),
+                              ),
                               const SizedBox(width: 3),
                               Expanded(
                                 child: Text(
                                   location,
                                   style: TextStyle(
-                                      fontSize: 12,
-                                      color: cs.onSurface
-                                          .withValues(alpha: 0.55)),
+                                    fontSize: 12,
+                                    color: cs.onSurface.withValues(alpha: 0.55),
+                                  ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -183,8 +202,10 @@ class _MyJobCardState extends State<MyJobCard> {
                   const SizedBox(width: 8),
                   // Live/Hidden badge
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: isLive
                           ? const Color(0xFF059669).withValues(alpha: 0.12)
@@ -236,12 +257,14 @@ class _MyJobCardState extends State<MyJobCard> {
                 spacing: 6,
                 runSpacing: 6,
                 children: [
-                  ...job.target.map((t) => _chip(
-                        icon: Icons.person_search_rounded,
-                        label: 'For: ${_targetLabel(t)}',
-                        textColor: const Color(0xFF0369A1),
-                      )),
-                  if (job.workersNeeded != null && job.workersNeeded > 0)
+                  ...job.target.map(
+                    (t) => _chip(
+                      icon: Icons.person_search_rounded,
+                      label: 'For: ${_targetLabel(t)}',
+                      textColor: const Color(0xFF0369A1),
+                    ),
+                  ),
+                  if (job.workersNeeded > 0)
                     _chip(
                       icon: Icons.groups_rounded,
                       label:
@@ -259,88 +282,95 @@ class _MyJobCardState extends State<MyJobCard> {
             ),
 
             // ── Business Types chips ──
-            if (job.businessTypes.isNotEmpty)
-              ...[
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.business_center_outlined,
-                              size: 13,
-                              color: primaryColor.withValues(alpha: 0.7)),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Business Types',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: primaryColor.withValues(alpha: 0.8),
-                              letterSpacing: 0.2,
+            if (job.businessTypes.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.business_center_outlined,
+                          size: 13,
+                          color: primaryColor.withValues(alpha: 0.7),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Business Types',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: primaryColor.withValues(alpha: 0.8),
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: job.businessTypes.map((id) {
+                        final bt = businessTypeList.firstWhere(
+                          (b) => b.id == id,
+                          orElse: () => BusinessTypeModel(
+                            id: id,
+                            enName: id,
+                            hiName: '',
+                            mrName: '',
+                            category: '',
+                          ),
+                        );
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: primaryColor.withValues(alpha: 0.3),
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: job.businessTypes
-                            .map((id) {
-                              final bt = businessTypeList.firstWhere(
-                                (b) => b.id == id,
-                                orElse: () => BusinessTypeModel(id: id, enName: id, hiName: '', mrName: '', category: ''),
-                              );
-                              return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: primaryColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                bt.enName,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: primaryColor,
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      bt.enName,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: primaryColor,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    if (bt.hiName.isNotEmpty)
-                                      Text(
-                                        bt.hiName,
-                                        style: TextStyle(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w600,
-                                          color: primaryColor.withOpacity(0.7),
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                  ],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (bt.hiName.isNotEmpty)
+                                Text(
+                                  bt.hiName,
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
+                                    color: primaryColor.withOpacity(0.7),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              );
-                            })
-                            .toList(),
-                      ),
-                    ],
-                  ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                 ),
-              ],
-                      
+              ),
+            ],
 
             const SizedBox(height: 12),
-
-            
 
             if (job.requiredSkills.isNotEmpty) ...[
               const SizedBox(height: 10),
@@ -351,9 +381,11 @@ class _MyJobCardState extends State<MyJobCard> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.build_circle_outlined,
-                            size: 13,
-                            color: primaryColor.withValues(alpha: 0.7)),
+                        Icon(
+                          Icons.build_circle_outlined,
+                          size: 13,
+                          color: primaryColor.withValues(alpha: 0.7),
+                        ),
                         const SizedBox(width: 5),
                         Text(
                           'Skills Required',
@@ -370,50 +402,57 @@ class _MyJobCardState extends State<MyJobCard> {
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
-                      children: job.requiredSkills
-                          .take(5)
-                          .map((id) {
-                            final skill = skillsList.firstWhere(
-                              (s) => s.id == id,
-                              orElse: () => SkillModel(id: id, enName: id, hiName: '', mrName: ''),
-                            );
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: primaryColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
+                      children: job.requiredSkills.take(5).map((id) {
+                        final skill = skillsList.firstWhere(
+                          (s) => s.id == id,
+                          orElse: () => SkillModel(
+                            id: id,
+                            enName: id,
+                            hiName: '',
+                            mrName: '',
+                          ),
+                        );
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: primaryColor.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                skill.enName,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: primaryColor,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    skill.enName,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: primaryColor,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                              if (skill.hiName.isNotEmpty)
+                                Text(
+                                  skill.hiName,
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
+                                    color: primaryColor.withOpacity(0.7),
                                   ),
-                                  if (skill.hiName.isNotEmpty)
-                                    Text(
-                                      skill.hiName,
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w600,
-                                        color: primaryColor.withOpacity(0.7),
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                ],
-                              ),
-                            );
-                          })
-                          .toList(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ],
                 ),
@@ -429,9 +468,11 @@ class _MyJobCardState extends State<MyJobCard> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.notes_rounded,
-                            size: 13,
-                            color: cs.onSurface.withValues(alpha: 0.4)),
+                        Icon(
+                          Icons.notes_rounded,
+                          size: 13,
+                          color: cs.onSurface.withValues(alpha: 0.4),
+                        ),
                         const SizedBox(width: 5),
                         Text(
                           'About this job',
@@ -489,27 +530,29 @@ class _MyJobCardState extends State<MyJobCard> {
                           width: 80,
                           height: 80,
                           color: cs.onSurface.withValues(alpha: 0.08),
-                          child: Icon(Icons.broken_image_outlined,
-                              color: cs.onSurface.withValues(alpha: 0.3),
-                              size: 24),
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            color: cs.onSurface.withValues(alpha: 0.3),
+                            size: 24,
+                          ),
                         ),
-                        loadingBuilder: (_, child, progress) =>
-                            progress == null
-                                ? child
-                                : Container(
-                                    width: 80,
-                                    height: 80,
-                                    color: cs.onSurface.withValues(alpha: 0.08),
-                                    child: Center(
-                                      child: SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: primaryColor),
-                                      ),
+                        loadingBuilder: (_, child, progress) => progress == null
+                            ? child
+                            : Container(
+                                width: 80,
+                                height: 80,
+                                color: cs.onSurface.withValues(alpha: 0.08),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: primaryColor,
                                     ),
                                   ),
+                                ),
+                              ),
                       ),
                     ),
                   ),
@@ -548,7 +591,8 @@ class _MyJobCardState extends State<MyJobCard> {
                               : const Color(0xFF059669),
                         ),
                   label: Text(
-                      isLive ? 'Deactivate (Hide Job)' : 'Activate (Make Live)'),
+                    isLive ? 'Deactivate (Hide Job)' : 'Activate (Make Live)',
+                  ),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
                       color: isLive
@@ -560,11 +604,13 @@ class _MyJobCardState extends State<MyJobCard> {
                         : const Color(0xFF059669),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     textStyle: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
                   ),
                 ),
               ),
@@ -588,10 +634,13 @@ class _MyJobCardState extends State<MyJobCard> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 11),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         elevation: 0,
                         textStyle: const TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w700),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -599,18 +648,25 @@ class _MyJobCardState extends State<MyJobCard> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: widget.onEditTap,
-                      icon: Icon(Icons.edit_outlined,
-                          size: 15, color: primaryColor),
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        size: 15,
+                        color: primaryColor,
+                      ),
                       label: const Text('Edit Job'),
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(
-                            color: primaryColor.withValues(alpha: 0.4)),
+                          color: primaryColor.withValues(alpha: 0.4),
+                        ),
                         foregroundColor: primaryColor,
                         padding: const EdgeInsets.symmetric(vertical: 11),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         textStyle: const TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w700),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -641,399 +697,22 @@ class _MyJobCardState extends State<MyJobCard> {
           Icon(icon, size: 12, color: textColor),
           const SizedBox(width: 4),
           Flexible(
-            child: Text(label,
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: textColor),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
-class _MyJobDetailScreen extends StatelessWidget {
-  final MyJob job;
-  final Color primaryColor;
-
-  const _MyJobDetailScreen({required this.job, required this.primaryColor});
-
-  String _fmtDate(DateTime? dt) {
-    if (dt == null) return '';
-    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
-  }
-
-  String _targetLabel(String t) {
-    switch (t) {
-      case 'sub_contractor':
-        return 'Sub-Contractor';
-      case 'labour':
-        return 'Labour';
-      default:
-        return t;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final location =
-        [job.area, job.city, job.state].where((s) => s.isNotEmpty).join(', ');
-
-    return Scaffold(
-      backgroundColor: cs.surface,
-      appBar: AppBar(
-        backgroundColor: cs.surface,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-          color: cs.onSurface,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          job.workTitle.isEmpty ? 'Job Details' : job.workTitle,
-          style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: cs.onSurface),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // \u2500\u2500 Status + Applications \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-          Row(
-            children: [
-              _statusBadge(cs),
-              const SizedBox(width: 8),
-              _appsBadge(),
-            ],
-          ),
-
-          // \u2500\u2500 Location \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-          if (location.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _card(
-              cs: cs,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.location_on_rounded,
-                      size: 18, color: Color(0xFFEF4444)),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Location',
-                            style: TextStyle(
-                                fontSize: 11,
-                                color: cs.onSurface.withValues(alpha: 0.45),
-                                fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 3),
-                        Text(location,
-                            style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: cs.onSurface)),
-                        if (job.address.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(job.address,
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  color: cs.onSurface.withValues(alpha: 0.55))),
-                        ],
-                        if (job.pincode.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text('Pincode: ${job.pincode}',
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  color: cs.onSurface.withValues(alpha: 0.55))),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 12),
-
-          // \u2500\u2500 Quick info tiles \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-          _card(
-            cs: cs,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ...job.target.map((t) => _infoTile(
-                      icon: Icons.person_pin_outlined,
-                      label: 'Target',
-                      value: _targetLabel(t),
-                      color: const Color(0xFF0369A1),
-                    )),
-                _infoTile(
-                  icon: Icons.group_outlined,
-                  label: 'Workers Needed',
-                  value: '${job.workersNeeded}',
-                  color: const Color(0xFF15803D),
-                ),
-                if (job.estimatedBudget != null)
-                  _infoTile(
-                    icon: Icons.currency_rupee_rounded,
-                    label: 'Budget',
-                    value:
-                        '\u20b9${job.estimatedBudget!.toStringAsFixed(0)}',
-                    color: const Color(0xFF92400E),
-                  ),
-                _infoTile(
-                  icon: Icons.assignment_outlined,
-                  label: 'Status',
-                  value: job.status.toUpperCase(),
-                  color: primaryColor,
-                ),
-                if (job.createdAt != null)
-                  _infoTile(
-                    icon: Icons.calendar_today_outlined,
-                    label: 'Posted On',
-                    value: _fmtDate(job.createdAt),
-                    color: const Color(0xFF6D28D9),
-                  ),
-              ],
-            ),
-          ),
-
-          // \u2500\u2500 Images \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-          if (job.images.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _card(
-              cs: cs,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Photos',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: cs.onSurface)),
-                  const SizedBox(height: 10),
-                  _JobImageGallery(images: job.images),
-                ],
-              ),
-            ),
-          ],
-
-          // \u2500\u2500 Description \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-          if (job.description.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _card(
-              cs: cs,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Description',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: cs.onSurface)),
-                  const SizedBox(height: 8),
-                  Text(
-                    job.description,
-                    style: TextStyle(
-                        fontSize: 13,
-                        color: cs.onSurface.withValues(alpha: 0.8),
-                        height: 1.55),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          // \u2500\u2500 Skills \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-          if (job.requiredSkills.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _card(
-              cs: cs,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Required Skills',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: cs.onSurface)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: job.requiredSkills
-                        .map((s) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: primaryColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                    color:
-                                        primaryColor.withValues(alpha: 0.3)),
-                              ),
-                              child: Text(s,
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: primaryColor)),
-                            ))
-                        .toList(),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-
-  Widget _statusBadge(ColorScheme cs) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: job.isActive
-            ? const Color(0xFF059669).withValues(alpha: 0.12)
-            : cs.onSurface.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: job.isActive
-              ? const Color(0xFF059669).withValues(alpha: 0.4)
-              : cs.outline.withValues(alpha: 0.5),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(
-              color: job.isActive
-                  ? const Color(0xFF059669)
-                  : cs.onSurface.withValues(alpha: 0.4),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            job.isActive ? 'Live' : 'Hidden',
-            style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: job.isActive
-                    ? const Color(0xFF059669)
-                    : cs.onSurface.withValues(alpha: 0.6)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _appsBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: primaryColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.people_rounded, size: 14, color: primaryColor),
-          const SizedBox(width: 5),
-          Text(
-            '${job.totalApplications} Application${job.totalApplications == 1 ? '' : 's'}',
-            style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: primaryColor),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _card({required ColorScheme cs, required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-
-  Widget _infoTile({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 12, color: color.withValues(alpha: 0.7)),
-              const SizedBox(width: 4),
-              Text(label,
-                  style: TextStyle(
-                      fontSize: 10,
-                      color: color.withValues(alpha: 0.7),
-                      fontWeight: FontWeight.w600)),
-            ],
-          ),
-          const SizedBox(height: 3),
-          Text(value,
+            child: Text(
+              label,
               style: TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w700, color: color)),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );
   }
 }
-
 
 class _JobImageGallery extends StatefulWidget {
   final List<String> images;
@@ -1076,10 +755,8 @@ class _JobImageGalleryState extends State<_JobImageGallery> {
               itemBuilder: (_, i) => GestureDetector(
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => _ImageGalleryViewer(
-                      images: images,
-                      initialIndex: i,
-                    ),
+                    builder: (_) =>
+                        _ImageGalleryViewer(images: images, initialIndex: i),
                   ),
                 ),
                 child: Image.network(
@@ -1088,16 +765,21 @@ class _JobImageGalleryState extends State<_JobImageGallery> {
                   errorBuilder: (_, __, ___) => ColoredBox(
                     color: cs.onSurface.withValues(alpha: 0.08),
                     child: Center(
-                      child: Icon(Icons.broken_image_outlined,
-                          size: 40,
-                          color: cs.onSurface.withValues(alpha: 0.3)),
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        size: 40,
+                        color: cs.onSurface.withValues(alpha: 0.3),
+                      ),
                     ),
                   ),
                   loadingBuilder: (_, child, progress) => progress == null
                       ? child
                       : Center(
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: cs.primary)),
+                            strokeWidth: 2,
+                            color: cs.primary,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -1129,13 +811,11 @@ class _JobImageGalleryState extends State<_JobImageGallery> {
   }
 }
 
-
 class _ImageGalleryViewer extends StatefulWidget {
   final List<String> images;
   final int initialIndex;
 
-  const _ImageGalleryViewer(
-      {required this.images, required this.initialIndex});
+  const _ImageGalleryViewer({required this.images, required this.initialIndex});
 
   @override
   State<_ImageGalleryViewer> createState() => _ImageGalleryViewerState();
@@ -1191,8 +871,8 @@ class _ImageGalleryViewerState extends State<_ImageGalleryViewer> {
                   loadingBuilder: (_, child, progress) => progress == null
                       ? child
                       : const Center(
-                          child: CircularProgressIndicator(
-                              color: Colors.white)),
+                          child: CircularProgressIndicator(color: Colors.white),
+                        ),
                 ),
               ),
             ),
@@ -1212,8 +892,7 @@ class _ImageGalleryViewerState extends State<_ImageGalleryViewer> {
                     width: _current == i ? 18 : 7,
                     height: 7,
                     decoration: BoxDecoration(
-                      color:
-                          _current == i ? Colors.white : Colors.white38,
+                      color: _current == i ? Colors.white : Colors.white38,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
