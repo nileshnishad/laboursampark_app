@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:in_app_update/in_app_update.dart';
 import '../../core/auth_service.dart';
-import '../../core/services/permission_service.dart';
 import '../../core/user_controller.dart';
 import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
@@ -40,9 +39,6 @@ class _SplashScreenState extends State<SplashScreen> {
           // Ignore update check errors (e.g. not on Play Store / debug build)
         }
       }
-      if (!mounted) return;
-      await PermissionService.requestStartupPermissionsIfNeeded(context);
-      if (!mounted) return;
       if (!mounted) return;
       bool loggedIn = await AuthService.isLoggedIn();
       if (!mounted) return;

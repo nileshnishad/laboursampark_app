@@ -1065,6 +1065,7 @@ class _AppliedJobCard extends StatelessWidget {
     }
   }
 
+  // ignore: unused_element
   Widget _noPhoto({double height = 110}) => Container(
         height: height,
         width: double.infinity,

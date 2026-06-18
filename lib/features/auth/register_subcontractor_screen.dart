@@ -25,21 +25,6 @@ const _scTeamSizeOptions = [
   '11-20 workers', '21-50 workers', '50+ workers',
 ];
 
-const _scBusinessTypes = [
-  'General Construction',
-  'Civil Construction',
-  'Building Construction',
-  'Electrical Work',
-  'Plumbing',
-  'Carpentry',
-  'Painting',
-  'Interior Design',
-  'Road Construction',
-  'Renovation',
-  'Waterproofing',
-  'Landscaping',
-];
-
 // Helper to force uppercase input in TextFormField
 class UpperCaseTextFormatter extends TextInputFormatter {
   @override

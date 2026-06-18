@@ -96,7 +96,7 @@ class S3UploadService {
       }
       // ...existing code...
       return null;
-    } on DioException catch (e) {
+    } on DioException catch (_) {
       // ...existing code...
       return null;
     } catch (e) {

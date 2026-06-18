@@ -25,21 +25,6 @@ const _teamSizeOptions = [
   '11-20 workers', '21-50 workers', '50+ workers',
 ];
 
-const _allBusinessTypes = [
-  'General Construction',
-  'Civil Construction',
-  'Building Construction',
-  'Electrical Work',
-  'Plumbing',
-  'Carpentry',
-  'Painting',
-  'Interior Design',
-  'Road Construction',
-  'Renovation',
-  'Waterproofing',
-  'Landscaping',
-];
-
 // ── Screen ─────────────────────────────────────────────────────────────────
 
 class RegisterContractorScreen extends StatefulWidget {

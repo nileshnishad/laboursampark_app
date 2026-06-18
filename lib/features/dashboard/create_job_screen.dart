@@ -410,21 +410,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     );
   }
 
-  void _addSkill(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) return;
-    final parts = trimmed.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty);
-    setState(() {
-      for (final p in parts) {
-        if (!_skills.contains(p)) _skills.add(p);
-      }
-      _skillsInputController.clear();
-    });
-  }
-
-  void _removeSkill(String skill) => setState(() => _skills.remove(skill));
-
-  // ── Form submit ───────────────────────────────────────────────────────────
+  // ── Form submit ───────────────────────────────────────────────────────────────────
 
   Future<void> _submit() async {
   debugPrint('══════════ [submit] FORM STATE ══════════');

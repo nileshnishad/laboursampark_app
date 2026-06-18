@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import '../common/models/skill_model.dart';
 import '../core/errors/app_error.dart';
 import '../core/errors/error_messages.dart';

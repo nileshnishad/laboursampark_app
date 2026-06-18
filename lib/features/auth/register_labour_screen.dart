@@ -53,7 +53,6 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
   bool _skillsLoading = true;
 
   Uint8List? _photoBytes;
-  String?    _photoMime;
   String?    _photoUrl;
   bool       _photoUploading = false;
   bool       _submitting     = false;
@@ -443,7 +442,6 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
     final mime  = _mimeFromName(xFile.name);
     setState(() {
       _photoBytes     = bytes;
-      _photoMime      = mime;
       _photoUrl       = null;
       _photoUploading = true;
     });
@@ -462,7 +460,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
       setState(() => _photoUrl = url);
     } else {
       ToastUtils.showError('Photo upload failed. Try again.');
-      setState(() { _photoBytes = null; _photoMime = null; });
+      setState(() { _photoBytes = null; });
     }
   }
 

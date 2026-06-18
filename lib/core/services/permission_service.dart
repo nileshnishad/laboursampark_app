@@ -4,9 +4,11 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PermissionService {
-  static const String _permissionsPromptedKey = 'permissions_prompted_v1';
+  static const String _permissionsPromptedKey = 'permissions_prompted_v2';
 
-  static Future<void> requestStartupPermissionsIfNeeded(BuildContext context) async {
+  /// Call this after the user logs in and lands on the dashboard.
+  /// Only requests Notification and Camera — no SMS.
+  static Future<void> requestPostLoginPermissionsIfNeeded(BuildContext context) async {
     if (!_isMobilePlatform()) return;
 
     final prefs = await SharedPreferences.getInstance();
@@ -20,7 +22,6 @@ class PermissionService {
     final permissions = <Permission>[
       Permission.notification,
       Permission.camera,
-      if (_isAndroidMobilePlatform()) Permission.sms,
     ];
 
     for (final permission in permissions) {
@@ -46,15 +47,9 @@ class PermissionService {
         defaultTargetPlatform == TargetPlatform.iOS;
   }
 
-  static bool _isAndroidMobilePlatform() {
-    if (kIsWeb) return false;
-    return defaultTargetPlatform == TargetPlatform.android;
-  }
-
   static String permissionName(Permission permission) {
     if (permission == Permission.camera) return 'Camera';
     if (permission == Permission.notification) return 'Notifications';
-    if (permission == Permission.sms) return 'SMS';
     return 'Permission';
   }
 
@@ -64,9 +59,6 @@ class PermissionService {
     }
     if (permission == Permission.notification) {
       return 'Notification permission helps us send important updates like job alerts, verification status, and account safety messages.';
-    }
-    if (permission == Permission.sms) {
-      return 'SMS access helps with mobile verification and safer account communication.';
     }
     return 'This permission helps improve app experience.';
   }
@@ -79,7 +71,7 @@ class PermissionService {
         return AlertDialog(
           title: const Text('Permissions Required'),
           content: const Text(
-            'To provide the best experience, the app will ask for Notifications, Camera, and SMS permissions.',
+            'To provide the best experience, the app will ask for Notifications and Camera permissions.',
           ),
           actions: [
             TextButton(

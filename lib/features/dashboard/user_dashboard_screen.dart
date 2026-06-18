@@ -7,6 +7,7 @@ import 'package:app_links/app_links.dart';
 import '../../core/user_controller.dart';
 import '../../core/auth_service.dart';
 import '../../core/app_state.dart';
+import '../../core/services/permission_service.dart';
 import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
 import 'package:get/get.dart';
@@ -49,6 +50,11 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     WidgetsBinding.instance.addObserver(this);
     _loadProfileStatus();
     _initDeepLinks();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        PermissionService.requestPostLoginPermissionsIfNeeded(context);
+      }
+    });
   }
 
   @override

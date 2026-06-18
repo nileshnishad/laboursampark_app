@@ -11,6 +11,7 @@ class LabourIdCard extends StatelessWidget {
     required this.canViewSensitiveData,
   });
 
+  // ignore: unused_element
   String _initials(String name) {
     final words = name
         .trim()
