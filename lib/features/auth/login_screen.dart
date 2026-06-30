@@ -362,55 +362,56 @@ class _LoginScreenState extends State<LoginScreen> {
                 icon: Icons.login_rounded,
                 onPressed: _submitLogin,
               ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: Divider(
-                      color: theme.colorScheme.outline.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14.0),
-                    child: Text(
-                      'OR',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.5,
-                        ),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Divider(
-                      color: theme.colorScheme.outline.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                height: 52,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    ToastUtils.showError('Google sign in feature coming soon');
-                  },
-                  icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
-                  label: const Text(
-                    'Continue with Google',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    side: BorderSide(
-                      color: theme.colorScheme.outline.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ),
-              ),
+              // TODO: Re-enable when Google sign-in is ready
+              // const SizedBox(height: 24),
+              // Row(
+              //   children: [
+              //     Expanded(
+              //       child: Divider(
+              //         color: theme.colorScheme.outline.withValues(alpha: 0.5),
+              //       ),
+              //     ),
+              //     Padding(
+              //       padding: const EdgeInsets.symmetric(horizontal: 14.0),
+              //       child: Text(
+              //         'OR',
+              //         style: theme.textTheme.labelMedium?.copyWith(
+              //           color: theme.colorScheme.onSurface.withValues(
+              //             alpha: 0.5,
+              //           ),
+              //           fontWeight: FontWeight.w700,
+              //         ),
+              //       ),
+              //     ),
+              //     Expanded(
+              //       child: Divider(
+              //         color: theme.colorScheme.outline.withValues(alpha: 0.5),
+              //       ),
+              //     ),
+              //   ],
+              // ),
+              // const SizedBox(height: 24),
+              // SizedBox(
+              //   height: 52,
+              //   child: OutlinedButton.icon(
+              //     onPressed: () {
+              //       ToastUtils.showError('Google sign in feature coming soon');
+              //     },
+              //     icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
+              //     label: const Text(
+              //       'Continue with Google',
+              //       style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+              //     ),
+              //     style: OutlinedButton.styleFrom(
+              //       shape: RoundedRectangleBorder(
+              //         borderRadius: BorderRadius.circular(12),
+              //       ),
+              //       side: BorderSide(
+              //         color: theme.colorScheme.outline.withValues(alpha: 0.5),
+              //       ),
+              //     ),
+              //   ),
+              // ),
               const SizedBox(height: 32),
               Wrap(
                 alignment: WrapAlignment.center,
