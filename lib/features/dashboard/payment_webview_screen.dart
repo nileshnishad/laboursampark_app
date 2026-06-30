@@ -133,10 +133,7 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen>
       }
     } else {
       // upi://, tez://, phonepe://, paytmmp:// — launch directly
-      await launchUrl(
-        Uri.parse(url),
-        mode: LaunchMode.externalApplication,
-      );
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     }
   }
 
