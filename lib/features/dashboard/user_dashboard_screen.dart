@@ -630,8 +630,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     if (plan == null) {
       final token =
           userController.token.value ?? await AuthService.getAuthToken();
-      final userType =
-          (userController.user.value?['userType'] ?? 'labour').toString();
+      final userType = (userController.user.value?['userType'] ?? 'labour')
+          .toString();
 
       if (!context.mounted) return;
 
@@ -684,7 +684,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     final durationDays = (resolvedPlan['durationDays'] ?? 0).toString();
     final pricePerDay =
         (resolvedPlan['pricePerDay'] as num?)?.toStringAsFixed(2) ?? '0.00';
-    final features = (resolvedPlan['features'] as List<dynamic>?)?.cast<String>() ?? [];
+    final features =
+        (resolvedPlan['features'] as List<dynamic>?)?.cast<String>() ?? [];
 
     showDialog(
       context: context,

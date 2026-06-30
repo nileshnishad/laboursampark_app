@@ -19,7 +19,8 @@ class ApiService {
 
   /// POST /auth/register — register a new user (labour / sub_contractor / contractor).
   static Future<Map<String, dynamic>> registerUser(
-      Map<String, dynamic> body) async {
+    Map<String, dynamic> body,
+  ) async {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {
       return {'success': false, 'message': ErrorMessages.noInternet};
@@ -34,30 +35,36 @@ class ApiService {
     } on DioException catch (e) {
       final body = e.response?.data;
       if (body is Map<String, dynamic>) return body;
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
 
-  static Future<Map<String, dynamic>> login(String emailOrMobile, String password) async {
+  static Future<Map<String, dynamic>> login(
+    String emailOrMobile,
+    String password,
+  ) async {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {
-      return {
-        'success': false,
-        'message': ErrorMessages.noInternet,
-      };
+      return {'success': false, 'message': ErrorMessages.noInternet};
     }
 
     try {
       // Detect if input is a 10-digit mobile number
       final cleanedInput = emailOrMobile.replaceAll(RegExp(r'[^0-9]'), '');
-      final isMobileNumber = cleanedInput.length == 10 && RegExp(r'^[0-9]{10}$').hasMatch(cleanedInput);
-      
+      final isMobileNumber =
+          cleanedInput.length == 10 &&
+          RegExp(r'^[0-9]{10}$').hasMatch(cleanedInput);
+
       // Build request data with appropriate key
       final Map<String, dynamic> requestData = {
         if (isMobileNumber)
-          'mobile': '+91$cleanedInput'  // Add +91 prefix for mobile numbers
+          'mobile':
+              '+91$cleanedInput' // Add +91 prefix for mobile numbers
         else
           'email': emailOrMobile,
         'password': password,
@@ -77,10 +84,7 @@ class ApiService {
         'message': AppError.fromDioException(e).userMessage,
       };
     } catch (_) {
-      return {
-        'success': false,
-        'message': ErrorMessages.unknown,
-      };
+      return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
 
@@ -88,10 +92,7 @@ class ApiService {
   static Future<Map<String, dynamic>> sendPasswordResetOtp(String email) async {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {
-      return {
-        'success': false,
-        'message': ErrorMessages.noInternet,
-      };
+      return {'success': false, 'message': ErrorMessages.noInternet};
     }
 
     try {
@@ -109,21 +110,18 @@ class ApiService {
         'message': AppError.fromDioException(e).userMessage,
       };
     } catch (_) {
-      return {
-        'success': false,
-        'message': ErrorMessages.unknown,
-      };
+      return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
 
   /// POST /api/users/verify-otp — verify OTP for password reset
-  static Future<Map<String, dynamic>> verifyPasswordResetOtp(String email, String otp) async {
+  static Future<Map<String, dynamic>> verifyPasswordResetOtp(
+    String email,
+    String otp,
+  ) async {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {
-      return {
-        'success': false,
-        'message': ErrorMessages.noInternet,
-      };
+      return {'success': false, 'message': ErrorMessages.noInternet};
     }
 
     try {
@@ -141,21 +139,19 @@ class ApiService {
         'message': AppError.fromDioException(e).userMessage,
       };
     } catch (_) {
-      return {
-        'success': false,
-        'message': ErrorMessages.unknown,
-      };
+      return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
 
   /// POST /api/users/reset-password-otp — reset password with userId
-  static Future<Map<String, dynamic>> resetPassword(String userId, String newPassword, String confirmPassword) async {
+  static Future<Map<String, dynamic>> resetPassword(
+    String userId,
+    String newPassword,
+    String confirmPassword,
+  ) async {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {
-      return {
-        'success': false,
-        'message': ErrorMessages.noInternet,
-      };
+      return {'success': false, 'message': ErrorMessages.noInternet};
     }
 
     try {
@@ -177,20 +173,14 @@ class ApiService {
         'message': AppError.fromDioException(e).userMessage,
       };
     } catch (_) {
-      return {
-        'success': false,
-        'message': ErrorMessages.unknown,
-      };
+      return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
 
   static Future<Map<String, dynamic>> fetchContractors() async {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {
-      return {
-        'success': false,
-        'message': ErrorMessages.noInternet,
-      };
+      return {'success': false, 'message': ErrorMessages.noInternet};
     }
 
     try {
@@ -202,20 +192,14 @@ class ApiService {
         'message': AppError.fromDioException(e).userMessage,
       };
     } catch (_) {
-      return {
-        'success': false,
-        'message': ErrorMessages.unknown,
-      };
+      return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
 
   static Future<Map<String, dynamic>> fetchLabours() async {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {
-      return {
-        'success': false,
-        'message': ErrorMessages.noInternet,
-      };
+      return {'success': false, 'message': ErrorMessages.noInternet};
     }
 
     try {
@@ -227,30 +211,20 @@ class ApiService {
         'message': AppError.fromDioException(e).userMessage,
       };
     } catch (_) {
-      return {
-        'success': false,
-        'message': ErrorMessages.unknown,
-      };
+      return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
 
   static Future<Map<String, dynamic>> fetchProfile(String token) async {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {
-      return {
-        'success': false,
-        'message': ErrorMessages.noInternet,
-      };
+      return {'success': false, 'message': ErrorMessages.noInternet};
     }
 
     try {
       final response = await _dio.get(
         '${Env.baseUrl}/api/users/profile',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $token',
-          },
-        ),
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
@@ -259,31 +233,23 @@ class ApiService {
         'message': AppError.fromDioException(e).userMessage,
       };
     } catch (_) {
-      return {
-        'success': false,
-        'message': ErrorMessages.unknown,
-      };
+      return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
 
   static Future<Map<String, dynamic>> fetchSubscriptionPlan(
-      String userType, String token) async {
+    String userType,
+    String token,
+  ) async {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {
-      return {
-        'success': false,
-        'message': ErrorMessages.noInternet,
-      };
+      return {'success': false, 'message': ErrorMessages.noInternet};
     }
 
     try {
       final response = await _dio.get(
         '${Env.baseUrl}/api/subscription/plan?userType=$userType',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $token',
-          },
-        ),
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
@@ -292,10 +258,7 @@ class ApiService {
         'message': AppError.fromDioException(e).userMessage,
       };
     } catch (_) {
-      return {
-        'success': false,
-        'message': ErrorMessages.unknown,
-      };
+      return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
 
@@ -312,16 +275,21 @@ class ApiService {
       final response = await _dio.put(
         '${Env.baseUrl}/api/users/profile',
         data: jsonEncode(fields),
-        options: Options(headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        }),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       final body = e.response?.data;
       if (body is Map<String, dynamic>) return body;
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
@@ -356,22 +324,30 @@ class ApiService {
       final response = await _dio.post(
         '${Env.baseUrl}/api/payments/payu/create-link',
         data: jsonEncode(body),
-        options: Options(headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        }),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       final body = e.response?.data;
       if (body is Map<String, dynamic>) return body;
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
 
-  static Future<Map<String, dynamic>> sendOtp(String phone, {String? userId}) async {
+  static Future<Map<String, dynamic>> sendOtp(
+    String phone, {
+    String? userId,
+  }) async {
     try {
       final payload = <String, dynamic>{'to': phone};
       if (userId != null && userId.isNotEmpty) payload['userId'] = userId;
@@ -383,13 +359,19 @@ class ApiService {
     } on DioException catch (e) {
       final body = e.response?.data;
       if (body is Map<String, dynamic>) return body;
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
 
-  static Future<Map<String, dynamic>> verifyOtp(String phone, String code) async {
+  static Future<Map<String, dynamic>> verifyOtp(
+    String phone,
+    String code,
+  ) async {
     try {
       final response = await _dio.post(
         '${Env.baseUrl}/api/twilio/verify-otp',
@@ -399,15 +381,22 @@ class ApiService {
     } on DioException catch (e) {
       final body = e.response?.data;
       if (body is Map<String, dynamic>) return body;
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
 
   static Future<Map<String, dynamic>> fetchJobHistory(
-      String token, {int page = 1, int limit = 20}) async {
-    final hasInternet = await NetworkService.hasInternet();    if (!hasInternet) {
+    String token, {
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
       return {'success': false, 'message': ErrorMessages.noInternet};
     }
 
@@ -441,19 +430,32 @@ class ApiService {
     try {
       final response = await _dio.post(
         '${Env.baseUrl}/api/upload/presigned-url',
-        data: jsonEncode({'filename': filename, 'fileType': fileType, 'userType': userType}),
-        options: Options(headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+        data: jsonEncode({
+          'filename': filename,
+          'fileType': fileType,
+          'userType': userType,
         }),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
       );
       final data = response.data;
       if (data is Map<String, dynamic> && data['uploadUrl'] != null) {
-        return {'success': true, 'uploadUrl': data['uploadUrl'], 'fileUrl': data['fileUrl']};
+        return {
+          'success': true,
+          'uploadUrl': data['uploadUrl'],
+          'fileUrl': data['fileUrl'],
+        };
       }
       return {'success': false, 'message': 'Failed to get upload URL'};
     } on DioException catch (e) {
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
@@ -497,14 +499,19 @@ class ApiService {
       final response = await _dio.post(
         '${Env.baseUrl}/api/jobs/create-job',
         data: jsonEncode(jobData),
-        options: Options(headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        }),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
@@ -529,18 +536,25 @@ class ApiService {
       final response = await _dio.put(
         url,
         data: jsonEncode(jobData),
-        options: Options(headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        }),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
       );
       debugPrint('[updateJob] Response status: ${response.statusCode}');
       debugPrint('[updateJob] Response data: ${jsonEncode(response.data)}');
       debugPrint('══════════════════════════════════════');
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      debugPrint('[updateJob] DioException: ${e.response?.statusCode} ${e.response?.data}');
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      debugPrint(
+        '[updateJob] DioException: ${e.response?.statusCode} ${e.response?.data}',
+      );
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (e) {
       debugPrint('[updateJob] Unknown error: $e');
       return {'success': false, 'message': ErrorMessages.unknown};
@@ -560,17 +574,22 @@ class ApiService {
       final response = await _dio.post(
         '${Env.baseUrl}/api/jobs/$jobId/toggle-activation',
         data: jsonEncode({}),
-        options: Options(headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        }),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       final body = e.response?.data;
       // Return full body so caller can access 'message', 'activeJobs', etc.
       if (body is Map<String, dynamic>) return body;
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
@@ -596,13 +615,14 @@ class ApiService {
       final response = await _dio.get(
         '${Env.baseUrl}/api/jobs/my-jobs',
         queryParameters: queryParams,
-        options: Options(headers: {
-          'Authorization': 'Bearer $token',
-        }),
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
@@ -626,7 +646,10 @@ class ApiService {
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
@@ -650,7 +673,10 @@ class ApiService {
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
@@ -674,7 +700,10 @@ class ApiService {
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
@@ -698,7 +727,10 @@ class ApiService {
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
@@ -713,10 +745,12 @@ class ApiService {
       await _dio.post(
         '${Env.baseUrl}/api/users/config-check',
         data: jsonEncode({'fcmToken': fcmToken}),
-        options: Options(headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        }),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
       );
       debugPrint('✅ FCM token registered to backend');
     } catch (e) {
@@ -744,7 +778,10 @@ class ApiService {
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
@@ -763,14 +800,19 @@ class ApiService {
       final response = await _dio.post(
         '${Env.baseUrl}/api/job-enquiries/$enquiryId/connect',
         data: '{}',
-        options: Options(headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        }),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
@@ -791,17 +833,21 @@ class ApiService {
       final response = await _dio.post(
         '${Env.baseUrl}/api/job-enquiries/$enquiryId/complete',
         data: jsonEncode({'rating': rating, 'feedback': feedback}),
-        options: Options(headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        }),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      return {'success': false, 'message': AppError.fromDioException(e).userMessage};
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
     } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
 }
-
