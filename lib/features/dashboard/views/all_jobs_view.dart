@@ -64,8 +64,7 @@ class _JobListing {
       city: (loc['city'] ?? '').toString(),
       area: (loc['area'] ?? '').toString(),
       state: (loc['state'] ?? '').toString(),
-      totalApplications:
-          (json['totalApplications'] as num?)?.toInt() ?? 0,
+      totalApplications: (json['totalApplications'] as num?)?.toInt() ?? 0,
       postedAt: DateTime.tryParse((json['postedAt'] ?? '').toString()),
       postedByName: (by['name'] ?? '').toString(),
       postedByUserType: (by['userType'] ?? '').toString(),
@@ -162,17 +161,12 @@ class _AppliedJobEntry {
         : <String, dynamic>{};
     return _AppliedJobEntry(
       enquiryId: (json['enquiryId'] ?? '').toString(),
-      applicationStatus:
-          (json['applicationStatus'] ?? 'pending').toString(),
+      applicationStatus: (json['applicationStatus'] ?? 'pending').toString(),
       message: (json['message'] ?? '').toString(),
-      appliedAt:
-          DateTime.tryParse((json['appliedAt'] ?? '').toString()),
-      acceptedAt:
-          DateTime.tryParse((json['acceptedAt'] ?? '').toString()),
-      rejectedAt:
-          DateTime.tryParse((json['rejectedAt'] ?? '').toString()),
-      completedAt:
-          DateTime.tryParse((json['completedAt'] ?? '').toString()),
+      appliedAt: DateTime.tryParse((json['appliedAt'] ?? '').toString()),
+      acceptedAt: DateTime.tryParse((json['acceptedAt'] ?? '').toString()),
+      rejectedAt: DateTime.tryParse((json['rejectedAt'] ?? '').toString()),
+      completedAt: DateTime.tryParse((json['completedAt'] ?? '').toString()),
       rejectionReason: json['rejectionReason']?.toString(),
       jobId: (job['jobId'] ?? '').toString(),
       workTitle: (job['workTitle'] ?? '').toString(),
@@ -196,15 +190,13 @@ class _AppliedJobEntry {
           ? (json['review'] as Map<String, dynamic>)['rating'] as num?
           : null),
       reviewFeedback: (json['review'] is Map
-          ? (json['review'] as Map<String, dynamic>)['feedback']
-              ?.toString()
+          ? (json['review'] as Map<String, dynamic>)['feedback']?.toString()
           : null),
       myFeedbackRating: (json['myFeedback'] is Map
           ? (json['myFeedback'] as Map<String, dynamic>)['rating'] as num?
           : null),
       myFeedbackText: (json['myFeedback'] is Map
-          ? (json['myFeedback'] as Map<String, dynamic>)['feedback']
-              ?.toString()
+          ? (json['myFeedback'] as Map<String, dynamic>)['feedback']?.toString()
           : null),
       feedbackSubmitted: (json['feedbackSubmitted'] as bool?) ?? false,
       postedByName: (by['name'] ?? '').toString(),
@@ -288,14 +280,12 @@ class _AllJobsViewState extends State<AllJobsView> {
         _jobs = jobsList
             .map((j) => _JobListing.fromJson(j as Map<String, dynamic>))
             .toList();
-        _total =
-            (pagination?['total'] as num?)?.toInt() ?? _jobs.length;
+        _total = (pagination?['total'] as num?)?.toInt() ?? _jobs.length;
         _loading = false;
       });
     } else {
       setState(() {
-        _error =
-            (result['message'] ?? 'Failed to load jobs').toString();
+        _error = (result['message'] ?? 'Failed to load jobs').toString();
         _loading = false;
       });
     }
@@ -311,12 +301,10 @@ class _AllJobsViewState extends State<AllJobsView> {
     if (result['success'] == true) {
       final data = result['data'] as Map<String, dynamic>?;
       final list = (data?['appliedJobs'] as List? ?? []);
-      final summary =
-          data?['summary'] as Map<String, dynamic>? ?? {};
+      final summary = data?['summary'] as Map<String, dynamic>? ?? {};
       setState(() {
         _pendingJobs = list
-            .map((j) =>
-                _AppliedJobEntry.fromJson(j as Map<String, dynamic>))
+            .map((j) => _AppliedJobEntry.fromJson(j as Map<String, dynamic>))
             .toList();
         _appliedTotal =
             (summary['total'] as num?)?.toInt() ?? _pendingJobs.length;
@@ -325,8 +313,8 @@ class _AllJobsViewState extends State<AllJobsView> {
       });
     } else {
       setState(() {
-        _pendingError =
-            (result['message'] ?? 'Failed to load pending jobs').toString();
+        _pendingError = (result['message'] ?? 'Failed to load pending jobs')
+            .toString();
         _pendingLoading = false;
         _pendingLoaded = true;
       });
@@ -345,16 +333,15 @@ class _AllJobsViewState extends State<AllJobsView> {
       final list = (data?['acceptedJobs'] as List? ?? []);
       setState(() {
         _acceptedJobs = list
-            .map((j) =>
-                _AppliedJobEntry.fromJson(j as Map<String, dynamic>))
+            .map((j) => _AppliedJobEntry.fromJson(j as Map<String, dynamic>))
             .toList();
         _acceptedLoading = false;
         _acceptedLoaded = true;
       });
     } else {
       setState(() {
-        _acceptedError =
-            (result['message'] ?? 'Failed to load accepted jobs').toString();
+        _acceptedError = (result['message'] ?? 'Failed to load accepted jobs')
+            .toString();
         _acceptedLoading = false;
         _acceptedLoaded = true;
       });
@@ -373,16 +360,15 @@ class _AllJobsViewState extends State<AllJobsView> {
       final list = (data?['completedJobs'] as List? ?? []);
       setState(() {
         _completedJobs = list
-            .map((j) =>
-                _AppliedJobEntry.fromJson(j as Map<String, dynamic>))
+            .map((j) => _AppliedJobEntry.fromJson(j as Map<String, dynamic>))
             .toList();
         _completedLoading = false;
         _completedLoaded = true;
       });
     } else {
       setState(() {
-        _completedError =
-            (result['message'] ?? 'Failed to load completed jobs').toString();
+        _completedError = (result['message'] ?? 'Failed to load completed jobs')
+            .toString();
         _completedLoading = false;
         _completedLoaded = true;
       });
@@ -434,7 +420,8 @@ class _AllJobsViewState extends State<AllJobsView> {
 
     if (isAvailable && _loading && _jobs.isEmpty) {
       return const Center(
-          child: CircularProgressIndicator(color: Color(0xFF2563EB)));
+        child: CircularProgressIndicator(color: Color(0xFF2563EB)),
+      );
     }
 
     if (isAvailable && _error != null && _jobs.isEmpty) {
@@ -444,12 +431,21 @@ class _AllJobsViewState extends State<AllJobsView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline_rounded,
-                  size: 48, color: Color(0xFFDC2626)),
+              const Icon(
+                Icons.error_outline_rounded,
+                size: 48,
+                color: Color(0xFFDC2626),
+              ),
               const SizedBox(height: 12),
-              Text(_error!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Color(0xFF374151))),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.75),
+                ),
+              ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: _onRefresh,
@@ -470,7 +466,7 @@ class _AllJobsViewState extends State<AllJobsView> {
       children: [
         // ── Sticky header ─────────────────────────────────────────
         Container(
-          color: const Color(0xFFF9FAFB),
+          color: Theme.of(context).colorScheme.surface,
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -498,11 +494,12 @@ class _AllJobsViewState extends State<AllJobsView> {
                     isAvailable
                         ? 'AVAILABLE JOBS (${_jobs.length})'
                         : '${_appliedSubTab.toUpperCase()} (${_appliedSubTabCount()})',
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF111827),
-                        letterSpacing: 0.5),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ],
               ),
@@ -548,14 +545,15 @@ class _AllJobsViewState extends State<AllJobsView> {
     final isAvailable = _mainTab == 'available';
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Row(
@@ -566,13 +564,16 @@ class _AllJobsViewState extends State<AllJobsView> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: isAvailable
                       ? const Color(0xFF2563EB).withValues(alpha: 0.07)
                       : Colors.transparent,
-                  borderRadius:
-                      const BorderRadius.horizontal(left: Radius.circular(11)),
+                  borderRadius: const BorderRadius.horizontal(
+                    left: Radius.circular(11),
+                  ),
                   border: Border(
                     bottom: BorderSide(
                       color: isAvailable
@@ -590,24 +591,35 @@ class _AllJobsViewState extends State<AllJobsView> {
                         color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.work_outline_rounded,
-                          color: Color(0xFF2563EB), size: 17),
+                      child: const Icon(
+                        Icons.work_outline_rounded,
+                        color: Color(0xFF2563EB),
+                        size: 17,
+                      ),
                     ),
                     const SizedBox(width: 9),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                            _loading ? '—' : _total.toString(),
-                            style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                color: isAvailable
-                                    ? const Color(0xFF2563EB)
-                                    : const Color(0xFF111827))),
-                        const Text('Available',
-                            style: TextStyle(
-                                fontSize: 11, color: Color(0xFF6B7280))),
+                          _loading ? '—' : _total.toString(),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: isAvailable
+                                ? const Color(0xFF2563EB)
+                                : Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        Text(
+                          'Available',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.55),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -615,20 +627,27 @@ class _AllJobsViewState extends State<AllJobsView> {
               ),
             ),
           ),
-          Container(width: 1, height: 52, color: const Color(0xFFE5E7EB)),
+          Container(
+            width: 1,
+            height: 52,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
           Expanded(
             child: GestureDetector(
               onTap: () => _setMainTab('applied'),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: !isAvailable
                       ? const Color(0xFF059669).withValues(alpha: 0.07)
                       : Colors.transparent,
                   borderRadius: const BorderRadius.horizontal(
-                      right: Radius.circular(11)),
+                    right: Radius.circular(11),
+                  ),
                   border: Border(
                     bottom: BorderSide(
                       color: !isAvailable
@@ -646,8 +665,11 @@ class _AllJobsViewState extends State<AllJobsView> {
                         color: const Color(0xFF059669).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.send_rounded,
-                          color: Color(0xFF059669), size: 17),
+                      child: const Icon(
+                        Icons.send_rounded,
+                        color: Color(0xFF059669),
+                        size: 17,
+                      ),
                     ),
                     const SizedBox(width: 9),
                     Column(
@@ -657,19 +679,26 @@ class _AllJobsViewState extends State<AllJobsView> {
                           (_appliedTotal > 0
                                   ? _appliedTotal
                                   : _pendingJobs.length +
-                                      _acceptedJobs.length +
-                                      _completedJobs.length)
+                                        _acceptedJobs.length +
+                                        _completedJobs.length)
                               .toString(),
                           style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: !isAvailable
-                                  ? const Color(0xFF059669)
-                                  : const Color(0xFF111827)),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: !isAvailable
+                                ? const Color(0xFF059669)
+                                : Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
-                        const Text('Applied',
-                            style: TextStyle(
-                                fontSize: 11, color: Color(0xFF6B7280))),
+                        Text(
+                          'Applied',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.55),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -690,21 +719,21 @@ class _AllJobsViewState extends State<AllJobsView> {
         'Pending',
         const Color(0xFFF59E0B),
         const Color(0xFFFEF3C7),
-        Icons.hourglass_top_rounded
+        Icons.hourglass_top_rounded,
       ),
       (
         'accepted',
         'Accepted',
         const Color(0xFF059669),
         const Color(0xFFD1FAE5),
-        Icons.check_circle_rounded
+        Icons.check_circle_rounded,
       ),
       (
         'completed',
         'Completed',
         const Color(0xFF2563EB),
         const Color(0xFFEFF6FF),
-        Icons.verified_rounded
+        Icons.verified_rounded,
       ),
     ];
 
@@ -750,49 +779,63 @@ class _AllJobsViewState extends State<AllJobsView> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               margin: EdgeInsets.only(left: i == 0 ? 0 : 8),
-              padding: const EdgeInsets.symmetric(
-                  vertical: 8, horizontal: 14),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
               decoration: BoxDecoration(
-                color: isActive ? bg : Colors.white,
+                color: isActive ? bg : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: isActive ? fg : const Color(0xFFE5E7EB),
+                  color: isActive
+                      ? fg
+                      : Theme.of(context).colorScheme.outlineVariant,
                   width: isActive ? 1.5 : 1,
                 ),
                 boxShadow: isActive
                     ? [
                         BoxShadow(
-                            color: fg.withValues(alpha: 0.15),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2))
+                          color: fg.withValues(alpha: 0.15),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
                       ]
                     : [],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon,
-                      size: 14,
-                      color: isActive ? fg : const Color(0xFF9CA3AF)),
+                  Icon(
+                    icon,
+                    size: 14,
+                    color: isActive
+                        ? fg
+                        : Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.40),
+                  ),
                   const SizedBox(width: 5),
                   Text(
                     label,
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: isActive
-                          ? FontWeight.w800
-                          : FontWeight.w600,
-                      color: isActive ? fg : const Color(0xFF9CA3AF),
+                      fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+                      color: isActive
+                          ? fg
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.40),
                     ),
                   ),
                   const SizedBox(width: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 7, vertical: 2),
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: isActive
                           ? fg.withValues(alpha: 0.15)
-                          : const Color(0xFFF3F4F6),
+                          : Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: isLoading
@@ -803,7 +846,8 @@ class _AllJobsViewState extends State<AllJobsView> {
                               strokeWidth: 1.5,
                               color: isActive
                                   ? fg
-                                  : const Color(0xFF9CA3AF),
+                                  : Theme.of(context).colorScheme.onSurface
+                                        .withValues(alpha: 0.40),
                             ),
                           )
                         : Text(
@@ -813,7 +857,8 @@ class _AllJobsViewState extends State<AllJobsView> {
                               fontWeight: FontWeight.w800,
                               color: isActive
                                   ? fg
-                                  : const Color(0xFF9CA3AF),
+                                  : Theme.of(context).colorScheme.onSurface
+                                        .withValues(alpha: 0.40),
                             ),
                           ),
                   ),
@@ -843,21 +888,32 @@ class _AllJobsViewState extends State<AllJobsView> {
                     color: const Color(0xFF2563EB).withValues(alpha: 0.08),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.work_off_outlined,
-                      size: 36, color: Color(0xFF2563EB)),
+                  child: const Icon(
+                    Icons.work_off_outlined,
+                    size: 36,
+                    color: Color(0xFF2563EB),
+                  ),
                 ),
                 const SizedBox(height: 14),
-                const Text('No Jobs Available',
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF111827))),
+                Text(
+                  'No Jobs Available',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
                 const SizedBox(height: 6),
-                const Text(
-                    'New jobs will appear here. Pull down to refresh.',
-                    style: TextStyle(
-                        fontSize: 13, color: Color(0xFF6B7280)),
-                    textAlign: TextAlign.center),
+                Text(
+                  'New jobs will appear here. Pull down to refresh.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ],
             ),
           ),
@@ -865,10 +921,10 @@ class _AllJobsViewState extends State<AllJobsView> {
       ];
     }
     return _jobs
-        .map((job) => _JobCard(
-              job: job,
-              subscriptionActive: widget.subscriptionActive,
-            ))
+        .map(
+          (job) =>
+              _JobCard(job: job, subscriptionActive: widget.subscriptionActive),
+        )
         .toList();
   }
 
@@ -913,8 +969,7 @@ class _AllJobsViewState extends State<AllJobsView> {
       return [
         Padding(
           padding: const EdgeInsets.only(top: 40),
-          child: Center(
-              child: CircularProgressIndicator(color: accentColor)),
+          child: Center(child: CircularProgressIndicator(color: accentColor)),
         ),
       ];
     }
@@ -927,13 +982,18 @@ class _AllJobsViewState extends State<AllJobsView> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.error_outline_rounded,
-                    size: 40, color: accentColor),
+                Icon(Icons.error_outline_rounded, size: 40, color: accentColor),
                 const SizedBox(height: 10),
-                Text(error,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        color: Color(0xFF374151), fontSize: 13)),
+                Text(
+                  error,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.75),
+                    fontSize: 13,
+                  ),
+                ),
                 const SizedBox(height: 14),
                 ElevatedButton.icon(
                   onPressed: _onRefresh,
@@ -969,16 +1029,25 @@ class _AllJobsViewState extends State<AllJobsView> {
                   child: Icon(emptyIcon, size: 36, color: accentColor),
                 ),
                 const SizedBox(height: 14),
-                Text(emptyLabel,
-                    style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF111827))),
+                Text(
+                  emptyLabel,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
                 const SizedBox(height: 6),
-                Text(emptySubLabel,
-                    style: const TextStyle(
-                        fontSize: 13, color: Color(0xFF6B7280)),
-                    textAlign: TextAlign.center),
+                Text(
+                  emptySubLabel,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ],
             ),
           ),
@@ -987,8 +1056,10 @@ class _AllJobsViewState extends State<AllJobsView> {
     }
 
     return list
-        .map((entry) => _AppliedJobCard(
-            entry: entry, statusOverride: _appliedSubTab))
+        .map(
+          (entry) =>
+              _AppliedJobCard(entry: entry, statusOverride: _appliedSubTab),
+        )
         .toList();
   }
 }
@@ -1002,42 +1073,43 @@ class _AppliedJobCard extends StatelessWidget {
   const _AppliedJobCard({required this.entry, this.statusOverride});
 
   static ({Color bg, Color fg, IconData icon, String label}) _statusInfo(
-      String status) {
+    String status,
+  ) {
     switch (status) {
       case 'accepted':
         return (
           bg: const Color(0xFFD1FAE5),
           fg: const Color(0xFF059669),
           icon: Icons.check_circle_rounded,
-          label: 'Accepted'
+          label: 'Accepted',
         );
       case 'rejected':
         return (
           bg: const Color(0xFFFEE2E2),
           fg: const Color(0xFFDC2626),
           icon: Icons.cancel_rounded,
-          label: 'Rejected'
+          label: 'Rejected',
         );
       case 'withdrawn':
         return (
           bg: const Color(0xFFF3F4F6),
           fg: const Color(0xFF9CA3AF),
           icon: Icons.undo_rounded,
-          label: 'Withdrawn'
+          label: 'Withdrawn',
         );
       case 'completed':
         return (
           bg: const Color(0xFFEFF6FF),
           fg: const Color(0xFF2563EB),
           icon: Icons.verified_rounded,
-          label: 'Completed'
+          label: 'Completed',
         );
       default:
         return (
           bg: const Color(0xFFFEF3C7),
           fg: const Color(0xFFD97706),
           icon: Icons.hourglass_top_rounded,
-          label: 'Pending'
+          label: 'Pending',
         );
     }
   }
@@ -1067,39 +1139,44 @@ class _AppliedJobCard extends StatelessWidget {
 
   // ignore: unused_element
   Widget _noPhoto({double height = 110}) => Container(
-        height: height,
-        width: double.infinity,
-        color: const Color(0xFFF3F4F6),
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.image_outlined, size: 28, color: Color(0xFFD1D5DB)),
-            SizedBox(height: 4),
-            Text('NO PHOTO',
-                style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF9CA3AF),
-                    letterSpacing: 1)),
-          ],
+    height: height,
+    width: double.infinity,
+    color: const Color(0xFFF3F4F6),
+    child: const Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.image_outlined, size: 28, color: Color(0xFFD1D5DB)),
+        SizedBox(height: 4),
+        Text(
+          'NO PHOTO',
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF9CA3AF),
+            letterSpacing: 1,
+          ),
         ),
-      );
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final info = _statusInfo(statusOverride ?? entry.applicationStatus);
     final postedByColor = _postedByColor(entry.postedByUserType);
-    final location = [entry.area, entry.city, entry.state]
-        .where((s) => s.isNotEmpty)
-        .join(', ');
+    final location = [
+      entry.area,
+      entry.city,
+      entry.state,
+    ].where((s) => s.isNotEmpty).join(', ');
     final initials = entry.postedByName.trim().isNotEmpty
         ? entry.postedByName
-            .trim()
-            .split(' ')
-            .take(2)
-            .map((w) => w[0].toUpperCase())
-            .join()
+              .trim()
+              .split(' ')
+              .take(2)
+              .map((w) => w[0].toUpperCase())
+              .join()
         : '?';
     final primaryColor = const Color(0xFF2563EB);
     final hasImages = entry.images.isNotEmpty;
@@ -1107,7 +1184,9 @@ class _AppliedJobCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Job details for "${entry.workTitle}" - coming soon')),
+          SnackBar(
+            content: Text('Job details for "${entry.workTitle}" - coming soon'),
+          ),
         );
       },
       child: Container(
@@ -1115,10 +1194,7 @@ class _AppliedJobCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: info.fg.withValues(alpha: 0.3),
-            width: 1.5,
-          ),
+          border: Border.all(color: info.fg.withValues(alpha: 0.3), width: 1.5),
           boxShadow: [
             BoxShadow(
               color: info.fg.withValues(alpha: 0.08),
@@ -1144,8 +1220,11 @@ class _AppliedJobCard extends StatelessWidget {
                       color: primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.work_outline_rounded,
-                        color: primaryColor, size: 22),
+                    child: Icon(
+                      Icons.work_outline_rounded,
+                      color: primaryColor,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1153,7 +1232,9 @@ class _AppliedJobCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          entry.workTitle.isEmpty ? 'Untitled Job' : entry.workTitle,
+                          entry.workTitle.isEmpty
+                              ? 'Untitled Job'
+                              : entry.workTitle,
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
@@ -1166,17 +1247,19 @@ class _AppliedJobCard extends StatelessWidget {
                           const SizedBox(height: 3),
                           Row(
                             children: [
-                              Icon(Icons.location_on_outlined,
-                                  size: 12,
-                                  color: cs.onSurface.withValues(alpha: 0.4)),
+                              Icon(
+                                Icons.location_on_outlined,
+                                size: 12,
+                                color: cs.onSurface.withValues(alpha: 0.4),
+                              ),
                               const SizedBox(width: 3),
                               Expanded(
                                 child: Text(
                                   location,
                                   style: TextStyle(
-                                      fontSize: 12,
-                                      color: cs.onSurface
-                                          .withValues(alpha: 0.55)),
+                                    fontSize: 12,
+                                    color: cs.onSurface.withValues(alpha: 0.55),
+                                  ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -1190,13 +1273,13 @@ class _AppliedJobCard extends StatelessWidget {
                   // Status badge
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 9, vertical: 5),
+                      horizontal: 9,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: info.bg,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: info.fg.withValues(alpha: 0.4),
-                      ),
+                      border: Border.all(color: info.fg.withValues(alpha: 0.4)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1229,24 +1312,30 @@ class _AppliedJobCard extends StatelessWidget {
                   color: postedByColor.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color: postedByColor.withValues(alpha: 0.25)),
+                    color: postedByColor.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: Row(
                   children: [
                     CircleAvatar(
                       radius: 16,
                       backgroundColor: postedByColor,
-                      backgroundImage: (entry.postedByPhoto != null &&
+                      backgroundImage:
+                          (entry.postedByPhoto != null &&
                               entry.postedByPhoto!.isNotEmpty)
                           ? NetworkImage(entry.postedByPhoto!)
                           : null,
-                      child: (entry.postedByPhoto == null ||
+                      child:
+                          (entry.postedByPhoto == null ||
                               entry.postedByPhoto!.isEmpty)
-                          ? Text(initials,
-                              style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white))
+                          ? Text(
+                              initials,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: Theme.of(context).colorScheme.surface,
+                              ),
+                            )
                           : null,
                     ),
                     const SizedBox(width: 10),
@@ -1256,22 +1345,26 @@ class _AppliedJobCard extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Text('Posted by: ',
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      color: cs.onSurface
-                                          .withValues(alpha: 0.5),
-                                      fontWeight: FontWeight.w600)),
+                              Text(
+                                'Posted by: ',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: cs.onSurface.withValues(alpha: 0.5),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               Expanded(
                                 child: Text(
-                                    entry.postedByName.isEmpty
-                                        ? 'Unknown'
-                                        : entry.postedByName,
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: cs.onSurface),
-                                    overflow: TextOverflow.ellipsis),
+                                  entry.postedByName.isEmpty
+                                      ? 'Unknown'
+                                      : entry.postedByName,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: cs.onSurface,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ],
                           ),
@@ -1280,17 +1373,22 @@ class _AppliedJobCard extends StatelessWidget {
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: postedByColor,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   _postedByLabel(entry.postedByUserType),
-                                  style: const TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surface,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                               if (entry.postedByRating > 0) ...[
@@ -1298,16 +1396,17 @@ class _AppliedJobCard extends StatelessWidget {
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: List.generate(
-                                      5,
-                                      (i) => Icon(
-                                            i < entry.postedByRating
-                                                ? Icons.star_rounded
-                                                : Icons.star_outline_rounded,
-                                            size: 12,
-                                            color: i < entry.postedByRating
-                                                ? const Color(0xFFF59E0B)
-                                                : const Color(0xFFD1D5DB),
-                                          )),
+                                    5,
+                                    (i) => Icon(
+                                      i < entry.postedByRating
+                                          ? Icons.star_rounded
+                                          : Icons.star_outline_rounded,
+                                      size: 12,
+                                      color: i < entry.postedByRating
+                                          ? const Color(0xFFF59E0B)
+                                          : const Color(0xFFD1D5DB),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ],
@@ -1331,7 +1430,8 @@ class _AppliedJobCard extends StatelessWidget {
                 children: [
                   _chip(
                     icon: Icons.groups_rounded,
-                    label: 'Need: ${entry.workersNeeded} Worker${entry.workersNeeded == 1 ? '' : 's'}',
+                    label:
+                        'Need: ${entry.workersNeeded} Worker${entry.workersNeeded == 1 ? '' : 's'}',
                     textColor: const Color(0xFF15803D),
                   ),
                   if (entry.estimatedBudget != null)
@@ -1360,9 +1460,11 @@ class _AppliedJobCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.build_circle_outlined,
-                            size: 13,
-                            color: primaryColor.withValues(alpha: 0.7)),
+                        Icon(
+                          Icons.build_circle_outlined,
+                          size: 13,
+                          color: primaryColor.withValues(alpha: 0.7),
+                        ),
                         const SizedBox(width: 5),
                         Text(
                           'Skills Required',
@@ -1381,25 +1483,29 @@ class _AppliedJobCard extends StatelessWidget {
                       runSpacing: 4,
                       children: entry.requiredSkills
                           .take(5)
-                          .map((s) => Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: primaryColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                      color:
-                                          primaryColor.withValues(alpha: 0.3)),
+                          .map(
+                            (s) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: primaryColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: primaryColor.withValues(alpha: 0.3),
                                 ),
-                                child: Text(
-                                  s,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: primaryColor,
-                                  ),
+                              ),
+                              child: Text(
+                                s,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: primaryColor,
                                 ),
-                              ))
+                              ),
+                            ),
+                          )
                           .toList(),
                     ),
                   ],
@@ -1417,9 +1523,11 @@ class _AppliedJobCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.notes_rounded,
-                            size: 13,
-                            color: cs.onSurface.withValues(alpha: 0.4)),
+                        Icon(
+                          Icons.notes_rounded,
+                          size: 13,
+                          color: cs.onSurface.withValues(alpha: 0.4),
+                        ),
                         const SizedBox(width: 5),
                         Text(
                           'About this job',
@@ -1469,9 +1577,11 @@ class _AppliedJobCard extends StatelessWidget {
                         width: 80,
                         height: 80,
                         color: cs.onSurface.withValues(alpha: 0.08),
-                        child: Icon(Icons.broken_image_outlined,
-                            color: cs.onSurface.withValues(alpha: 0.3),
-                            size: 24),
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          color: cs.onSurface.withValues(alpha: 0.3),
+                          size: 24,
+                        ),
                       ),
                       loadingBuilder: (_, child, progress) => progress == null
                           ? child
@@ -1484,7 +1594,9 @@ class _AppliedJobCard extends StatelessWidget {
                                   width: 18,
                                   height: 18,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: primaryColor),
+                                    strokeWidth: 2,
+                                    color: primaryColor,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1518,11 +1630,14 @@ class _AppliedJobCard extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: textColor),
           const SizedBox(width: 4),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: textColor)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
+          ),
         ],
       ),
     );
@@ -1563,17 +1678,19 @@ class _JobCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final location = [job.area, job.city, job.state]
-        .where((s) => s.isNotEmpty)
-        .join(', ');
+    final location = [
+      job.area,
+      job.city,
+      job.state,
+    ].where((s) => s.isNotEmpty).join(', ');
     final postedByColor = _postedByColor(job.postedByUserType);
     final initials = job.postedByName.trim().isNotEmpty
         ? job.postedByName
-            .trim()
-            .split(' ')
-            .take(2)
-            .map((w) => w[0].toUpperCase())
-            .join()
+              .trim()
+              .split(' ')
+              .take(2)
+              .map((w) => w[0].toUpperCase())
+              .join()
         : '?';
     final primaryColor = const Color(0xFF2563EB);
     final hasImages = job.images.isNotEmpty;
@@ -1620,8 +1737,11 @@ class _JobCard extends StatelessWidget {
                       color: primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.work_outline_rounded,
-                        color: primaryColor, size: 22),
+                    child: Icon(
+                      Icons.work_outline_rounded,
+                      color: primaryColor,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1629,7 +1749,9 @@ class _JobCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          job.workTitle.isEmpty ? 'Untitled Job' : job.workTitle,
+                          job.workTitle.isEmpty
+                              ? 'Untitled Job'
+                              : job.workTitle,
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
@@ -1642,17 +1764,19 @@ class _JobCard extends StatelessWidget {
                           const SizedBox(height: 3),
                           Row(
                             children: [
-                              Icon(Icons.location_on_outlined,
-                                  size: 12,
-                                  color: cs.onSurface.withValues(alpha: 0.4)),
+                              Icon(
+                                Icons.location_on_outlined,
+                                size: 12,
+                                color: cs.onSurface.withValues(alpha: 0.4),
+                              ),
                               const SizedBox(width: 3),
                               Expanded(
                                 child: Text(
                                   location,
                                   style: TextStyle(
-                                      fontSize: 12,
-                                      color: cs.onSurface
-                                          .withValues(alpha: 0.55)),
+                                    fontSize: 12,
+                                    color: cs.onSurface.withValues(alpha: 0.55),
+                                  ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -1667,7 +1791,9 @@ class _JobCard extends StatelessWidget {
                   if (job.postedAt != null)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 9, vertical: 5),
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: primaryColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
@@ -1699,24 +1825,30 @@ class _JobCard extends StatelessWidget {
                   color: postedByColor.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color: postedByColor.withValues(alpha: 0.25)),
+                    color: postedByColor.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: Row(
                   children: [
                     CircleAvatar(
                       radius: 16,
                       backgroundColor: postedByColor,
-                      backgroundImage: (job.postedByPhoto != null &&
+                      backgroundImage:
+                          (job.postedByPhoto != null &&
                               job.postedByPhoto!.isNotEmpty)
                           ? NetworkImage(job.postedByPhoto!)
                           : null,
-                      child: (job.postedByPhoto == null ||
+                      child:
+                          (job.postedByPhoto == null ||
                               job.postedByPhoto!.isEmpty)
-                          ? Text(initials,
-                              style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white))
+                          ? Text(
+                              initials,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: Theme.of(context).colorScheme.surface,
+                              ),
+                            )
                           : null,
                     ),
                     const SizedBox(width: 10),
@@ -1726,22 +1858,26 @@ class _JobCard extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Text('Posted by: ',
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      color: cs.onSurface
-                                          .withValues(alpha: 0.5),
-                                      fontWeight: FontWeight.w600)),
+                              Text(
+                                'Posted by: ',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: cs.onSurface.withValues(alpha: 0.5),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               Expanded(
                                 child: Text(
-                                    job.postedByName.isEmpty
-                                        ? 'Unknown'
-                                        : job.postedByName,
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: cs.onSurface),
-                                    overflow: TextOverflow.ellipsis),
+                                  job.postedByName.isEmpty
+                                      ? 'Unknown'
+                                      : job.postedByName,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: cs.onSurface,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ],
                           ),
@@ -1750,17 +1886,22 @@ class _JobCard extends StatelessWidget {
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: postedByColor,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   _postedByLabel(job.postedByUserType),
-                                  style: const TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surface,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                               if (job.postedByRating > 0) ...[
@@ -1768,16 +1909,17 @@ class _JobCard extends StatelessWidget {
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: List.generate(
-                                      5,
-                                      (i) => Icon(
-                                            i < job.postedByRating
-                                                ? Icons.star_rounded
-                                                : Icons.star_outline_rounded,
-                                            size: 12,
-                                            color: i < job.postedByRating
-                                                ? const Color(0xFFF59E0B)
-                                                : const Color(0xFFD1D5DB),
-                                          )),
+                                    5,
+                                    (i) => Icon(
+                                      i < job.postedByRating
+                                          ? Icons.star_rounded
+                                          : Icons.star_outline_rounded,
+                                      size: 12,
+                                      color: i < job.postedByRating
+                                          ? const Color(0xFFF59E0B)
+                                          : const Color(0xFFD1D5DB),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ],
@@ -1801,7 +1943,8 @@ class _JobCard extends StatelessWidget {
                 children: [
                   _chip(
                     icon: Icons.groups_rounded,
-                    label: 'Need: ${job.workersNeeded} Worker${job.workersNeeded == 1 ? '' : 's'}',
+                    label:
+                        'Need: ${job.workersNeeded} Worker${job.workersNeeded == 1 ? '' : 's'}',
                     textColor: const Color(0xFF15803D),
                   ),
                   if (job.estimatedBudget != null)
@@ -1829,9 +1972,11 @@ class _JobCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.build_circle_outlined,
-                            size: 13,
-                            color: primaryColor.withValues(alpha: 0.7)),
+                        Icon(
+                          Icons.build_circle_outlined,
+                          size: 13,
+                          color: primaryColor.withValues(alpha: 0.7),
+                        ),
                         const SizedBox(width: 5),
                         Text(
                           'Skills Required',
@@ -1850,27 +1995,31 @@ class _JobCard extends StatelessWidget {
                       runSpacing: 4,
                       children: job.requiredSkills
                           .take(5)
-                          .map((s) => Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: primaryColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                      color:
-                                          primaryColor.withValues(alpha: 0.3)),
+                          .map(
+                            (s) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: primaryColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: primaryColor.withValues(alpha: 0.3),
                                 ),
-                                child: Text(
-                                  s,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: primaryColor,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              ),
+                              child: Text(
+                                s,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: primaryColor,
                                 ),
-                              ))
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          )
                           .toList(),
                     ),
                   ],
@@ -1888,9 +2037,11 @@ class _JobCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.notes_rounded,
-                            size: 13,
-                            color: cs.onSurface.withValues(alpha: 0.4)),
+                        Icon(
+                          Icons.notes_rounded,
+                          size: 13,
+                          color: cs.onSurface.withValues(alpha: 0.4),
+                        ),
                         const SizedBox(width: 5),
                         Text(
                           'About this job',
@@ -1940,9 +2091,11 @@ class _JobCard extends StatelessWidget {
                         width: 80,
                         height: 80,
                         color: cs.onSurface.withValues(alpha: 0.08),
-                        child: Icon(Icons.broken_image_outlined,
-                            color: cs.onSurface.withValues(alpha: 0.3),
-                            size: 24),
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          color: cs.onSurface.withValues(alpha: 0.3),
+                          size: 24,
+                        ),
                       ),
                       loadingBuilder: (_, child, progress) => progress == null
                           ? child
@@ -1955,7 +2108,9 @@ class _JobCard extends StatelessWidget {
                                   width: 18,
                                   height: 18,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: primaryColor),
+                                    strokeWidth: 2,
+                                    color: primaryColor,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1978,24 +2133,29 @@ class _JobCard extends StatelessWidget {
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                            content: Text(
-                                'Apply for "${job.workTitle}" — coming soon')),
-                    );
-                  },
-                  icon: const Icon(Icons.send_rounded, size: 16),
-                  label: const Text('APPLY NOW'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 11),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    elevation: 0,
-                    textStyle: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w700),
+                          content: Text(
+                            'Apply for "${job.workTitle}" — coming soon',
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.send_rounded, size: 16),
+                    label: const Text('APPLY NOW'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 0,
+                      textStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
-              )
               )
             else
               Padding(
@@ -2005,7 +2165,10 @@ class _JobCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFF7ED),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFFED7AA), width: 1.2),
+                    border: Border.all(
+                      color: const Color(0xFFFED7AA),
+                      width: 1.2,
+                    ),
                   ),
                   child: Material(
                     color: Colors.transparent,
@@ -2015,18 +2178,25 @@ class _JobCard extends StatelessWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
-                                'Active subscription required to apply for jobs. Go to Profile → Subscription to activate.'),
+                              'Active subscription required to apply for jobs. Go to Profile → Subscription to activate.',
+                            ),
                             duration: Duration(seconds: 4),
                           ),
                         );
                       },
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 11,
+                          horizontal: 12,
+                        ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: const [
-                            Icon(Icons.lock_outline_rounded,
-                                size: 15, color: Color(0xFFEA580C)),
+                            Icon(
+                              Icons.lock_outline_rounded,
+                              size: 15,
+                              color: Color(0xFFEA580C),
+                            ),
                             SizedBox(width: 6),
                             Text(
                               'SUBSCRIPTION REQUIRED TO APPLY',
@@ -2043,7 +2213,7 @@ class _JobCard extends StatelessWidget {
                     ),
                   ),
                 ),
-              )
+              ),
           ],
         ),
       ),
@@ -2068,13 +2238,16 @@ class _JobCard extends StatelessWidget {
           Icon(icon, size: 12, color: textColor),
           const SizedBox(width: 4),
           Flexible(
-            child: Text(label,
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: textColor),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -2109,7 +2282,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
     }
   }
 
-  Color _postedByColor(String userType) {
+  Color _postedByColor(BuildContext context, String userType) {
     switch (userType) {
       case 'contractor':
         return const Color(0xFF059669);
@@ -2118,7 +2291,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
       case 'labour':
         return const Color(0xFF2563EB);
       default:
-        return const Color(0xFF6B7280);
+        return Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55);
     }
   }
 
@@ -2126,16 +2299,19 @@ class _AvailableJobDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final primaryColor = const Color(0xFF2563EB);
-    final location =
-        [job.area, job.city, job.state].where((s) => s.isNotEmpty).join(', ');
-    final postedByColor = _postedByColor(job.postedByUserType);
+    final location = [
+      job.area,
+      job.city,
+      job.state,
+    ].where((s) => s.isNotEmpty).join(', ');
+    final postedByColor = _postedByColor(context, job.postedByUserType);
     final initials = job.postedByName.trim().isNotEmpty
         ? job.postedByName
-            .trim()
-            .split(' ')
-            .take(2)
-            .map((w) => w[0].toUpperCase())
-            .join()
+              .trim()
+              .split(' ')
+              .take(2)
+              .map((w) => w[0].toUpperCase())
+              .join()
         : '?';
 
     return Scaffold(
@@ -2152,9 +2328,10 @@ class _AvailableJobDetailScreen extends StatelessWidget {
         title: Text(
           job.workTitle.isEmpty ? 'Job Details' : job.workTitle,
           style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: cs.onSurface),
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: cs.onSurface,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -2183,7 +2360,8 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                       width: 1.5,
                     ),
                   ),
-                  child: job.postedByPhoto != null && job.postedByPhoto!.isNotEmpty
+                  child:
+                      job.postedByPhoto != null && job.postedByPhoto!.isNotEmpty
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(11),
                           child: Image.network(
@@ -2238,7 +2416,9 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                       const SizedBox(height: 2),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: postedByColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
@@ -2258,8 +2438,10 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                 // Rating
                 if (job.postedByRating > 0)
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEF3C7),
                       borderRadius: BorderRadius.circular(8),
@@ -2270,8 +2452,11 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.star_rounded,
-                            size: 14, color: Color(0xFFF59E0B)),
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 14,
+                          color: Color(0xFFF59E0B),
+                        ),
                         const SizedBox(width: 3),
                         Text(
                           job.postedByRating.toString(),
@@ -2296,24 +2481,33 @@ class _AvailableJobDetailScreen extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.location_on_rounded,
-                      size: 18, color: Color(0xFFEF4444)),
+                  const Icon(
+                    Icons.location_on_rounded,
+                    size: 18,
+                    color: Color(0xFFEF4444),
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Location',
-                            style: TextStyle(
-                                fontSize: 11,
-                                color: cs.onSurface.withValues(alpha: 0.45),
-                                fontWeight: FontWeight.w600)),
+                        Text(
+                          'Location',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: cs.onSurface.withValues(alpha: 0.45),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         const SizedBox(height: 3),
-                        Text(location,
-                            style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: cs.onSurface)),
+                        Text(
+                          location,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: cs.onSurface,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -2370,11 +2564,14 @@ class _AvailableJobDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Photos',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: cs.onSurface)),
+                  Text(
+                    'Photos',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: cs.onSurface,
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   _AvailableJobImageGallery(images: job.images),
                 ],
@@ -2390,18 +2587,22 @@ class _AvailableJobDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Description',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: cs.onSurface)),
+                  Text(
+                    'Description',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: cs.onSurface,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     job.description,
                     style: TextStyle(
-                        fontSize: 13,
-                        color: cs.onSurface.withValues(alpha: 0.8),
-                        height: 1.55),
+                      fontSize: 13,
+                      color: cs.onSurface.withValues(alpha: 0.8),
+                      height: 1.55,
+                    ),
                   ),
                 ],
               ),
@@ -2416,32 +2617,42 @@ class _AvailableJobDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Required Skills',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: cs.onSurface)),
+                  Text(
+                    'Required Skills',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: cs.onSurface,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
                     children: job.requiredSkills
-                        .map((s) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: primaryColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                    color:
-                                        primaryColor.withValues(alpha: 0.3)),
+                        .map(
+                          (s) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: primaryColor.withValues(alpha: 0.3),
                               ),
-                              child: Text(s,
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: primaryColor)),
-                            ))
+                            ),
+                            child: Text(
+                              s,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: primaryColor,
+                              ),
+                            ),
+                          ),
+                        )
                         .toList(),
                   ),
                 ],
@@ -2497,17 +2708,25 @@ class _AvailableJobDetailScreen extends StatelessWidget {
             children: [
               Icon(icon, size: 12, color: color.withValues(alpha: 0.7)),
               const SizedBox(width: 4),
-              Text(label,
-                  style: TextStyle(
-                      fontSize: 10,
-                      color: color.withValues(alpha: 0.7),
-                      fontWeight: FontWeight.w600)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: color.withValues(alpha: 0.7),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 3),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w700, color: color)),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
         ],
       ),
     );
@@ -2574,16 +2793,21 @@ class _AvailableJobImageGalleryState extends State<_AvailableJobImageGallery> {
                     errorBuilder: (_, __, ___) => ColoredBox(
                       color: cs.onSurface.withValues(alpha: 0.08),
                       child: Center(
-                        child: Icon(Icons.broken_image_outlined,
-                            size: 40,
-                            color: cs.onSurface.withValues(alpha: 0.3)),
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          size: 40,
+                          color: cs.onSurface.withValues(alpha: 0.3),
+                        ),
                       ),
                     ),
                     loadingBuilder: (_, child, progress) => progress == null
                         ? child
                         : Center(
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: cs.primary)),
+                              strokeWidth: 2,
+                              color: cs.primary,
+                            ),
+                          ),
                   ),
                 );
               },
@@ -2656,11 +2880,14 @@ class _AvailableJobImageViewerState extends State<_AvailableJobImageViewer> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.surface),
         title: widget.images.length > 1
             ? Text(
                 '${_current + 1} / ${widget.images.length}',
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.surface,
+                  fontSize: 14,
+                ),
               )
             : null,
       ),
@@ -2682,9 +2909,11 @@ class _AvailableJobImageViewerState extends State<_AvailableJobImageViewer> {
                   ),
                   loadingBuilder: (_, child, progress) => progress == null
                       ? child
-                      : const Center(
-                          child:
-                              CircularProgressIndicator(color: Colors.white)),
+                      : Center(
+                          child: CircularProgressIndicator(
+                            color: Theme.of(context).colorScheme.surface,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -2716,4 +2945,3 @@ class _AvailableJobImageViewerState extends State<_AvailableJobImageViewer> {
     );
   }
 }
-

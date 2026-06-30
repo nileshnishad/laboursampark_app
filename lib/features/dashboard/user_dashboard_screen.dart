@@ -920,8 +920,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
         },
         child: Scaffold(
           appBar: AppBar(
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF1F2937),
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            foregroundColor: Theme.of(context).colorScheme.onSurface,
             elevation: 0,
             scrolledUnderElevation: 0,
             surfaceTintColor: Colors.transparent,
@@ -930,7 +930,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             titleSpacing: 10,
             flexibleSpace: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.08),
@@ -958,7 +958,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                         border: Border.all(
                           color: hasPhoto
                               ? const Color(0xFF2563EB).withValues(alpha: 0.35)
-                              : const Color(0xFFE5E7EB),
+                              : Theme.of(context).colorScheme.outlineVariant,
                           width: 1.6,
                         ),
                         boxShadow: [
@@ -1000,10 +1000,10 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                     children: [
                       Text(
                         fullName.isEmpty ? 'Welcome' : fullName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF111827),
+                          color: Theme.of(context).colorScheme.onSurface,
                           letterSpacing: 0.2,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -1159,7 +1159,10 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             ],
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(2),
-              child: Container(height: 2, color: const Color(0xFFE5E7EB)),
+              child: Container(
+                height: 2,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
           ),
           body: Column(
