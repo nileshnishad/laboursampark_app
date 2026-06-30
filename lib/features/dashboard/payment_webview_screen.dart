@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart'
@@ -61,20 +62,15 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen>
           onNavigationRequest: (NavigationRequest request) {
             final url = request.url;
 
-            // Handle UPI intent URLs — launch via Android intent system
-            // so GPay / PhonePe / Paytm etc. can open
+            // Handle UPI intent URLs — must use Android's Intent.parseUri
+            // because url_launcher cannot parse intent:// scheme correctly.
             if (url.startsWith('intent://') ||
                 url.startsWith('upi://') ||
                 url.startsWith('tez://') ||
                 url.startsWith('phonepe://') ||
                 url.startsWith('paytmmp://')) {
               _upiLaunched = true;
-              launchUrl(
-                Uri.parse(url),
-                mode: LaunchMode.externalApplication,
-              ).catchError((_) {
-                return false;
-              });
+              _launchUpiUrl(url);
               return NavigationDecision.prevent;
             }
 
@@ -117,6 +113,33 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen>
   }
 
   /// Called when user returns from UPI app back to this app.
+  static const _channel = MethodChannel('com.laboursampark.app/navigation');
+
+  /// Launches a UPI intent URL using Android's Intent.parseUri via a
+  /// MethodChannel — url_launcher cannot handle intent:// scheme correctly.
+  Future<void> _launchUpiUrl(String url) async {
+    if (url.startsWith('intent://')) {
+      try {
+        await _channel.invokeMethod('launchIntent', {'url': url});
+        return;
+      } catch (_) {
+        // Fallback: convert intent:// to upi:// and launch generically
+        final upiUrl =
+            'upi://${url.substring('intent://'.length).split('#Intent;').first}';
+        await launchUrl(
+          Uri.parse(upiUrl),
+          mode: LaunchMode.externalApplication,
+        );
+      }
+    } else {
+      // upi://, tez://, phonepe://, paytmmp:// — launch directly
+      await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
+    }
+  }
+
   /// Don't reload — PayU's own JS polling may still work.
   /// Instead, poll our backend directly to check payment status.
   @override

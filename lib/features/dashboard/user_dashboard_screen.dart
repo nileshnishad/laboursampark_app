@@ -11,7 +11,6 @@ import '../../core/services/permission_service.dart';
 import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
 import 'package:get/get.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 // Views
 import 'views/all_jobs_view.dart';
@@ -23,6 +22,7 @@ import 'views/id_card_screen.dart';
 import 'views/labour_list_view.dart';
 import 'views/my_jobs_view.dart';
 import 'views/profile_view.dart';
+import 'payment_webview_screen.dart';
 import '../../l10n/app_localizations.dart';
 
 class UserDashboardScreen extends StatefulWidget {
@@ -868,31 +868,30 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
       return;
     }
 
-    // Open in Chrome — handles UPI intents, bank OTPs, redirects natively.
-    // When user completes payment and returns to app, didChangeAppLifecycleState
-    // fires and _pollAfterPayment() automatically verifies subscription.
-    final uri = Uri.parse(paymentLink);
-    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-
+    // Open payment in-app via WebView — handles UPI intents natively
+    // and detects success/failure URLs without leaving the app.
     if (!context.mounted) return;
-    if (!launched) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).couldNotOpenBrowser),
-        ),
-      );
-      return;
-    }
-
-    // Mark payment as pending — polling starts when user returns to app
-    _paymentPending = true;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context).completePaymentMessage),
-        duration: const Duration(seconds: 6),
+    final paymentResult = await Navigator.of(context).push<PaymentResult>(
+      MaterialPageRoute(
+        builder: (_) => PaymentWebViewScreen(paymentUrl: paymentLink),
       ),
     );
+
+    if (!context.mounted) return;
+
+    if (paymentResult == PaymentResult.success) {
+      // Immediately start verifying
+      _pollAfterPayment();
+    } else if (paymentResult == PaymentResult.failure) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).paymentFailed),
+          backgroundColor: const Color(0xFFDC2626),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+    // If cancelled (user pressed back), do nothing
   }
 
   @override

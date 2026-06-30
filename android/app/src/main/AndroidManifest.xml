@@ -58,6 +58,20 @@
             android:name="com.google.mlkit.vision.DEPENDENCIES"
             android:value="face" />
     </application>
+
+    <!-- UPI app package visibility — required on Android 11+ -->
+    <queries>
+        <package android:name="com.google.android.apps.nbu.paisa.user" /><!-- Google Pay -->
+        <package android:name="net.one97.paytm" /><!-- Paytm -->
+        <package android:name="com.phonepe.app" /><!-- PhonePe -->
+        <package android:name="in.org.npci.upiapp" /><!-- BHIM -->
+        <package android:name="com.amazon.mShop.android.shopping" /><!-- Amazon Pay -->
+        <package android:name="com.freecharge.android" /><!-- Freecharge -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="upi" />
+        </intent>
+    </queries>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
          https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
