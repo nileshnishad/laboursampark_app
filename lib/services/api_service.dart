@@ -333,22 +333,29 @@ class ApiService {
     required String productInfo,
     required String description,
     required String token,
+    String name = '',
+    String email = '',
+    String phone = '',
   }) async {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {
       return {'success': false, 'message': ErrorMessages.noInternet};
     }
     try {
+      final body = <String, dynamic>{
+        'amount': amount,
+        'productInfo': productInfo,
+        'purpose': 'subscription',
+        'description': description,
+        'successUrl': 'https://laboursampark.com/payment/success?source=mobile',
+        'failureUrl': 'https://laboursampark.com/payment/failure?source=mobile',
+      };
+      if (name.isNotEmpty) body['name'] = name;
+      if (email.isNotEmpty) body['email'] = email;
+      if (phone.isNotEmpty) body['phone'] = phone;
       final response = await _dio.post(
         '${Env.baseUrl}/api/payments/payu/create-link',
-        data: jsonEncode({
-          'amount': amount,
-          'productInfo': productInfo,
-          'purpose': 'subscription',
-          'description': description,
-          'successUrl': 'https://laboursampark.com/payment/success?source=mobile',
-          'failureUrl': 'https://laboursampark.com/payment/failure?source=mobile',
-        }),
+        data: jsonEncode(body),
         options: Options(headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

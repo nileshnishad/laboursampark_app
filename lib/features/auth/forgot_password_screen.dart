@@ -20,11 +20,7 @@ class UpperCaseTextFormatter extends TextInputFormatter {
   }
 }
 
-enum ForgotPasswordStep {
-  enterEmail,
-  enterOtp,
-  resetPassword,
-}
+enum ForgotPasswordStep { enterEmail, enterOtp, resetPassword }
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -35,20 +31,21 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   ForgotPasswordStep _currentStep = ForgotPasswordStep.enterEmail;
-  
+
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
-  
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+
   bool _isLoading = false;
   bool _autoValidate = false;
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
-  
+
   String? _userId;
   String? _verifiedEmail;
-  
+
   // Timer for resend OTP cooldown
   Timer? _resendTimer;
   int _resendCooldownSeconds = 0;
@@ -77,7 +74,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() {
       _resendCooldownSeconds = _resendCooldownDuration;
     });
-    
+
     _resendTimer?.cancel();
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_resendCooldownSeconds > 0) {
@@ -101,43 +98,45 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   bool _hasUppercase(String password) => password.contains(RegExp(r'[A-Z]'));
   bool _hasLowercase(String password) => password.contains(RegExp(r'[a-z]'));
   bool _hasNumber(String password) => password.contains(RegExp(r'[0-9]'));
-  
+
   bool _isPasswordValid(String password) {
     return _hasMinLength(password) &&
-           _hasUppercase(password) &&
-           _hasLowercase(password) &&
-           _hasNumber(password);
+        _hasUppercase(password) &&
+        _hasLowercase(password) &&
+        _hasNumber(password);
   }
-  
+
   String? _getPasswordError(String password) {
     if (password.isEmpty) return null;
-    
+
     final errors = <String>[];
     if (!_hasMinLength(password)) errors.add('8 characters');
     if (!_hasUppercase(password)) errors.add('uppercase letter');
     if (!_hasLowercase(password)) errors.add('lowercase letter');
     if (!_hasNumber(password)) errors.add('number');
-    
+
     if (errors.isEmpty) return null;
     return 'Must contain: ${errors.join(', ')}';
   }
 
   Future<void> _sendOtp() async {
     final email = _emailController.text.trim().toLowerCase();
-    
+
     if (email.isEmpty) {
       ToastUtils.showError('Please enter your email');
       return;
     }
-    
+
     if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
       ToastUtils.showError('Please enter a valid email');
       return;
     }
-    
+
     // Check if cooldown is still active
     if (_resendCooldownSeconds > 0) {
-      ToastUtils.showError('Please wait ${_formatCooldownTime()} before requesting another OTP');
+      ToastUtils.showError(
+        'Please wait ${_formatCooldownTime()} before requesting another OTP',
+      );
       return;
     }
 
@@ -145,7 +144,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     try {
       final res = await ApiService.sendPasswordResetOtp(email);
-      
+
       if (res['success'] == true) {
         ToastUtils.showSuccess(res['message'] ?? 'OTP sent to your email');
         _startResendCooldown(); // Start 10-minute cooldown
@@ -165,12 +164,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _verifyOtp() async {
     final otp = _otpController.text.trim().toUpperCase();
-    
+
     if (otp.isEmpty) {
       ToastUtils.showError('Please enter the OTP');
       return;
     }
-    
+
     if (otp.length < 6) {
       ToastUtils.showError('Please enter a valid 6-character OTP');
       return;
@@ -180,16 +179,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     try {
       final res = await ApiService.verifyPasswordResetOtp(_verifiedEmail!, otp);
-      
+
       if (res['success'] == true && res['data'] != null) {
         final data = res['data'] as Map<String, dynamic>;
         _userId = data['userId'] as String?;
-        
+
         if (_userId == null) {
           ToastUtils.showError('Invalid response from server');
           return;
         }
-        
+
         ToastUtils.showSuccess(res['message'] ?? 'OTP verified successfully');
         _resendTimer?.cancel(); // Cancel timer on successful verification
         setState(() {
@@ -209,24 +208,24 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Future<void> _resetPassword() async {
     final newPassword = _newPasswordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
-    
+
     setState(() => _autoValidate = true);
-    
+
     if (newPassword.isEmpty) {
       ToastUtils.showError('Please enter new password');
       return;
     }
-    
+
     if (!_isPasswordValid(newPassword)) {
       ToastUtils.showError('Password does not meet requirements');
       return;
     }
-    
+
     if (confirmPassword.isEmpty) {
       ToastUtils.showError('Please confirm your password');
       return;
     }
-    
+
     if (newPassword != confirmPassword) {
       ToastUtils.showError('Passwords do not match');
       return;
@@ -235,11 +234,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final res = await ApiService.resetPassword(_userId!, newPassword, confirmPassword);
-      
+      final res = await ApiService.resetPassword(
+        _userId!,
+        newPassword,
+        confirmPassword,
+      );
+
       if (res['success'] == true) {
         ToastUtils.showSuccess(res['message'] ?? 'Password reset successfully');
-        
+
         // Navigate back to login screen
         if (mounted) {
           Navigator.of(context).pop();
@@ -286,26 +289,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Icon(
-          Icons.email_outlined,
-          size: 80,
-          color: Colors.blue,
-        ),
+        const Icon(Icons.email_outlined, size: 80, color: Colors.blue),
         const SizedBox(height: 24),
         Text(
           'Forgot Password?',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Text(
           'Enter your registered email address and we\'ll send you an OTP to reset your password.',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
         ),
         const SizedBox(height: 16),
         Container(
@@ -323,9 +322,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 child: Text(
                   'Note: You can resend OTP after 10 minutes',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.blue[900],
-                        fontSize: 12,
-                      ),
+                    color: Colors.blue[900],
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],
@@ -340,6 +339,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _sendOtp(),
+          inputFormatters: [
+            TextInputFormatter.withFunction(
+              (oldValue, newValue) =>
+                  newValue.copyWith(text: newValue.text.toLowerCase()),
+            ),
+          ],
         ),
         const SizedBox(height: 24),
         AppPrimaryButton(
@@ -357,9 +362,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               'Please wait before requesting another OTP',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.orange[700],
-                    fontSize: 12,
-                  ),
+                color: Colors.orange[700],
+                fontSize: 12,
+              ),
             ),
           ),
       ],
@@ -370,26 +375,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Icon(
-          Icons.lock_outline,
-          size: 80,
-          color: Colors.blue,
-        ),
+        const Icon(Icons.lock_outline, size: 80, color: Colors.blue),
         const SizedBox(height: 24),
         Text(
           'Enter OTP',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Text(
           'We\'ve sent a 6-character OTP to\n$_verifiedEmail',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
         ),
         const SizedBox(height: 32),
         AppTextField(
@@ -439,9 +440,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               'You can request a new OTP after the timer expires',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
+                color: Colors.grey[600],
+                fontSize: 12,
+              ),
             ),
           ),
         const SizedBox(height: 24),
@@ -475,26 +476,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Icon(
-          Icons.lock_reset,
-          size: 80,
-          color: Colors.blue,
-        ),
+        const Icon(Icons.lock_reset, size: 80, color: Colors.blue),
         const SizedBox(height: 24),
         Text(
           'Reset Password',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Text(
           'Create a strong password',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
         ),
         const SizedBox(height: 16),
         Container(
@@ -510,9 +507,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               Text(
                 'Password Requirements:',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[900],
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue[900],
+                ),
               ),
               const SizedBox(height: 8),
               _buildPasswordRequirement(
@@ -579,7 +576,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   : Icons.visibility_off_outlined,
             ),
           ),
-          errorText: _autoValidate &&
+          errorText:
+              _autoValidate &&
                   _confirmPasswordController.text.isNotEmpty &&
                   _confirmPasswordController.text.trim() !=
                       _newPasswordController.text.trim()
@@ -591,7 +589,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           label: 'Reset Password',
           icon: Icons.check,
           isLoading: _isLoading,
-          onPressed: _isPasswordValid(_newPasswordController.text.trim()) &&
+          onPressed:
+              _isPasswordValid(_newPasswordController.text.trim()) &&
                   _newPasswordController.text.trim() ==
                       _confirmPasswordController.text.trim()
               ? _resetPassword
@@ -605,9 +604,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               'Please meet all password requirements',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.orange[700],
-                    fontSize: 12,
-                  ),
+                color: Colors.orange[700],
+                fontSize: 12,
+              ),
             ),
           ),
       ],
@@ -617,10 +616,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Forgot Password'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Forgot Password'), centerTitle: true),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),

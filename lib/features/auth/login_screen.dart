@@ -21,21 +21,27 @@ class MobileOrEmailInputFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) {
     final text = newValue.text;
-    
-    // If input contains @ (email), allow normal input
+
+    // If input contains @ (email), force lowercase
     if (text.contains('@')) {
-      return newValue;
+      final lowered = text.toLowerCase();
+      if (lowered == text) return newValue;
+      return newValue.copyWith(
+        text: lowered,
+        selection: newValue.selection,
+        composing: newValue.composing,
+      );
     }
-    
+
     // Check if input is numeric (mobile number)
     final cleanedInput = text.replaceAll(RegExp(r'[^0-9]'), '');
     final isNumeric = RegExp(r'^[0-9+\s-]*$').hasMatch(text);
-    
+
     // If numeric and cleaned digits exceed 10, reject the change
     if (isNumeric && cleanedInput.length > 10) {
       return oldValue;
     }
-    
+
     return newValue;
   }
 }
@@ -74,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final credentials = await AuthService.getRememberedCredentials();
       final emailOrMobile = credentials['emailOrMobile'];
       final password = credentials['password'];
-      
+
       if (emailOrMobile != null && password != null) {
         setState(() {
           _emailOrMobileController.text = emailOrMobile;
@@ -101,12 +107,12 @@ class _LoginScreenState extends State<LoginScreen> {
     final input = _emailOrMobileController.text.trim();
     final cleanedInput = input.replaceAll(RegExp(r'[^0-9]'), '');
     final isNumeric = RegExp(r'^[0-9+\s-]+$').hasMatch(input);
-    
+
     if (isNumeric && cleanedInput.length > 10) {
       ToastUtils.showError('Mobile number must be exactly 10 digits');
       return;
     }
-    
+
     if (isNumeric && cleanedInput.length < 10) {
       ToastUtils.showError('Mobile number must be 10 digits');
       return;
@@ -118,12 +124,25 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final emailOrMobile = _emailOrMobileController.text.trim();
+      final emailOrMobile = _emailOrMobileController.text.trim().toLowerCase();
       final password = _passwordController.text.trim();
-      
+
       final res = await ApiService.login(emailOrMobile, password);
 
       if (res['success'] == true && res['data'] != null) {
+        final user = res['data']['user'] as Map<String, dynamic>;
+        final userType = (user['userType'] ?? '').toString().toLowerCase();
+
+        // Only labour, sub_contractor, and contractor can use this app
+        const allowedTypes = {'labour', 'sub_contractor', 'contractor'};
+        if (!allowedTypes.contains(userType)) {
+          setState(() => _isSubmitting = false);
+          ToastUtils.showError(
+            'Access denied. This app is for labourers and contractors only.',
+          );
+          return;
+        }
+
         // Save or clear remembered credentials based on checkbox
         if (_rememberMe) {
           await AuthService.setRememberMe(true);
@@ -131,7 +150,6 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           await AuthService.clearRememberedCredentials();
         }
-        final user = res['data']['user'] as Map<String, dynamic>;
         final token = res['data']['token'] as String;
         final userController = Get.find<UserController>();
         userController.setUser(user, token);
@@ -148,14 +166,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
         // Check OTPstatus — from login response first, else fetch profile
         Map<String, dynamic> profile = user;
-        String otpStatus = (user['OTPstatus'] ?? user['otpStatus'] ?? '').toString();
+        String otpStatus = (user['OTPstatus'] ?? user['otpStatus'] ?? '')
+            .toString();
 
         if (otpStatus.isEmpty) {
           // OTPstatus not in login response — fetch profile to get it
           final profileRes = await ApiService.fetchProfile(token);
-          if (profileRes['success'] == true && profileRes['data'] is Map<String, dynamic>) {
+          if (profileRes['success'] == true &&
+              profileRes['data'] is Map<String, dynamic>) {
             profile = profileRes['data'] as Map<String, dynamic>;
-            otpStatus = (profile['OTPstatus'] ?? profile['otpStatus'] ?? '').toString();
+            otpStatus = (profile['OTPstatus'] ?? profile['otpStatus'] ?? '')
+                .toString();
           }
         }
 
@@ -164,9 +185,22 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!mounted) return;
 
         if (otpStatus == 'inactive') {
-          final phone = (profile['phone'] ?? profile['mobile'] ?? profile['mobileNumber'] ?? '').toString();
-          final displayPhone = phone.isNotEmpty ? phone : 'your registered number';
-          final userId = (user['_id'] ?? user['id'] ?? profile['_id'] ?? profile['id'] ?? '').toString();
+          final phone =
+              (profile['phone'] ??
+                      profile['mobile'] ??
+                      profile['mobileNumber'] ??
+                      '')
+                  .toString();
+          final displayPhone = phone.isNotEmpty
+              ? phone
+              : 'your registered number';
+          final userId =
+              (user['_id'] ??
+                      user['id'] ??
+                      profile['_id'] ??
+                      profile['id'] ??
+                      '')
+                  .toString();
           await AuthService.setOtpVerified(false);
           if (!mounted) return;
           Navigator.of(context).pushReplacement(
@@ -230,7 +264,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2563EB).withValues(alpha: 0.35),
+                            color: const Color(
+                              0xFF2563EB,
+                            ).withValues(alpha: 0.35),
                             blurRadius: 20,
                             offset: const Offset(0, 8),
                           ),
@@ -246,10 +282,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                   
-                    
-                    
-                    
                   ],
                 ),
               ),

@@ -40,6 +40,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
   bool _profileLoading = true;
   String? _profileError;
   Map<String, dynamic>? _subscriptionPlan;
+  bool _subscriptionPlanLoading = false;
   StreamSubscription<Uri>? _linkSub;
   bool _paymentPending =
       false; // true while waiting for user to return from browser
@@ -67,6 +68,12 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
 
   Future<void> _pollAfterPayment() async {
     if (!mounted) return;
+
+    // Wait briefly — UPI apps can cause a spurious resume before payment
+    // is actually complete. 5 seconds gives the backend time to process.
+    await Future.delayed(const Duration(seconds: 5));
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -180,12 +187,16 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
 
       setState(() {
         _subscriptionActive = (profile['display'] as bool?) ?? false;
+        // Admin users never need to subscribe
+        if (userType.toLowerCase() == 'admin') _subscriptionActive = true;
         _profileLoading = false;
         _subscriptionStatusLoaded = true;
       });
 
-      // Load subscription plan
-      _loadSubscriptionPlan(userType, token);
+      // Load subscription plan (skip for admin)
+      if (userType.toLowerCase() != 'admin') {
+        _loadSubscriptionPlan(userType, token);
+      }
     } else {
       setState(() {
         _profileLoading = false;
@@ -198,15 +209,18 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
   }
 
   Future<void> _loadSubscriptionPlan(String userType, String token) async {
+    if (_subscriptionPlanLoading) return;
+    setState(() => _subscriptionPlanLoading = true);
     final response = await ApiService.fetchSubscriptionPlan(userType, token);
     if (!mounted) return;
 
-    if (response['success'] == true &&
-        response['data'] is Map<String, dynamic>) {
-      setState(() {
+    setState(() {
+      _subscriptionPlanLoading = false;
+      if (response['success'] == true &&
+          response['data'] is Map<String, dynamic>) {
         _subscriptionPlan = response['data'] as Map<String, dynamic>;
-      });
-    }
+      }
+    });
   }
 
   List<BottomNavigationBarItem> _getNavItems(
@@ -606,28 +620,71 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     });
   }
 
-  void _showSubscriptionDetails(
+  Future<void> _showSubscriptionDetails(
     BuildContext context,
     Map<String, dynamic>? plan,
-  ) {
+  ) async {
+    final userController = Get.find<UserController>();
+
+    // If plan not cached yet, fetch it with a loading dialog
     if (plan == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context).loadingSubscriptionDetails,
+      final token =
+          userController.token.value ?? await AuthService.getAuthToken();
+      final userType =
+          (userController.user.value?['userType'] ?? 'labour').toString();
+
+      if (!context.mounted) return;
+
+      // Show loading dialog while we fetch
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const AlertDialog(
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Loading plan details...'),
+            ],
           ),
         ),
       );
-      return;
+
+      final response = await ApiService.fetchSubscriptionPlan(
+        userType,
+        token ?? '',
+      );
+
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // dismiss loading
+
+      if (response['success'] == true &&
+          response['data'] is Map<String, dynamic>) {
+        plan = response['data'] as Map<String, dynamic>;
+        setState(() => _subscriptionPlan = plan);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              response['message']?.toString() ??
+                  'Could not load subscription plan.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
     }
 
+    final resolvedPlan = plan;
     final theme = Theme.of(context);
-    final price = (plan['price'] ?? 0).toString();
-    final currency = (plan['currency'] ?? 'INR').toString();
-    final durationDays = (plan['durationDays'] ?? 0).toString();
+    final price = (resolvedPlan['price'] ?? 0).toString();
+    final currency = (resolvedPlan['currency'] ?? 'INR').toString();
+    final durationDays = (resolvedPlan['durationDays'] ?? 0).toString();
     final pricePerDay =
-        (plan['pricePerDay'] as num?)?.toStringAsFixed(2) ?? '0.00';
-    final features = (plan['features'] as List<dynamic>?)?.cast<String>() ?? [];
+        (resolvedPlan['pricePerDay'] as num?)?.toStringAsFixed(2) ?? '0.00';
+    final features = (resolvedPlan['features'] as List<dynamic>?)?.cast<String>() ?? [];
 
     showDialog(
       context: context,
@@ -713,7 +770,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             ),
             onPressed: () async {
               Navigator.pop(dialogContext);
-              await _initiatePayment(context, plan);
+              await _initiatePayment(context, resolvedPlan);
             },
             child: Text(AppLocalizations.of(dialogContext).proceedToPayment),
           ),
@@ -739,8 +796,11 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     }
 
     final amount = (plan['price'] as num?)?.toDouble() ?? 99.0;
-    final userType = (userController.user.value?['userType'] ?? 'labour')
-        .toString();
+    final user = userController.user.value ?? {};
+    final userType = (user['userType'] ?? 'labour').toString();
+    final name = (user['fullName'] ?? user['name'] ?? '').toString().trim();
+    final email = (user['email'] ?? '').toString().trim();
+    final phone = (user['mobile'] ?? user['phone'] ?? '').toString().trim();
     final productInfo = switch (userType.toLowerCase()) {
       'labour' => 'Labour profile visibility – LabourSampark',
       'sub_contractor' => 'Sub-Contractor profile visibility – LabourSampark',
@@ -777,6 +837,9 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
       productInfo: productInfo,
       description: description,
       token: token,
+      name: name,
+      email: email,
+      phone: phone,
     );
 
     if (!context.mounted) return;
