@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../common/models/skill_model.dart';
+import '../../common/widgets/language_picker.dart';
 import '../../services/api_service.dart';
 import '../../services/s3_upload_service.dart';
 import '../../services/skills_service.dart';
@@ -34,7 +35,6 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
-  final _ageController = TextEditingController();
   final _emailController = TextEditingController();
   final _mobileController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -51,6 +51,9 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
   List<SkillModel> _availableSkills = [];
   final List<String> _selectedSkillIds = [];
   bool _skillsLoading = true;
+
+  final List<String> _selectedLanguages = [];
+  DateTime? _selectedDob;
 
   Uint8List? _photoBytes;
   String? _photoUrl;
@@ -74,7 +77,6 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _ageController.dispose();
     _emailController.dispose();
     _mobileController.dispose();
     _passwordController.dispose();
@@ -532,12 +534,13 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
     final body = <String, dynamic>{
       'userType': 'labour',
       'fullName': _nameController.text.trim(),
-      'age': int.tryParse(_ageController.text.trim()) ?? 0,
+      if (_selectedDob != null) 'dob': _selectedDob!.toIso8601String(),
       'mobile': normalizedMobile,
       'email': _emailController.text.trim().toLowerCase(),
       'password': _passwordController.text.trim(),
       'experience': _experience,
       'skills': _selectedSkillIds,
+      'preferredLanguages': _selectedLanguages,
       'bio': _bioController.text.trim(),
       'termsAgreed': true,
       'location': {
@@ -788,22 +791,66 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                           : null,
                     ),
                     const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _ageController,
-                      decoration: _dec(
-                        'Age *',
-                        hint: 'e.g. 25',
-                        prefix: const Icon(Icons.cake_outlined, size: 20),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty)
-                          return 'Age is required';
-                        final age = int.tryParse(v.trim());
-                        if (age == null || age < 18 || age > 70)
-                          return 'Enter valid age (18–70)';
-                        return null;
+                    // DOB picker
+                    GestureDetector(
+                      onTap: () async {
+                        final now = DateTime.now();
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _selectedDob ?? DateTime(now.year - 25),
+                          firstDate: DateTime(1950),
+                          lastDate: DateTime(now.year - 18, now.month, now.day),
+                          helpText: 'Select Date of Birth',
+                        );
+                        if (picked != null)
+                          setState(() => _selectedDob = picked);
                       },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.cake_outlined,
+                              size: 20,
+                              color: Color(0xFF2563EB),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _selectedDob == null
+                                    ? 'Date of Birth *'
+                                    : '${_selectedDob!.day.toString().padLeft(2, '0')}/${_selectedDob!.month.toString().padLeft(2, '0')}/${_selectedDob!.year}',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: _selectedDob == null
+                                      ? Theme.of(context).colorScheme.onSurface
+                                            .withValues(alpha: 0.4)
+                                      : Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 16,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.4),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
@@ -1193,6 +1240,15 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                         }).toList(),
                       ),
                     ],
+                    const SizedBox(height: 14),
+                    // Language selector
+                    LanguageSelectorField(
+                      selected: _selectedLanguages,
+                      onChanged: (v) => setState(() {
+                        _selectedLanguages.clear();
+                        _selectedLanguages.addAll(v);
+                      }),
+                    ),
                     const SizedBox(height: 14),
                     TextFormField(
                       controller: _bioController,

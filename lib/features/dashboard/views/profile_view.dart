@@ -3,6 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../../common/models/skill_model.dart';
+import '../../../common/widgets/language_picker.dart';
 import '../../../core/app_state.dart';
 import '../../../services/skills_service.dart';
 import '../widgets/profile_widgets.dart';
@@ -211,7 +212,17 @@ class _ProfileViewState extends State<ProfileView> {
       (widget.profileData?['lastLogin'] ?? '').toString(),
     );
     final skills = _asStringList(widget.profileData?['skills']);
-    final languages = _asStringList(widget.profileData?['languages']);
+    final languages = _asStringList(
+      widget.profileData?['preferredLanguages'] ??
+          widget.profileData?['languages'],
+    );
+    final dobFormatted = () {
+      final raw = (widget.profileData?['dob'] ?? '').toString();
+      if (raw.isEmpty) return '';
+      final d = DateTime.tryParse(raw);
+      if (d == null) return '';
+      return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+    }();
     final rawId =
         (widget.profileData?['userId'] ?? widget.profileData?['_id'] ?? '')
             .toString();
@@ -639,6 +650,8 @@ class _ProfileViewState extends State<ProfileView> {
                 label: 'PHONE',
                 value: mobile.isEmpty ? 'Not specified' : mobile,
               ),
+              if (!isContractor && !isSubContractor && dobFormatted.isNotEmpty)
+                ProfileInfoItem(label: 'DATE OF BIRTH', value: dobFormatted),
             ],
           ),
         ),
@@ -672,7 +685,16 @@ class _ProfileViewState extends State<ProfileView> {
                     label: 'LANGUAGES',
                     value: languages.isEmpty
                         ? 'Not specified'
-                        : languages.join(', '),
+                        : languages
+                              .map((en) {
+                                final match = kAllLanguages
+                                    .where((l) => l.englishName == en)
+                                    .firstOrNull;
+                                return match != null
+                                    ? '${match.nativeName} (${match.englishName})'
+                                    : en;
+                              })
+                              .join(', '),
                   ),
 
                   ProfileInfoItem(

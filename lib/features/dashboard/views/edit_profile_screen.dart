@@ -6,12 +6,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../common/models/skill_model.dart';
+import '../../../common/widgets/language_picker.dart';
 import '../../../core/app_state.dart';
 import '../../../core/user_controller.dart';
 import '../../../core/auth_service.dart';
 import '../../../services/api_service.dart';
 import '../../../services/s3_upload_service.dart';
 import '../../../services/skills_service.dart';
+import '../../../utils/app_constants.dart';
 import '../../../utils/toast_utils.dart';
 import 'profile_frame_editor_screen.dart';
 
@@ -36,9 +38,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _scrollCtrl = ScrollController();
 
   late TextEditingController _fullNameCtrl;
-  late TextEditingController _ageCtrl;
   late TextEditingController _bioCtrl;
-  late TextEditingController _experienceCtrl;
   late TextEditingController _experienceRangeCtrl;
   late TextEditingController _companyNameCtrl;
   late TextEditingController _workingHoursCtrl;
@@ -72,13 +72,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   List<SkillModel> _availableSkills = [];
   bool _skillsLoading = true;
 
+  String _selectedExperience = AppConstants.experienceOptions[3];
+  DateTime? _selectedDob;
+
   bool _saving = false;
   String? _error;
 
   // Chip add controllers (persistent per list)
   final _workTypeAddCtrl = TextEditingController();
   final _servicesAddCtrl = TextEditingController();
-  final _langAddCtrl = TextEditingController();
 
   bool get _isContractor =>
       widget.userType.toLowerCase() == 'contractor' ||
@@ -92,13 +94,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _fullNameCtrl = TextEditingController(
       text: (d['fullName'] ?? d['name'] ?? '').toString(),
     );
-    _ageCtrl = TextEditingController(text: (d['age'] ?? '').toString());
+    final dobRaw = (d['dob'] ?? '').toString();
+    _selectedDob = dobRaw.isNotEmpty ? DateTime.tryParse(dobRaw) : null;
     _bioCtrl = TextEditingController(
       text: (d['bio'] ?? d['about'] ?? '').toString(),
     );
-    _experienceCtrl = TextEditingController(
-      text: (d['experience'] ?? '').toString(),
-    );
+    final expRaw = (d['experience'] ?? '').toString();
+    _selectedExperience = AppConstants.experienceOptions.contains(expRaw)
+        ? expRaw
+        : AppConstants.experienceOptions[3];
     _experienceRangeCtrl = TextEditingController(
       text: (d['experienceRange'] ?? '').toString(),
     );
@@ -128,7 +132,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _skills = _asList(d['skills']);
     _workTypes = _asList(d['workTypes']);
     _servicesOffered = _asList(d['servicesOffered'] ?? d['serviceCategories']);
-    _languages = _asList(d['languages']);
+    _languages = _asList(d['preferredLanguages'] ?? d['languages']);
     _loadSkills();
   }
 
@@ -411,9 +415,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void dispose() {
     _scrollCtrl.dispose();
     _fullNameCtrl.dispose();
-    _ageCtrl.dispose();
     _bioCtrl.dispose();
-    _experienceCtrl.dispose();
     _experienceRangeCtrl.dispose();
     _companyNameCtrl.dispose();
     _workingHoursCtrl.dispose();
@@ -424,7 +426,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _addressCtrl.dispose();
     _workTypeAddCtrl.dispose();
     _servicesAddCtrl.dispose();
-    _langAddCtrl.dispose();
     super.dispose();
   }
 
@@ -530,13 +531,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final body = <String, dynamic>{
       'fullName': _fullNameCtrl.text.trim(),
       'bio': _bioCtrl.text.trim(),
-      'experience': _experienceCtrl.text.trim(),
+      'experience': _selectedExperience,
       'experienceRange': _experienceRangeCtrl.text.trim(),
       'skills': _skills,
       'workTypes': _workTypes,
       'workingHours': _workingHoursCtrl.text.trim(),
       'servicesOffered': _servicesOffered,
-      'languages': _languages,
+      'preferredLanguages': _languages,
       'location': {
         'city': _cityCtrl.text.trim(),
         'state': _stateCtrl.text.trim(),
@@ -545,7 +546,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'address': _addressCtrl.text.trim(),
       },
       if (photoUrl != null && photoUrl.isNotEmpty) 'profilePhotoUrl': photoUrl,
-      if (!_isContractor) 'age': int.tryParse(_ageCtrl.text.trim()) ?? 0,
+      if (!_isContractor && _selectedDob != null)
+        'dob': _selectedDob!.toIso8601String(),
       if (_isContractor) 'companyName': _companyNameCtrl.text.trim(),
       if (_isContractor && logoUrl != null && logoUrl.isNotEmpty)
         'companyLogoUrl': logoUrl,
@@ -782,14 +784,61 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               'Company Name',
               Icons.business_outlined,
             ),
-          if (!_isContractor)
-            _buildField(
-              _ageCtrl,
-              'Age',
-              Icons.cake_outlined,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          if (!_isContractor) ...[
+            GestureDetector(
+              onTap: () async {
+                final now = DateTime.now();
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _selectedDob ?? DateTime(now.year - 25),
+                  firstDate: DateTime(1950),
+                  lastDate: DateTime(now.year - 18, now.month, now.day),
+                  helpText: 'Select Date of Birth',
+                );
+                if (picked != null) setState(() => _selectedDob = picked);
+              },
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: cs.onSurface.withValues(alpha: 0.02),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: cs.outline.withValues(alpha: 0.18)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.cake_outlined,
+                      size: 20,
+                      color: cs.onSurface.withValues(alpha: 0.45),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _selectedDob == null
+                            ? 'Date of Birth'
+                            : '${_selectedDob!.day.toString().padLeft(2, '0')}/${_selectedDob!.month.toString().padLeft(2, '0')}/${_selectedDob!.year}',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: _selectedDob == null
+                              ? cs.onSurface.withValues(alpha: 0.35)
+                              : cs.onSurface,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 16,
+                      color: cs.onSurface.withValues(alpha: 0.35),
+                    ),
+                  ],
+                ),
+              ),
             ),
+          ],
           _buildField(
             _bioCtrl,
             'Bio / About',
@@ -806,34 +855,47 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             color: const Color(0xFF7C3AED),
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _buildField(
-                  _experienceCtrl,
-                  'Experience',
-                  Icons.timeline_outlined,
-                  hint: 'e.g. 5 years',
+          // Experience dropdown
+          DropdownButtonFormField<String>(
+            value: _selectedExperience,
+            decoration: InputDecoration(
+              labelText: 'Experience',
+              prefixIcon: const Icon(Icons.timeline_outlined),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.4),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildField(
-                  _experienceRangeCtrl,
-                  'Range',
-                  Icons.bar_chart_rounded,
-                  hint: 'e.g. 3-5 yrs',
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color(0xFF7C3AED),
+                  width: 1.5,
                 ),
               ),
-            ],
+              filled: true,
+              fillColor: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.02),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 14,
+              ),
+            ),
+            items: AppConstants.experienceOptions
+                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                .toList(),
+            onChanged: (v) =>
+                setState(() => _selectedExperience = v ?? _selectedExperience),
           ),
-          _buildField(
-            _workingHoursCtrl,
-            'Working Hours',
-            Icons.access_time_rounded,
-            hint: 'e.g. flexible / 9am-6pm',
-          ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 10),
 
           // ── Skills picker ──────────────────────────────────────────────
           Builder(
@@ -964,35 +1026,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               );
             },
           ),
+
           const SizedBox(height: 6),
-          _ChipEditor(
-            label: 'Work Types',
-            icon: Icons.assignment_outlined,
-            color: const Color(0xFF059669),
-            items: _workTypes,
-            addCtrl: _workTypeAddCtrl,
-            onAdd: (v) => setState(() => _workTypes.add(v)),
-            onRemove: (i) => setState(() => _workTypes.removeAt(i)),
-          ),
-          const SizedBox(height: 6),
-          _ChipEditor(
-            label: 'Services Offered',
-            icon: Icons.handyman_outlined,
-            color: const Color(0xFF2563EB),
-            items: _servicesOffered,
-            addCtrl: _servicesAddCtrl,
-            onAdd: (v) => setState(() => _servicesOffered.add(v)),
-            onRemove: (i) => setState(() => _servicesOffered.removeAt(i)),
-          ),
-          const SizedBox(height: 6),
-          _ChipEditor(
-            label: 'Languages',
-            icon: Icons.translate_rounded,
-            color: const Color(0xFFF59E0B),
-            items: _languages,
-            addCtrl: _langAddCtrl,
-            onAdd: (v) => setState(() => _languages.add(v)),
-            onRemove: (i) => setState(() => _languages.removeAt(i)),
+          LanguageSelectorField(
+            selected: _languages,
+            onChanged: (v) => setState(() => _languages = v),
           ),
           const SizedBox(height: 20),
 
@@ -1385,177 +1423,6 @@ class _ErrorBanner extends StatelessWidget {
               size: 16,
               color: cs.onSurface.withValues(alpha: 0.4),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChipEditor extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final List<String> items;
-  final TextEditingController addCtrl;
-  final void Function(String) onAdd;
-  final void Function(int) onRemove;
-
-  const _ChipEditor({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.items,
-    required this.addCtrl,
-    required this.onAdd,
-    required this.onRemove,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    void submit() {
-      final v = addCtrl.text.trim();
-      if (v.isNotEmpty) {
-        onAdd(v);
-        addCtrl.clear();
-      }
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 4),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-      decoration: BoxDecoration(
-        color: cs.onSurface.withValues(alpha: 0.02),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.18)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: color,
-                  letterSpacing: 0.4,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (items.isNotEmpty) ...[
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: List.generate(
-                items.length,
-                (i) => GestureDetector(
-                  onTap: () => onRemove(i),
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(10, 5, 6, 5),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: color.withValues(alpha: 0.25)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          items[i],
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: color,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.close_rounded,
-                          size: 13,
-                          color: color.withValues(alpha: 0.7),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: addCtrl,
-                  onSubmitted: (_) => submit(),
-                  decoration: InputDecoration(
-                    hintText: 'Add ${label.toLowerCase()}...',
-                    hintStyle: TextStyle(
-                      fontSize: 12,
-                      color: cs.onSurface.withValues(alpha: 0.3),
-                    ),
-                    filled: true,
-                    fillColor: cs.onSurface.withValues(alpha: 0.03),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 9,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(
-                        color: cs.outline.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(
-                        color: cs.outline.withValues(alpha: 0.18),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(
-                        color: color.withValues(alpha: 0.6),
-                        width: 1.5,
-                      ),
-                    ),
-                  ),
-                  style: TextStyle(fontSize: 13, color: cs.onSurface),
-                ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: submit,
-                child: Container(
-                  padding: const EdgeInsets.all(9),
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.3),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.add_rounded,
-                    size: 18,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),

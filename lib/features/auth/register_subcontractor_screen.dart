@@ -10,6 +10,7 @@ import '../../services/s3_upload_service.dart';
 import '../../utils/toast_utils.dart';
 import 'login_screen.dart';
 import '../../common/models/business_type_model.dart';
+import '../../common/widgets/language_picker.dart';
 import '../../services/business_type_service.dart';
 import 'package:flutter/services.dart';
 
@@ -156,6 +157,9 @@ class _RegisterSubContractorScreenState
   String _teamSize = _scTeamSizeOptions[1];
 
   bool _submitting = false;
+
+  DateTime? _selectedDob;
+  final List<String> _selectedLanguages = [];
 
   // Password validation helpers
   bool _hasMinLength(String password) => password.length >= 8;
@@ -386,6 +390,8 @@ class _RegisterSubContractorScreenState
         'registrationNumber': _regNumberController.text.trim(),
       if (_logoUrl != null) 'companyLogoUrl': _logoUrl,
       if (_licenseUrl != null) 'businessLicenseUrl': _licenseUrl,
+      if (_selectedDob != null) 'dob': _selectedDob!.toIso8601String(),
+      'preferredLanguages': _selectedLanguages,
     };
 
     final result = await ApiService.registerUser(body);
@@ -721,6 +727,69 @@ class _RegisterSubContractorScreenState
                           : null,
                     ),
                     const SizedBox(height: 14),
+                    // DOB picker
+                    GestureDetector(
+                      onTap: () async {
+                        final now = DateTime.now();
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _selectedDob ?? DateTime(now.year - 30),
+                          firstDate: DateTime(1950),
+                          lastDate: DateTime(now.year - 18, now.month, now.day),
+                          helpText: 'Select Date of Birth',
+                        );
+                        if (picked != null)
+                          setState(() => _selectedDob = picked);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.cake_outlined,
+                              size: 20,
+                              color: Color(0xFF2563EB),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _selectedDob == null
+                                    ? 'Date of Birth'
+                                    : '${_selectedDob!.day.toString().padLeft(2, '0')}/${_selectedDob!.month.toString().padLeft(2, '0')}/${_selectedDob!.year}',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: _selectedDob == null
+                                      ? Theme.of(context).colorScheme.onSurface
+                                            .withValues(alpha: 0.4)
+                                      : Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 16,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.4),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
                     TextFormField(
                       controller: _emailController,
                       decoration: _dec(
@@ -960,7 +1029,9 @@ class _RegisterSubContractorScreenState
                           vertical: 16,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerLow,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: _selectedBusinessTypeIds.isEmpty
@@ -973,7 +1044,9 @@ class _RegisterSubContractorScreenState
                             Icon(
                               Icons.category_outlined,
                               size: 20,
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.5),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -1200,6 +1273,15 @@ class _RegisterSubContractorScreenState
                 ),
                 const SizedBox(height: 20),
 
+                LanguageSelectorField(
+                  selected: _selectedLanguages,
+                  onChanged: (v) => setState(() {
+                    _selectedLanguages.clear();
+                    _selectedLanguages.addAll(v);
+                  }),
+                ),
+                const SizedBox(height: 14),
+
                 // ── Terms ─────────────────────────────────────
                 InkWell(
                   onTap: () => setState(() => _acceptTerms = !_acceptTerms),
@@ -1228,7 +1310,9 @@ class _RegisterSubContractorScreenState
                               text: 'I agree to the ',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.8),
                               ),
                               children: [
                                 TextSpan(
@@ -1386,7 +1470,9 @@ class _RegisterSubContractorScreenState
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? _primary.withValues(alpha: 0.08)
-                                    : Theme.of(context).colorScheme.surfaceContainerLow,
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerLow,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isSelected
@@ -1419,7 +1505,9 @@ class _RegisterSubContractorScreenState
                                             fontWeight: FontWeight.w600,
                                             color: isSelected
                                                 ? _primary
-                                                : Theme.of(context).colorScheme.onSurface,
+                                                : Theme.of(
+                                                    context,
+                                                  ).colorScheme.onSurface,
                                           ),
                                         ),
                                         const SizedBox(height: 2),
