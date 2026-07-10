@@ -3,11 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
+import '../../../common/models/skill_model.dart';
+import '../../../core/app_state.dart';
 import '../../../core/user_controller.dart';
 import '../../../core/auth_service.dart';
 import '../../../services/api_service.dart';
 import '../../../services/s3_upload_service.dart';
+import '../../../services/skills_service.dart';
+import '../../../utils/toast_utils.dart';
 import 'profile_frame_editor_screen.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -63,11 +68,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   List<String> _servicesOffered = [];
   List<String> _languages = [];
 
+  // Skills from global API
+  List<SkillModel> _availableSkills = [];
+  bool _skillsLoading = true;
+
   bool _saving = false;
   String? _error;
 
   // Chip add controllers (persistent per list)
-  final _skillAddCtrl = TextEditingController();
   final _workTypeAddCtrl = TextEditingController();
   final _servicesAddCtrl = TextEditingController();
   final _langAddCtrl = TextEditingController();
@@ -81,18 +89,38 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     final d = widget.profileData ?? {};
     final loc = d['location'] as Map<String, dynamic>?;
-    _fullNameCtrl = TextEditingController(text: (d['fullName'] ?? d['name'] ?? '').toString());
+    _fullNameCtrl = TextEditingController(
+      text: (d['fullName'] ?? d['name'] ?? '').toString(),
+    );
     _ageCtrl = TextEditingController(text: (d['age'] ?? '').toString());
-    _bioCtrl = TextEditingController(text: (d['bio'] ?? d['about'] ?? '').toString());
-    _experienceCtrl = TextEditingController(text: (d['experience'] ?? '').toString());
-    _experienceRangeCtrl = TextEditingController(text: (d['experienceRange'] ?? '').toString());
-    _companyNameCtrl = TextEditingController(text: (d['companyName'] ?? '').toString());
-    _workingHoursCtrl = TextEditingController(text: (d['workingHours'] ?? '').toString());
-    _cityCtrl = TextEditingController(text: (d['city'] ?? loc?['city'] ?? '').toString());
-    _stateCtrl = TextEditingController(text: (d['state'] ?? loc?['state'] ?? '').toString());
+    _bioCtrl = TextEditingController(
+      text: (d['bio'] ?? d['about'] ?? '').toString(),
+    );
+    _experienceCtrl = TextEditingController(
+      text: (d['experience'] ?? '').toString(),
+    );
+    _experienceRangeCtrl = TextEditingController(
+      text: (d['experienceRange'] ?? '').toString(),
+    );
+    _companyNameCtrl = TextEditingController(
+      text: (d['companyName'] ?? '').toString(),
+    );
+    _workingHoursCtrl = TextEditingController(
+      text: (d['workingHours'] ?? '').toString(),
+    );
+    _cityCtrl = TextEditingController(
+      text: (d['city'] ?? loc?['city'] ?? '').toString(),
+    );
+    _stateCtrl = TextEditingController(
+      text: (d['state'] ?? loc?['state'] ?? '').toString(),
+    );
     _areaCtrl = TextEditingController(text: (loc?['area'] ?? '').toString());
-    _pincodeCtrl = TextEditingController(text: (loc?['pincode'] ?? '').toString());
-    _addressCtrl = TextEditingController(text: (loc?['address'] ?? '').toString());
+    _pincodeCtrl = TextEditingController(
+      text: (loc?['pincode'] ?? '').toString(),
+    );
+    _addressCtrl = TextEditingController(
+      text: (loc?['address'] ?? '').toString(),
+    );
     _email = (d['email'] ?? '').toString();
     _mobile = (d['mobile'] ?? '').toString();
     _profilePhotoUrl = (d['profilePhotoUrl'] ?? '').toString();
@@ -101,10 +129,281 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _workTypes = _asList(d['workTypes']);
     _servicesOffered = _asList(d['servicesOffered'] ?? d['serviceCategories']);
     _languages = _asList(d['languages']);
+    _loadSkills();
+  }
+
+  Future<void> _loadSkills() async {
+    final cached = SkillsService.getCachedSkills();
+    if (cached != null && cached.isNotEmpty) {
+      if (mounted)
+        setState(() {
+          _availableSkills = cached;
+          _skillsLoading = false;
+        });
+      return;
+    }
+    final result = await SkillsService.getAllSkills();
+    if (!mounted) return;
+    if (result['success'] == true) {
+      setState(() {
+        _availableSkills = result['skills'] as List<SkillModel>;
+        _skillsLoading = false;
+      });
+    } else {
+      setState(() => _skillsLoading = false);
+      ToastUtils.showError(
+        result['message']?.toString() ?? 'Failed to load skills',
+      );
+    }
+  }
+
+  void _toggleSkill(String skillId) {
+    setState(() {
+      if (_skills.contains(skillId)) {
+        _skills.remove(skillId);
+      } else {
+        _skills.add(skillId);
+      }
+    });
+  }
+
+  void _showSkillsBottomSheet() {
+    final langCode = context.read<AppState>().locale?.languageCode ?? 'en';
+    String _skillName(SkillModel s) {
+      switch (langCode) {
+        case 'hi':
+          return s.hiName.isNotEmpty ? s.hiName : s.enName;
+        case 'mr':
+          return s.mrName.isNotEmpty ? s.mrName : s.enName;
+        default:
+          return s.enName;
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModal) {
+          return Container(
+            height: MediaQuery.of(ctx).size.height * 0.75,
+            decoration: BoxDecoration(
+              color: Theme.of(ctx).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7C3AED).withValues(alpha: 0.05),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.build_outlined,
+                        color: Color(0xFF7C3AED),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Select Skills',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Choose skills that match your expertise',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(
+                                  ctx,
+                                ).colorScheme.onSurface.withValues(alpha: 0.55),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+                // Skills list
+                Expanded(
+                  child: _skillsLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _availableSkills.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No skills available',
+                            style: TextStyle(
+                              color: Theme.of(
+                                ctx,
+                              ).colorScheme.onSurface.withValues(alpha: 0.5),
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _availableSkills.length,
+                          itemBuilder: (_, index) {
+                            final skill = _availableSkills[index];
+                            final isSelected = _skills.contains(skill.id);
+                            return InkWell(
+                              onTap: () {
+                                setState(() => _toggleSkill(skill.id));
+                                setModal(() {});
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(
+                                          0xFF7C3AED,
+                                        ).withValues(alpha: 0.08)
+                                      : Theme.of(
+                                          ctx,
+                                        ).colorScheme.surfaceContainerLow,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? const Color(0xFF7C3AED)
+                                        : Theme.of(ctx).colorScheme.outline,
+                                    width: isSelected ? 1.5 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      isSelected
+                                          ? Icons.check_circle
+                                          : Icons.circle_outlined,
+                                      color: isSelected
+                                          ? const Color(0xFF7C3AED)
+                                          : const Color(0xFF9CA3AF),
+                                      size: 22,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _skillName(skill),
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: isSelected
+                                                  ? const Color(0xFF7C3AED)
+                                                  : Theme.of(
+                                                      ctx,
+                                                    ).colorScheme.onSurface,
+                                            ),
+                                          ),
+                                          if (langCode != 'en' &&
+                                              skill.enName.isNotEmpty)
+                                            Text(
+                                              skill.enName,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Theme.of(ctx)
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withValues(alpha: 0.5),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                // Footer
+                Container(
+                  padding: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: 12,
+                    bottom: 12 + MediaQuery.of(ctx).padding.bottom,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(ctx).colorScheme.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${_skills.length} skill${_skills.length == 1 ? '' : 's'} selected',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(
+                              ctx,
+                            ).colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF7C3AED),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          'Done',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   List<String> _asList(dynamic v) {
-    if (v is List) return v.whereType<String>().where((s) => s.trim().isNotEmpty).toList();
+    if (v is List)
+      return v.whereType<String>().where((s) => s.trim().isNotEmpty).toList();
     return [];
   }
 
@@ -123,7 +422,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _areaCtrl.dispose();
     _pincodeCtrl.dispose();
     _addressCtrl.dispose();
-    _skillAddCtrl.dispose();
     _workTypeAddCtrl.dispose();
     _servicesAddCtrl.dispose();
     _langAddCtrl.dispose();
@@ -133,13 +431,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _pickPhoto() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
-        source: ImageSource.gallery, imageQuality: 90, maxWidth: 1200);
+      source: ImageSource.gallery,
+      imageQuality: 90,
+      maxWidth: 1200,
+    );
     if (picked == null) return;
     final bytes = await picked.readAsBytes();
     if (!mounted) return;
     // Open the LabourSampark frame editor — user positions their face
-    final composited =
-        await ProfileFrameEditorScreen.show(context, bytes);
+    final composited = await ProfileFrameEditorScreen.show(context, bytes);
     if (composited == null) return; // user cancelled
     setState(() {
       _pendingPhotoBytes = composited;
@@ -149,16 +449,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _pickLogo() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 600);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 600,
+    );
     if (picked == null) return;
     final bytes = await picked.readAsBytes();
-    setState(() { _pendingLogoBytes = bytes; _pendingLogoName = picked.name; });
+    setState(() {
+      _pendingLogoBytes = bytes;
+      _pendingLogoName = picked.name;
+    });
   }
 
   Future<String?> _uploadPendingPhoto() async {
     if (_pendingPhotoBytes == null) return _profilePhotoUrl;
     setState(() => _uploadingPhoto = true);
-    final ext = (_pendingPhotoName ?? 'photo.jpg').split('.').last.toLowerCase();
+    final ext = (_pendingPhotoName ?? 'photo.jpg')
+        .split('.')
+        .last
+        .toLowerCase();
     final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
     final url = await S3UploadService.upload(
       bytes: _pendingPhotoBytes!,
@@ -187,11 +497,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { _saving = true; _error = null; });
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
 
     final photoUrl = await _uploadPendingPhoto();
     if (_pendingPhotoBytes != null && photoUrl == null) {
-      setState(() { _saving = false; _error = 'Profile photo upload failed. Please try again.'; });
+      setState(() {
+        _saving = false;
+        _error = 'Profile photo upload failed. Please try again.';
+      });
       return;
     }
 
@@ -199,12 +515,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (_isContractor) {
       logoUrl = await _uploadPendingLogo();
       if (_pendingLogoBytes != null && logoUrl == null) {
-        setState(() { _saving = false; _error = 'Company logo upload failed. Please try again.'; });
+        setState(() {
+          _saving = false;
+          _error = 'Company logo upload failed. Please try again.';
+        });
         return;
       }
     }
 
-    final token = Get.find<UserController>().token.value ?? await AuthService.getAuthToken() ?? '';
+    final token =
+        Get.find<UserController>().token.value ??
+        await AuthService.getAuthToken() ??
+        '';
     final body = <String, dynamic>{
       'fullName': _fullNameCtrl.text.trim(),
       'bio': _bioCtrl.text.trim(),
@@ -225,7 +547,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (photoUrl != null && photoUrl.isNotEmpty) 'profilePhotoUrl': photoUrl,
       if (!_isContractor) 'age': int.tryParse(_ageCtrl.text.trim()) ?? 0,
       if (_isContractor) 'companyName': _companyNameCtrl.text.trim(),
-      if (_isContractor && logoUrl != null && logoUrl.isNotEmpty) 'companyLogoUrl': logoUrl,
+      if (_isContractor && logoUrl != null && logoUrl.isNotEmpty)
+        'companyLogoUrl': logoUrl,
     };
 
     final res = await ApiService.updateProfile(fields: body, token: token);
@@ -233,12 +556,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (res['success'] == true) {
       final updated = (res['data'] as Map<String, dynamic>?) ?? {};
-      final merged = <String, dynamic>{...(widget.profileData ?? {}), ...updated};
+      final merged = <String, dynamic>{
+        ...(widget.profileData ?? {}),
+        ...updated,
+      };
       Get.find<UserController>().setUser(merged, token);
       widget.onSaved(merged);
       if (mounted) Navigator.of(context).pop();
     } else {
-      setState(() { _error = (res['message'] ?? 'Update failed. Please try again.').toString(); });
+      setState(() {
+        _error = (res['message'] ?? 'Update failed. Please try again.')
+            .toString();
+      });
     }
   }
 
@@ -256,27 +585,50 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: cs.onSurface),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 18,
+            color: cs.onSurface,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text('Edit Profile',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: cs.onSurface)),
+        title: Text(
+          'Edit Profile',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: cs.onSurface,
+          ),
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 14),
             child: busy
                 ? const SizedBox(
-                    width: 20, height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF2563EB)))
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Color(0xFF2563EB),
+                    ),
+                  )
                 : FilledButton(
                     onPressed: _save,
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF2563EB),
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 8,
+                      ),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     child: const Text('Save'),
                   ),
@@ -301,22 +653,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: cs.surface,
-          border: Border(top: BorderSide(color: cs.outline.withValues(alpha: 0.15))),
+          border: Border(
+            top: BorderSide(color: cs.outline.withValues(alpha: 0.15)),
+          ),
         ),
-        padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          12,
+          16,
+          MediaQuery.of(context).padding.bottom + 12,
+        ),
         child: SizedBox(
           height: 50,
           child: FilledButton(
             onPressed: busy ? null : _save,
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF2563EB),
-              disabledBackgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.5),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              disabledBackgroundColor: const Color(
+                0xFF2563EB,
+              ).withValues(alpha: 0.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
             ),
             child: busy
-                ? const SizedBox(height: 20, width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white,
+                    ),
+                  )
                 : const Text('Save Changes'),
           ),
         ),
@@ -334,7 +706,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
           // ── Error banner ──────────────────────────────────────────────────
           if (_error != null) ...[
-            _ErrorBanner(message: _error!, onDismiss: () => setState(() => _error = null)),
+            _ErrorBanner(
+              message: _error!,
+              onDismiss: () => setState(() => _error = null),
+            ),
             const SizedBox(height: 16),
           ],
 
@@ -360,58 +735,234 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           const SizedBox(height: 24),
 
           // ── Account (read-only) ───────────────────────────────────────────
-          _SectionHeader(label: 'ACCOUNT', icon: Icons.lock_outline_rounded,
-              color: cs.onSurface.withValues(alpha: 0.35)),
+          _SectionHeader(
+            label: 'ACCOUNT',
+            icon: Icons.lock_outline_rounded,
+            color: cs.onSurface.withValues(alpha: 0.35),
+          ),
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: _ReadOnlyField(label: 'Email', value: _email, icon: Icons.email_outlined)),
+              Expanded(
+                child: _ReadOnlyField(
+                  label: 'Email',
+                  value: _email,
+                  icon: Icons.email_outlined,
+                ),
+              ),
               const SizedBox(width: 10),
-              Expanded(child: _ReadOnlyField(label: 'Mobile', value: _mobile, icon: Icons.phone_outlined)),
+              Expanded(
+                child: _ReadOnlyField(
+                  label: 'Mobile',
+                  value: _mobile,
+                  icon: Icons.phone_outlined,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 20),
 
           // ── Basic information ─────────────────────────────────────────────
-          _SectionHeader(label: 'BASIC INFORMATION', icon: Icons.person_outline_rounded,
-              color: const Color(0xFF2563EB)),
+          _SectionHeader(
+            label: 'BASIC INFORMATION',
+            icon: Icons.person_outline_rounded,
+            color: const Color(0xFF2563EB),
+          ),
           const SizedBox(height: 10),
-          _buildField(_fullNameCtrl, 'Full Name', Icons.badge_outlined,
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Name is required' : null),
+          _buildField(
+            _fullNameCtrl,
+            'Full Name',
+            Icons.badge_outlined,
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+          ),
           if (_isContractor)
-            _buildField(_companyNameCtrl, 'Company Name', Icons.business_outlined),
+            _buildField(
+              _companyNameCtrl,
+              'Company Name',
+              Icons.business_outlined,
+            ),
           if (!_isContractor)
-            _buildField(_ageCtrl, 'Age', Icons.cake_outlined,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-          _buildField(_bioCtrl, 'Bio / About', Icons.notes_rounded,
-              maxLines: 3, hint: 'Describe yourself or your work...'),
+            _buildField(
+              _ageCtrl,
+              'Age',
+              Icons.cake_outlined,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            ),
+          _buildField(
+            _bioCtrl,
+            'Bio / About',
+            Icons.notes_rounded,
+            maxLines: 3,
+            hint: 'Describe yourself or your work...',
+          ),
           const SizedBox(height: 6),
 
           // ── Work & Skills ─────────────────────────────────────────────────
           _SectionHeader(
-              label: _isContractor ? 'BUSINESS DETAILS' : 'WORK & SKILLS',
-              icon: Icons.work_outline_rounded,
-              color: const Color(0xFF7C3AED)),
-          const SizedBox(height: 10),
-          Row(children: [
-            Expanded(child: _buildField(_experienceCtrl, 'Experience', Icons.timeline_outlined,
-                hint: 'e.g. 5 years')),
-            const SizedBox(width: 10),
-            Expanded(child: _buildField(_experienceRangeCtrl, 'Range', Icons.bar_chart_rounded,
-                hint: 'e.g. 3-5 yrs')),
-          ]),
-          _buildField(_workingHoursCtrl, 'Working Hours', Icons.access_time_rounded,
-              hint: 'e.g. flexible / 9am-6pm'),
-          const SizedBox(height: 4),
-          _ChipEditor(
-            label: 'Skills',
-            icon: Icons.build_outlined,
+            label: _isContractor ? 'BUSINESS DETAILS' : 'WORK & SKILLS',
+            icon: Icons.work_outline_rounded,
             color: const Color(0xFF7C3AED),
-            items: _skills,
-            addCtrl: _skillAddCtrl,
-            onAdd: (v) => setState(() => _skills.add(v)),
-            onRemove: (i) => setState(() => _skills.removeAt(i)),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _buildField(
+                  _experienceCtrl,
+                  'Experience',
+                  Icons.timeline_outlined,
+                  hint: 'e.g. 5 years',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildField(
+                  _experienceRangeCtrl,
+                  'Range',
+                  Icons.bar_chart_rounded,
+                  hint: 'e.g. 3-5 yrs',
+                ),
+              ),
+            ],
+          ),
+          _buildField(
+            _workingHoursCtrl,
+            'Working Hours',
+            Icons.access_time_rounded,
+            hint: 'e.g. flexible / 9am-6pm',
+          ),
+          const SizedBox(height: 4),
+
+          // ── Skills picker ──────────────────────────────────────────────
+          Builder(
+            builder: (ctx) {
+              final langCode =
+                  context.read<AppState>().locale?.languageCode ?? 'en';
+              String skillName(SkillModel s) {
+                switch (langCode) {
+                  case 'hi':
+                    return s.hiName.isNotEmpty ? s.hiName : s.enName;
+                  case 'mr':
+                    return s.mrName.isNotEmpty ? s.mrName : s.enName;
+                  default:
+                    return s.enName;
+                }
+              }
+
+              return GestureDetector(
+                onTap: _showSkillsBottomSheet,
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                  decoration: BoxDecoration(
+                    color: cs.onSurface.withValues(alpha: 0.02),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: cs.outline.withValues(alpha: 0.18),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.build_outlined,
+                            size: 14,
+                            color: Color(0xFF7C3AED),
+                          ),
+                          const SizedBox(width: 6),
+                          const Expanded(
+                            child: Text(
+                              'Skills',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF7C3AED),
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ),
+                          if (_skillsLoading)
+                            const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFF7C3AED),
+                              ),
+                            )
+                          else
+                            const Icon(
+                              Icons.add_rounded,
+                              size: 18,
+                              color: Color(0xFF7C3AED),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (_skills.isEmpty)
+                        Text(
+                          'Tap to select skills',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurface.withValues(alpha: 0.35),
+                          ),
+                        )
+                      else
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: _skills.map((id) {
+                            final match = _availableSkills
+                                .where((s) => s.id == id)
+                                .firstOrNull;
+                            final name = match != null ? skillName(match) : id;
+                            return GestureDetector(
+                              onTap: () => setState(() => _skills.remove(id)),
+                              child: Container(
+                                padding: const EdgeInsets.fromLTRB(10, 5, 6, 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF7C3AED,
+                                  ).withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: const Color(
+                                      0xFF7C3AED,
+                                    ).withValues(alpha: 0.25),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      name,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF7C3AED),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.close_rounded,
+                                      size: 13,
+                                      color: Color(0xFF7C3AED),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 6),
           _ChipEditor(
@@ -446,22 +997,54 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           const SizedBox(height: 20),
 
           // ── Location ──────────────────────────────────────────────────────
-          _SectionHeader(label: 'LOCATION', icon: Icons.location_on_outlined,
-              color: const Color(0xFF059669)),
+          _SectionHeader(
+            label: 'LOCATION',
+            icon: Icons.location_on_outlined,
+            color: const Color(0xFF059669),
+          ),
           const SizedBox(height: 10),
-          Row(children: [
-            Expanded(child: _buildField(_cityCtrl, 'City', Icons.location_city_outlined)),
-            const SizedBox(width: 10),
-            Expanded(child: _buildField(_stateCtrl, 'State', Icons.map_outlined)),
-          ]),
-          Row(children: [
-            Expanded(child: _buildField(_areaCtrl, 'Area / Locality', Icons.near_me_outlined)),
-            const SizedBox(width: 10),
-            Expanded(child: _buildField(_pincodeCtrl, 'Pincode', Icons.pin_outlined,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
-          ]),
-          _buildField(_addressCtrl, 'Full Address', Icons.home_outlined, maxLines: 2),
+          Row(
+            children: [
+              Expanded(
+                child: _buildField(
+                  _cityCtrl,
+                  'City',
+                  Icons.location_city_outlined,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildField(_stateCtrl, 'State', Icons.map_outlined),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: _buildField(
+                  _areaCtrl,
+                  'Area / Locality',
+                  Icons.near_me_outlined,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildField(
+                  _pincodeCtrl,
+                  'Pincode',
+                  Icons.pin_outlined,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                ),
+              ),
+            ],
+          ),
+          _buildField(
+            _addressCtrl,
+            'Full Address',
+            Icons.home_outlined,
+            maxLines: 2,
+          ),
         ],
       ),
     );
@@ -489,7 +1072,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
-          prefixIcon: Icon(icon, size: 18, color: cs.onSurface.withValues(alpha: 0.4)),
+          prefixIcon: Icon(
+            icon,
+            size: 18,
+            color: cs.onSurface.withValues(alpha: 0.4),
+          ),
           filled: true,
           fillColor: cs.onSurface.withValues(alpha: 0.025),
           border: OutlineInputBorder(
@@ -512,11 +1099,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
           ),
-          labelStyle: TextStyle(fontSize: 13, color: cs.onSurface.withValues(alpha: 0.5)),
-          hintStyle: TextStyle(fontSize: 13, color: cs.onSurface.withValues(alpha: 0.3)),
-          contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: maxLines > 1 ? 14 : 0),
+          labelStyle: TextStyle(
+            fontSize: 13,
+            color: cs.onSurface.withValues(alpha: 0.5),
+          ),
+          hintStyle: TextStyle(
+            fontSize: 13,
+            color: cs.onSurface.withValues(alpha: 0.3),
+          ),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: maxLines > 1 ? 14 : 0,
+          ),
         ),
-        style: TextStyle(fontSize: 14, color: cs.onSurface, fontWeight: FontWeight.w500),
+        style: TextStyle(
+          fontSize: 14,
+          color: cs.onSurface,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }
@@ -529,7 +1129,11 @@ class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final Color color;
 
-  const _SectionHeader({required this.label, required this.icon, required this.color});
+  const _SectionHeader({
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -538,17 +1142,23 @@ class _SectionHeader extends StatelessWidget {
         Container(
           width: 3,
           height: 16,
-          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
         ),
         const SizedBox(width: 8),
         Icon(icon, size: 15, color: color),
         const SizedBox(width: 6),
-        Text(label,
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                color: color,
-                letterSpacing: 0.8)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            color: color,
+            letterSpacing: 0.8,
+          ),
+        ),
       ],
     );
   }
@@ -559,7 +1169,11 @@ class _ReadOnlyField extends StatelessWidget {
   final String value;
   final IconData icon;
 
-  const _ReadOnlyField({required this.label, required this.value, required this.icon});
+  const _ReadOnlyField({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -579,25 +1193,33 @@ class _ReadOnlyField extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: cs.onSurface.withValues(alpha: 0.35),
-                        letterSpacing: 0.4)),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface.withValues(alpha: 0.35),
+                    letterSpacing: 0.4,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   value.isEmpty ? '—' : value,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface.withValues(alpha: 0.4)),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withValues(alpha: 0.4),
+                  ),
                 ),
               ],
             ),
           ),
-          Icon(Icons.lock_outline_rounded, size: 13, color: cs.onSurface.withValues(alpha: 0.2)),
+          Icon(
+            Icons.lock_outline_rounded,
+            size: 13,
+            color: cs.onSurface.withValues(alpha: 0.2),
+          ),
         ],
       ),
     );
@@ -642,25 +1264,39 @@ class _PhotoHero extends StatelessWidget {
                   height: 100,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: accent.withValues(alpha: 0.35), width: 3),
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.35),
+                      width: 3,
+                    ),
                     image: bg != null
                         ? DecorationImage(image: bg, fit: BoxFit.cover)
                         : null,
                     color: accent.withValues(alpha: 0.08),
                   ),
                   child: bg == null
-                      ? Icon(Icons.person_outline_rounded, size: 40, color: accent.withValues(alpha: 0.5))
+                      ? Icon(
+                          Icons.person_outline_rounded,
+                          size: 40,
+                          color: accent.withValues(alpha: 0.5),
+                        )
                       : null,
                 ),
                 if (uploading)
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black.withValues(alpha: 0.45)),
+                        shape: BoxShape.circle,
+                        color: Colors.black.withValues(alpha: 0.45),
+                      ),
                       child: const Center(
-                        child: SizedBox(width: 22, height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white)),
+                        child: SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -674,11 +1310,18 @@ class _PhotoHero extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(color: cs.surface, width: 2.5),
                       boxShadow: [
-                        BoxShadow(color: accent.withValues(alpha: 0.35),
-                            blurRadius: 8, offset: const Offset(0, 2))
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
                       ],
                     ),
-                    child: const Icon(Icons.camera_alt_rounded, size: 14, color: Colors.white),
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      size: 14,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
@@ -686,8 +1329,13 @@ class _PhotoHero extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            photoBytes != null ? 'Photo ready — saves with form' : 'Tap to change photo',
-            style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.45)),
+            photoBytes != null
+                ? 'Photo ready — saves with form'
+                : 'Tap to change photo',
+            style: TextStyle(
+              fontSize: 12,
+              color: cs.onSurface.withValues(alpha: 0.45),
+            ),
           ),
         ],
       ),
@@ -709,17 +1357,34 @@ class _ErrorBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFDC2626).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFDC2626).withValues(alpha: 0.3)),
+        border: Border.all(
+          color: const Color(0xFFDC2626).withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 18),
+          const Icon(
+            Icons.error_outline_rounded,
+            color: Color(0xFFDC2626),
+            size: 18,
+          ),
           const SizedBox(width: 10),
-          Expanded(child: Text(message,
-              style: TextStyle(fontSize: 13, color: cs.onSurface.withValues(alpha: 0.85)))),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                fontSize: 13,
+                color: cs.onSurface.withValues(alpha: 0.85),
+              ),
+            ),
+          ),
           GestureDetector(
             onTap: onDismiss,
-            child: Icon(Icons.close_rounded, size: 16, color: cs.onSurface.withValues(alpha: 0.4)),
+            child: Icon(
+              Icons.close_rounded,
+              size: 16,
+              color: cs.onSurface.withValues(alpha: 0.4),
+            ),
           ),
         ],
       ),
@@ -752,7 +1417,10 @@ class _ChipEditor extends StatelessWidget {
 
     void submit() {
       final v = addCtrl.text.trim();
-      if (v.isNotEmpty) { onAdd(v); addCtrl.clear(); }
+      if (v.isNotEmpty) {
+        onAdd(v);
+        addCtrl.clear();
+      }
     }
 
     return Container(
@@ -766,83 +1434,129 @@ class _ChipEditor extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 6),
-            Text(label,
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 6),
+              Text(
+                label,
                 style: TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.w800,
-                    color: color, letterSpacing: 0.4)),
-          ]),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                  letterSpacing: 0.4,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
           if (items.isNotEmpty) ...[
             Wrap(
               spacing: 6,
               runSpacing: 6,
-              children: List.generate(items.length, (i) => GestureDetector(
-                onTap: () => onRemove(i),
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(10, 5, 6, 5),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: color.withValues(alpha: 0.25)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(items[i],
+              children: List.generate(
+                items.length,
+                (i) => GestureDetector(
+                  onTap: () => onRemove(i),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(10, 5, 6, 5),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: color.withValues(alpha: 0.25)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          items[i],
                           style: TextStyle(
-                              fontSize: 12, fontWeight: FontWeight.w600, color: color)),
-                      const SizedBox(width: 4),
-                      Icon(Icons.close_rounded, size: 13, color: color.withValues(alpha: 0.7)),
-                    ],
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: color,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.close_rounded,
+                          size: 13,
+                          color: color.withValues(alpha: 0.7),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              )),
+              ),
             ),
             const SizedBox(height: 8),
           ],
-          Row(children: [
-            Expanded(
-              child: TextField(
-                controller: addCtrl,
-                onSubmitted: (_) => submit(),
-                decoration: InputDecoration(
-                  hintText: 'Add ${label.toLowerCase()}...',
-                  hintStyle: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.3)),
-                  filled: true,
-                  fillColor: cs.onSurface.withValues(alpha: 0.03),
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                  border: OutlineInputBorder(
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: addCtrl,
+                  onSubmitted: (_) => submit(),
+                  decoration: InputDecoration(
+                    hintText: 'Add ${label.toLowerCase()}...',
+                    hintStyle: TextStyle(
+                      fontSize: 12,
+                      color: cs.onSurface.withValues(alpha: 0.3),
+                    ),
+                    filled: true,
+                    fillColor: cs.onSurface.withValues(alpha: 0.03),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 9,
+                    ),
+                    border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.2))),
-                  enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: cs.outline.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.18))),
-                  focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: cs.outline.withValues(alpha: 0.18),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: color.withValues(alpha: 0.6), width: 1.5)),
+                      borderSide: BorderSide(
+                        color: color.withValues(alpha: 0.6),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  style: TextStyle(fontSize: 13, color: cs.onSurface),
                 ),
-                style: TextStyle(fontSize: 13, color: cs.onSurface),
               ),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: submit,
-              child: Container(
-                padding: const EdgeInsets.all(9),
-                decoration: BoxDecoration(
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: submit,
+                child: Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
                     color: color,
                     borderRadius: BorderRadius.circular(8),
-                    boxShadow: [BoxShadow(
+                    boxShadow: [
+                      BoxShadow(
                         color: color.withValues(alpha: 0.3),
-                        blurRadius: 6, offset: const Offset(0, 2))]),
-                child: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.add_rounded,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
         ],
       ),
     );
@@ -936,8 +1650,10 @@ class _PhotoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     ImageProvider? bg;
-    if (bytes != null) bg = MemoryImage(bytes!);
-    else if (url.isNotEmpty) bg = NetworkImage(url);
+    if (bytes != null)
+      bg = MemoryImage(bytes!);
+    else if (url.isNotEmpty)
+      bg = NetworkImage(url);
 
     final size = 84.0;
     final radius = round ? size / 2 : 16.0;
@@ -955,11 +1671,20 @@ class _PhotoTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(radius),
-                  border: Border.all(color: accent.withValues(alpha: 0.3), width: 2.5),
-                  image: bg != null ? DecorationImage(image: bg, fit: BoxFit.cover) : null,
+                  border: Border.all(
+                    color: accent.withValues(alpha: 0.3),
+                    width: 2.5,
+                  ),
+                  image: bg != null
+                      ? DecorationImage(image: bg, fit: BoxFit.cover)
+                      : null,
                 ),
                 child: bg == null
-                    ? Icon(icon, size: 32, color: accent.withValues(alpha: 0.45))
+                    ? Icon(
+                        icon,
+                        size: 32,
+                        color: accent.withValues(alpha: 0.45),
+                      )
                     : null,
               ),
               if (uploading)
@@ -971,8 +1696,12 @@ class _PhotoTile extends StatelessWidget {
                     ),
                     child: const Center(
                       child: SizedBox(
-                        width: 20, height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -986,21 +1715,33 @@ class _PhotoTile extends StatelessWidget {
                     color: accent,
                     shape: BoxShape.circle,
                     border: Border.all(color: cs.surface, width: 2),
-                    boxShadow: [BoxShadow(
+                    boxShadow: [
+                      BoxShadow(
                         color: accent.withValues(alpha: 0.35),
-                        blurRadius: 6, offset: const Offset(0, 2))],
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: const Icon(Icons.camera_alt_rounded, size: 12, color: Colors.white),
+                  child: const Icon(
+                    Icons.camera_alt_rounded,
+                    size: 12,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 8),
-        Text(label,
-            style: TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w700,
-                color: cs.onSurface.withValues(alpha: 0.75))),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: cs.onSurface.withValues(alpha: 0.75),
+          ),
+        ),
         const SizedBox(height: 2),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -1008,15 +1749,25 @@ class _PhotoTile extends StatelessWidget {
             color: accent.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(6),
           ),
-          child: Text(sublabel,
-              style: TextStyle(
-                  fontSize: 10, fontWeight: FontWeight.w700,
-                  color: accent, letterSpacing: 0.3)),
+          child: Text(
+            sublabel,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: accent,
+              letterSpacing: 0.3,
+            ),
+          ),
         ),
         if (bytes != null) ...[
           const SizedBox(height: 3),
-          Text('Ready to save',
-              style: TextStyle(fontSize: 10, color: accent.withValues(alpha: 0.7))),
+          Text(
+            'Ready to save',
+            style: TextStyle(
+              fontSize: 10,
+              color: accent.withValues(alpha: 0.7),
+            ),
+          ),
         ],
       ],
     );

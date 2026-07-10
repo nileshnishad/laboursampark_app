@@ -922,10 +922,12 @@ class _ProfileViewState extends State<ProfileView> {
             DateTime? endDate = subscriptionEndRaw.isNotEmpty
                 ? DateTime.tryParse(subscriptionEndRaw)
                 : (startDateTime != null && durationDaysVal != null
-                    ? startDateTime.add(Duration(days: durationDaysVal))
-                    : null);
+                      ? startDateTime.add(Duration(days: durationDaysVal))
+                      : null);
 
-            final expiresOn = endDate != null ? _formatDate(endDate.toIso8601String()) : null;
+            final expiresOn = endDate != null
+                ? _formatDate(endDate.toIso8601String())
+                : null;
 
             final daysRemaining = endDate != null
                 ? endDate.difference(DateTime.now()).inDays
