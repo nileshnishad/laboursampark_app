@@ -24,9 +24,15 @@ class ProfileBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: border),
       ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w700, color: text, letterSpacing: 0.3)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: text,
+          letterSpacing: 0.3,
+        ),
+      ),
     );
   }
 }
@@ -37,8 +43,12 @@ class ProfileStatusItem extends StatelessWidget {
   final String value;
   final Color valueColor;
 
-  const ProfileStatusItem(
-      {super.key, required this.label, required this.value, required this.valueColor});
+  const ProfileStatusItem({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.valueColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -46,20 +56,26 @@ class ProfileStatusItem extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label,
-            style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                color: cs.onSurface.withValues(alpha: 0.4),
-                letterSpacing: 0.5)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            color: cs.onSurface.withValues(alpha: 0.4),
+            letterSpacing: 0.5,
+          ),
+        ),
         const SizedBox(height: 4),
-        Text(value,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                color: valueColor,
-                height: 1.3)),
+        Text(
+          value,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            color: valueColor,
+            height: 1.3,
+          ),
+        ),
       ],
     );
   }
@@ -71,8 +87,11 @@ class ProfileInfoItem {
   final String value;
   final Color? valueColor;
 
-  const ProfileInfoItem(
-      {required this.label, required this.value, this.valueColor});
+  const ProfileInfoItem({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
 }
 
 /// 2-column grid of info chips (label on top, value below)
@@ -100,21 +119,27 @@ class ProfileInfoGrid extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.label,
-                    style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        color: cs.onSurface.withValues(alpha: 0.4),
-                        letterSpacing: 0.5)),
+                Text(
+                  item.label,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface.withValues(alpha: 0.4),
+                    letterSpacing: 0.5,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(item.value,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: item.valueColor ?? cs.onSurface,
-                        height: 1.3)),
+                Text(
+                  item.value,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: item.valueColor ?? cs.onSurface,
+                    height: 1.3,
+                  ),
+                ),
               ],
             ),
           ),
@@ -144,7 +169,7 @@ class ProfileSectionCard extends StatefulWidget {
 }
 
 class _ProfileSectionCardState extends State<ProfileSectionCard> {
-  bool _expanded = true;
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -156,9 +181,10 @@ class _ProfileSectionCardState extends State<ProfileSectionCard> {
         border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 6,
-              offset: const Offset(0, 1))
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
+          ),
         ],
       ),
       child: Column(
@@ -174,7 +200,9 @@ class _ProfileSectionCardState extends State<ProfileSectionCard> {
                     width: 4,
                     height: 18,
                     decoration: BoxDecoration(
-                        color: widget.color, borderRadius: BorderRadius.circular(4)),
+                      color: widget.color,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Icon(widget.icon, size: 16, color: widget.color),
@@ -183,18 +211,20 @@ class _ProfileSectionCardState extends State<ProfileSectionCard> {
                     child: Text(
                       widget.title,
                       style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: cs.onSurface,
-                          letterSpacing: 0.4),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: cs.onSurface,
+                        letterSpacing: 0.4,
+                      ),
                     ),
                   ),
                   Icon(
-                      _expanded
-                          ? Icons.keyboard_arrow_up_rounded
-                          : Icons.keyboard_arrow_down_rounded,
-                      color: cs.onSurface.withValues(alpha: 0.35),
-                      size: 20),
+                    _expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: cs.onSurface.withValues(alpha: 0.35),
+                    size: 20,
+                  ),
                 ],
               ),
             ),
@@ -245,11 +275,20 @@ class ProfileActionTile extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-                child: Text(label,
-                    style: TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600, color: c))),
-            Icon(Icons.chevron_right_rounded,
-                color: cs.outline.withValues(alpha: 0.6), size: 20),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: c,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: cs.outline.withValues(alpha: 0.6),
+              size: 20,
+            ),
           ],
         ),
       ),

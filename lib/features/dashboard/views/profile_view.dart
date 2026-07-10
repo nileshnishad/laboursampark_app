@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 
+import '../../../common/models/skill_model.dart';
+import '../../../core/app_state.dart';
+import '../../../services/skills_service.dart';
 import '../widgets/profile_widgets.dart';
 
-class ProfileView extends StatelessWidget {
+class ProfileView extends StatefulWidget {
   final String fullName;
   final String userType;
   final Map<String, dynamic>? profileData;
@@ -31,6 +36,111 @@ class ProfileView extends StatelessWidget {
     required this.onLogout,
     required this.onUpdateProfile,
   });
+
+  @override
+  State<ProfileView> createState() => _ProfileViewState();
+}
+
+class _ProfileViewState extends State<ProfileView> {
+  String _appVersion = '';
+  List<SkillModel> _allSkills = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+    _loadSkills();
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _appVersion = 'v${info.version} (${info.buildNumber})';
+      });
+    }
+  }
+
+  Future<void> _loadSkills() async {
+    final cached = SkillsService.getCachedSkills();
+    if (cached != null && cached.isNotEmpty) {
+      if (mounted) setState(() => _allSkills = cached);
+      return;
+    }
+    final result = await SkillsService.getAllSkills();
+    if (mounted && result['success'] == true) {
+      setState(
+        () => _allSkills = (result['skills'] as List<SkillModel>? ?? []),
+      );
+    }
+  }
+
+  String _skillName(String idOrName, String langCode) {
+    if (_allSkills.isEmpty) return idOrName;
+    final match = _allSkills.where((s) => s.id == idOrName).firstOrNull;
+    if (match == null) return idOrName;
+    switch (langCode) {
+      case 'hi':
+        return match.hiName.isNotEmpty ? match.hiName : match.enName;
+      case 'mr':
+        return match.mrName.isNotEmpty ? match.mrName : match.enName;
+      default:
+        return match.enName.isNotEmpty ? match.enName : idOrName;
+    }
+  }
+
+  Widget _subInfoTile(
+    BuildContext ctx, {
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+    bool fullWidth = false,
+  }) {
+    final ics = Theme.of(ctx).colorScheme;
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: ics.onSurface.withValues(alpha: 0.4),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: ics.onSurface,
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   String _roleLabel(String ut) {
     switch (ut.toLowerCase()) {
@@ -71,84 +181,113 @@ class ProfileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final langCode = context.watch<AppState>().locale?.languageCode ?? 'en';
 
-    final profilePhotoUrl = (profileData?['profilePhotoUrl'] ?? '').toString();
-    final companyLogoUrl = (profileData?['companyLogoUrl'] ?? '').toString();
-    final companyName = (profileData?['companyName'] ?? '').toString();
-    final about = (profileData?['bio'] ?? profileData?['about'] ?? '').toString();
-    final age = (profileData?['age'] ?? '').toString();
+    final profilePhotoUrl = (widget.profileData?['profilePhotoUrl'] ?? '')
+        .toString();
+    final companyLogoUrl = (widget.profileData?['companyLogoUrl'] ?? '')
+        .toString();
+    final companyName = (widget.profileData?['companyName'] ?? '').toString();
+    final about =
+        (widget.profileData?['bio'] ?? widget.profileData?['about'] ?? '')
+            .toString();
     final experience =
-        (profileData?['experience'] ?? profileData?['experienceRange'] ?? '').toString();
-    final email = (profileData?['email'] ?? '').toString();
-    final mobile = (profileData?['mobile'] ?? '').toString();
-    final location = profileData?['location'] as Map<String, dynamic>?;
-    final city = (profileData?['city'] ?? location?['city'] ?? '').toString();
-    final state = (profileData?['state'] ?? location?['state'] ?? '').toString();
+        (widget.profileData?['experience'] ??
+                widget.profileData?['experienceRange'] ??
+                '')
+            .toString();
+    final email = (widget.profileData?['email'] ?? '').toString();
+    final mobile = (widget.profileData?['mobile'] ?? '').toString();
+    final location = widget.profileData?['location'] as Map<String, dynamic>?;
+    final city = (widget.profileData?['city'] ?? location?['city'] ?? '')
+        .toString();
+    final state = (widget.profileData?['state'] ?? location?['state'] ?? '')
+        .toString();
     final address = (location?['address'] ?? '').toString();
-    final createdAt = _formatDate((profileData?['createdAt'] ?? '').toString());
-    final lastLogin = _formatDate((profileData?['lastLogin'] ?? '').toString());
-    final skills = _asStringList(profileData?['skills']);
-    final workingHours = (profileData?['workingHours'] ?? '').toString();
-    final workTypes = _asStringList(profileData?['workTypes']);
-    final serviceCategories = _asStringList(profileData?['serviceCategories']);
-    final languages = _asStringList(profileData?['languages']);
-    final rawId = (profileData?['userId'] ?? profileData?['_id'] ?? '').toString();
+    final createdAt = _formatDate(
+      (widget.profileData?['createdAt'] ?? '').toString(),
+    );
+    final lastLogin = _formatDate(
+      (widget.profileData?['lastLogin'] ?? '').toString(),
+    );
+    final skills = _asStringList(widget.profileData?['skills']);
+    final languages = _asStringList(widget.profileData?['languages']);
+    final rawId =
+        (widget.profileData?['userId'] ?? widget.profileData?['_id'] ?? '')
+            .toString();
     final shortId = rawId.length > 6
         ? 'ID: #${rawId.substring(0, 6).toUpperCase()}'
         : (rawId.isNotEmpty ? 'ID: #$rawId' : '');
 
-    final displayVerified = (profileData?['display'] as bool?) ?? false;
-    final emailVerified = (profileData?['emailVerified'] as bool?) ?? false;
-    final mobileVerified = (profileData?['mobileVerified'] as bool?) ?? false;
-    final aadharVerified = (profileData?['aadharVerified'] as bool?) ?? false;
-    final availability = (profileData?['availability'] as bool?) ?? false;
+    final displayVerified = (widget.profileData?['display'] as bool?) ?? false;
+    final emailVerified =
+        (widget.profileData?['emailVerified'] as bool?) ?? false;
+    final mobileVerified =
+        (widget.profileData?['mobileVerified'] as bool?) ?? false;
+    final aadharVerified =
+        (widget.profileData?['aadharVerified'] as bool?) ?? false;
+    final availability =
+        (widget.profileData?['availability'] as bool?) ?? false;
 
-    final isContractor = userType.toLowerCase() == 'contractor';
-    final isSubContractor = userType.toLowerCase() == 'sub_contractor';
+    final isContractor = widget.userType.toLowerCase() == 'contractor';
+    final isSubContractor = widget.userType.toLowerCase() == 'sub_contractor';
     final avatarColor = isContractor
         ? const Color(0xFF059669)
         : isSubContractor
-            ? const Color(0xFF7C3AED)
-            : const Color(0xFF2563EB);
+        ? const Color(0xFF7C3AED)
+        : const Color(0xFF2563EB);
 
-    final nameParts = fullName.trim().split(RegExp(r'\s+'));
+    final nameParts = widget.fullName.trim().split(RegExp(r'\s+'));
     final initials = nameParts.length >= 2
         ? '${nameParts[0][0]}${nameParts[1][0]}'.toUpperCase()
-        : (fullName.isNotEmpty
-            ? fullName.substring(0, fullName.length > 1 ? 2 : 1).toUpperCase()
-            : 'LS');
+        : (widget.fullName.isNotEmpty
+              ? widget.fullName
+                    .substring(0, widget.fullName.length > 1 ? 2 : 1)
+                    .toUpperCase()
+              : 'LS');
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        if (profileLoading)
+        if (widget.profileLoading)
           const Padding(
             padding: EdgeInsets.only(bottom: 10),
             child: LinearProgressIndicator(color: Color(0xFF2563EB)),
           ),
-        if (profileError != null)
+        if (widget.profileError != null)
           Container(
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: const Color(0xFFDC2626).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFDC2626).withValues(alpha: 0.3)),
+              border: Border.all(
+                color: const Color(0xFFDC2626).withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.error_outline_rounded,
-                    color: Color(0xFFDC2626), size: 18),
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: Color(0xFFDC2626),
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
-                    child: Text(profileError!,
-                        style: TextStyle(
-                            color: cs.onSurface.withValues(alpha: 0.8), fontSize: 13))),
+                  child: Text(
+                    widget.profileError!,
+                    style: TextStyle(
+                      color: cs.onSurface.withValues(alpha: 0.8),
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
                 TextButton(
-                  onPressed: onRetry,
+                  onPressed: widget.onRetry,
                   style: TextButton.styleFrom(
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   child: const Text('Retry'),
                 ),
               ],
@@ -156,49 +295,62 @@ class ProfileView extends StatelessWidget {
           ),
 
         // Subscription banner
-        if (!subscriptionActive)
+        if (!widget.subscriptionActive)
           Container(
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
             decoration: BoxDecoration(
               color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+              border: Border.all(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.warning_amber_rounded,
-                    color: Color(0xFFF59E0B), size: 20),
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Color(0xFFF59E0B),
+                  size: 20,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Attention Required',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: cs.onSurface,
-                              fontSize: 14)),
+                      Text(
+                        'Attention Required',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface,
+                          fontSize: 14,
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       RichText(
                         text: TextSpan(
                           style: TextStyle(
-                              color: cs.onSurface.withValues(alpha: 0.75),
-                              fontSize: 13,
-                              height: 1.4),
+                            color: cs.onSurface.withValues(alpha: 0.75),
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
                           children: [
                             const TextSpan(text: 'Your profile is currently '),
                             const TextSpan(
-                                text: 'hidden',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFFDC2626))),
+                              text: 'hidden',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFDC2626),
+                              ),
+                            ),
                             TextSpan(
-                                text:
-                                    '. To make your account visible and access all features, please pay the subscription amount.',
-                                style: TextStyle(
-                                    color: cs.onSurface.withValues(alpha: 0.75))),
+                              text:
+                                  '. To make your account visible and access all features, please pay the subscription amount.',
+                              style: TextStyle(
+                                color: cs.onSurface.withValues(alpha: 0.75),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -207,19 +359,29 @@ class ProfileView extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton(
-                  onPressed: () => onShowSubscription(subscriptionPlan),
+                  onPressed: () =>
+                      widget.onShowSubscription(widget.subscriptionPlan),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2563EB),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     textStyle: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w700),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                  child: const Text('Pay\nSubscription', textAlign: TextAlign.center),
+                  child: const Text(
+                    'Pay\nSubscription',
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ],
             ),
@@ -233,9 +395,10 @@ class ProfileView extends StatelessWidget {
             border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2))
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
             ],
           ),
           child: Column(
@@ -252,24 +415,31 @@ class ProfileView extends StatelessWidget {
                         CircleAvatar(
                           radius: 42,
                           backgroundColor: avatarColor,
-                          backgroundImage: (isContractor || isSubContractor) &&
+                          backgroundImage:
+                              (isContractor || isSubContractor) &&
                                   companyLogoUrl.isNotEmpty
                               ? NetworkImage(companyLogoUrl)
                               : profilePhotoUrl.isNotEmpty
-                                  ? NetworkImage(profilePhotoUrl)
-                                  : null,
+                              ? NetworkImage(profilePhotoUrl)
+                              : null,
                           child: (isContractor || isSubContractor)
                               ? (companyLogoUrl.isEmpty
-                                  ? const Icon(Icons.business_center_rounded,
-                                      size: 28, color: Colors.white)
-                                  : null)
+                                    ? const Icon(
+                                        Icons.business_center_rounded,
+                                        size: 28,
+                                        color: Colors.white,
+                                      )
+                                    : null)
                               : (profilePhotoUrl.isEmpty
-                                  ? Text(initials,
-                                      style: const TextStyle(
+                                    ? Text(
+                                        initials,
+                                        style: const TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.w800,
-                                          color: Colors.white))
-                                  : null),
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : null),
                         ),
                         if ((isContractor || isSubContractor) &&
                             profilePhotoUrl.isNotEmpty &&
@@ -278,8 +448,9 @@ class ProfileView extends StatelessWidget {
                             right: -4,
                             top: -4,
                             child: CircleAvatar(
-                                radius: 14,
-                                backgroundImage: NetworkImage(profilePhotoUrl)),
+                              radius: 14,
+                              backgroundImage: NetworkImage(profilePhotoUrl),
+                            ),
                           ),
                         Positioned(
                           right: 0,
@@ -287,7 +458,9 @@ class ProfileView extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.all(2),
                             decoration: BoxDecoration(
-                                color: cs.surface, shape: BoxShape.circle),
+                              color: cs.surface,
+                              shape: BoxShape.circle,
+                            ),
                             child: Container(
                               width: 20,
                               height: 20,
@@ -297,8 +470,11 @@ class ProfileView extends StatelessWidget {
                                     : cs.onSurface.withValues(alpha: 0.35),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.check,
-                                  size: 12, color: Colors.white),
+                              child: const Icon(
+                                Icons.check,
+                                size: 12,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -310,27 +486,34 @@ class ProfileView extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            fullName.isEmpty ? 'User' : fullName,
+                            widget.fullName.isEmpty ? 'User' : widget.fullName,
                             style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                                color: cs.onSurface),
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: cs.onSurface,
+                            ),
                           ),
                           if ((isContractor || isSubContractor) &&
                               companyName.isNotEmpty) ...[
                             const SizedBox(height: 3),
                             Row(
                               children: [
-                                Icon(Icons.business_rounded,
-                                    size: 13, color: avatarColor),
+                                Icon(
+                                  Icons.business_rounded,
+                                  size: 13,
+                                  color: avatarColor,
+                                ),
                                 const SizedBox(width: 4),
                                 Flexible(
-                                  child: Text(companyName,
-                                      style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: avatarColor),
-                                      overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    companyName,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: avatarColor,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ],
                             ),
@@ -341,8 +524,11 @@ class ProfileView extends StatelessWidget {
                             runSpacing: 6,
                             children: [
                               ProfileBadge(
-                                  label: _roleLabel(userType).toUpperCase(),
-                                  color: avatarColor),
+                                label: _roleLabel(
+                                  widget.userType,
+                                ).toUpperCase(),
+                                color: avatarColor,
+                              ),
                               if (shortId.isNotEmpty)
                                 ProfileBadge(label: shortId),
                             ],
@@ -352,10 +538,12 @@ class ProfileView extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     GestureDetector(
-                      onTap: onUpdateProfile,
+                      onTap: widget.onUpdateProfile,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 8),
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: avatarColor,
                           borderRadius: BorderRadius.circular(8),
@@ -364,11 +552,12 @@ class ProfileView extends StatelessWidget {
                           'UPDATE\nPROFILE',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              height: 1.4,
-                              letterSpacing: 0.3),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1.4,
+                            letterSpacing: 0.3,
+                          ),
                         ),
                       ),
                     ),
@@ -388,14 +577,16 @@ class ProfileView extends StatelessWidget {
                   children: [
                     Expanded(
                       child: ProfileStatusItem(
-                          label: 'STATUS',
-                          value: '● ONLINE',
-                          valueColor: const Color(0xFF059669)),
+                        label: 'STATUS',
+                        value: '● ONLINE',
+                        valueColor: const Color(0xFF059669),
+                      ),
                     ),
                     Container(
-                        width: 1,
-                        height: 36,
-                        color: cs.outline.withValues(alpha: 0.2)),
+                      width: 1,
+                      height: 36,
+                      color: cs.outline.withValues(alpha: 0.2),
+                    ),
                     Expanded(
                       child: ProfileStatusItem(
                         label: 'VISIBLE',
@@ -406,14 +597,17 @@ class ProfileView extends StatelessWidget {
                       ),
                     ),
                     Container(
-                        width: 1,
-                        height: 36,
-                        color: cs.outline.withValues(alpha: 0.2)),
+                      width: 1,
+                      height: 36,
+                      color: cs.outline.withValues(alpha: 0.2),
+                    ),
                     Expanded(
                       child: ProfileStatusItem(
                         label: isContractor ? 'HIRING' : 'AVAILABILITY',
                         value: availability
-                            ? (isContractor ? 'OPEN\nTO HIRE' : 'READY TO\nWORK')
+                            ? (isContractor
+                                  ? 'OPEN\nTO HIRE'
+                                  : 'READY TO\nWORK')
                             : (isContractor ? 'NOT HIRING' : 'BUSY'),
                         valueColor: availability
                             ? const Color(0xFF059669)
@@ -433,17 +627,20 @@ class ProfileView extends StatelessWidget {
           title: 'CONTACT INFORMATION',
           icon: Icons.contact_page_outlined,
           color: const Color(0xFF2563EB),
-          child: ProfileInfoGrid(items: [
-            ProfileInfoItem(
-                label: 'FULL NAME',
-                value: fullName.isEmpty ? 'Not specified' : fullName),
-            if ((isContractor || isSubContractor) && companyName.isNotEmpty)
-              ProfileInfoItem(label: 'COMPANY NAME', value: companyName),
-            ProfileInfoItem(label: 'EMAIL', value: email.isEmpty ? 'Not specified' : email),
-            ProfileInfoItem(label: 'PHONE', value: mobile.isEmpty ? 'Not specified' : mobile),
-            if (!isContractor && !isSubContractor)
-              ProfileInfoItem(label: 'AGE', value: age.isEmpty ? 'Not specified' : age),
-          ]),
+          child: ProfileInfoGrid(
+            items: [
+              if ((isContractor || isSubContractor) && companyName.isNotEmpty)
+                ProfileInfoItem(label: 'COMPANY NAME', value: companyName),
+              ProfileInfoItem(
+                label: 'EMAIL',
+                value: email.isEmpty ? 'Not specified' : email,
+              ),
+              ProfileInfoItem(
+                label: 'PHONE',
+                value: mobile.isEmpty ? 'Not specified' : mobile,
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 10),
 
@@ -459,70 +656,76 @@ class ProfileView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ProfileInfoGrid(items: [
-                ProfileInfoItem(
-                    label: (isContractor || isSubContractor)
-                        ? 'YEARS IN BUSINESS'
-                        : 'EXPERIENCE',
-                    value: experience.isEmpty ? 'Not specified' : experience),
-                if (!isContractor && !isSubContractor)
+              ProfileInfoGrid(
+                items: [
                   ProfileInfoItem(
-                      label: 'WORKING HOURS',
-                      value: workingHours.isEmpty ? 'Not specified' : workingHours),
-                ProfileInfoItem(
-                    label: (isContractor || isSubContractor)
-                        ? 'WORK TYPES / TRADE'
-                        : 'WORK TYPES',
-                    value: workTypes.isEmpty ? 'Not specified' : workTypes.join(', ')),
-                ProfileInfoItem(
                     label: (isContractor || isSubContractor)
                         ? 'SPECIALIZATION'
                         : 'SKILLS',
-                    value: skills.isEmpty ? 'Not specified' : skills.join(', ')),
-                ProfileInfoItem(
-                    label: 'SERVICE CATEGORIES',
-                    value: serviceCategories.isEmpty
+                    value: skills.isEmpty
                         ? 'Not specified'
-                        : serviceCategories.join(', ')),
-                ProfileInfoItem(
+                        : skills
+                              .map((id) => _skillName(id, langCode))
+                              .join(', '),
+                  ),
+                  ProfileInfoItem(
                     label: 'LANGUAGES',
-                    value: languages.isEmpty ? 'Not specified' : languages.join(', ')),
-              ]),
+                    value: languages.isEmpty
+                        ? 'Not specified'
+                        : languages.join(', '),
+                  ),
+
+                  ProfileInfoItem(
+                    label: (isContractor || isSubContractor)
+                        ? 'YEARS IN BUSINESS'
+                        : 'EXPERIENCE',
+                    value: experience.isEmpty ? 'Not specified' : experience,
+                  ),
+                ],
+              ),
               if (about.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                Builder(builder: (ctx) {
-                  final ics = Theme.of(ctx).colorScheme;
-                  return Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: ics.onSurface.withValues(alpha: 0.04),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: ics.outline.withValues(alpha: 0.2)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          (isContractor || isSubContractor)
-                              ? 'ABOUT COMPANY'
-                              : 'ABOUT',
-                          style: TextStyle(
+                Builder(
+                  builder: (ctx) {
+                    final ics = Theme.of(ctx).colorScheme;
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: ics.onSurface.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: ics.outline.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            (isContractor || isSubContractor)
+                                ? 'ABOUT COMPANY'
+                                : 'ABOUT',
+                            style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: ics.onSurface.withValues(alpha: 0.45),
-                              letterSpacing: 0.5),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(about,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            about,
                             style: TextStyle(
-                                fontSize: 13,
-                                color: ics.onSurface.withValues(alpha: 0.8),
-                                height: 1.5)),
-                      ],
-                    ),
-                  );
-                }),
+                              fontSize: 13,
+                              color: ics.onSurface.withValues(alpha: 0.8),
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ],
             ],
           ),
@@ -531,16 +734,117 @@ class ProfileView extends StatelessWidget {
 
         // Location
         ProfileSectionCard(
-          title: 'LOCATION PRESENCE',
+          title: 'ADDRESS & LOCATION',
           icon: Icons.location_on_outlined,
           color: const Color(0xFF059669),
-          child: ProfileInfoGrid(items: [
-            ProfileInfoItem(label: 'CITY', value: city.isEmpty ? 'Not specified' : city),
-            ProfileInfoItem(label: 'STATE', value: state.isEmpty ? 'Not specified' : state),
-            ProfileInfoItem(
-                label: 'ADDRESS',
-                value: address.isEmpty ? 'Not specified' : address),
-          ]),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ProfileInfoGrid(
+                items: [
+                  ProfileInfoItem(
+                    label: 'CITY',
+                    value: city.isEmpty ? 'Not specified' : city,
+                  ),
+                  ProfileInfoItem(
+                    label: 'STATE',
+                    value: state.isEmpty ? 'Not specified' : state,
+                  ),
+                ],
+              ),
+              if (address.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Builder(
+                  builder: (ctx) {
+                    final ics = Theme.of(ctx).colorScheme;
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: ics.onSurface.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: ics.outline.withValues(alpha: 0.18),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ADDRESS',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: ics.onSurface.withValues(alpha: 0.4),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            address,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: ics.onSurface,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ] else ...[
+                const SizedBox(height: 8),
+                Builder(
+                  builder: (ctx) {
+                    final ics = Theme.of(ctx).colorScheme;
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: ics.onSurface.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: ics.outline.withValues(alpha: 0.18),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ADDRESS',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: ics.onSurface.withValues(alpha: 0.4),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Not specified',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: ics.onSurface,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
         ),
         const SizedBox(height: 10),
 
@@ -549,133 +853,584 @@ class ProfileView extends StatelessWidget {
           title: 'ACCOUNT TRUST & VERIFICATION',
           icon: Icons.verified_outlined,
           color: const Color(0xFF2563EB),
-          child: ProfileInfoGrid(items: [
-            ProfileInfoItem(
+          child: ProfileInfoGrid(
+            items: [
+              ProfileInfoItem(
                 label: 'EMAIL',
-                value: emailVerified ? '\u2713 Verified' : '\u2717 Not Verified',
-                valueColor:
-                    emailVerified ? const Color(0xFF059669) : const Color(0xFFDC2626)),
-            ProfileInfoItem(
+                value: emailVerified
+                    ? '\u2713 Verified'
+                    : '\u2717 Not Verified',
+                valueColor: emailVerified
+                    ? const Color(0xFF059669)
+                    : const Color(0xFFDC2626),
+              ),
+              ProfileInfoItem(
                 label: 'MOBILE',
-                value: mobileVerified ? '\u2713 Verified' : '\u2717 Not Verified',
-                valueColor:
-                    mobileVerified ? const Color(0xFF059669) : const Color(0xFFDC2626)),
-            ProfileInfoItem(
+                value: mobileVerified
+                    ? '\u2713 Verified'
+                    : '\u2717 Not Verified',
+                valueColor: mobileVerified
+                    ? const Color(0xFF059669)
+                    : const Color(0xFFDC2626),
+              ),
+              ProfileInfoItem(
                 label: 'AADHAR',
-                value: aadharVerified ? '\u2713 Verified' : '\u2717 Not Verified',
-                valueColor:
-                    aadharVerified ? const Color(0xFF059669) : const Color(0xFFDC2626)),
-            ProfileInfoItem(label: 'ACCOUNT CREATED', value: createdAt),
-            ProfileInfoItem(label: 'LAST LOGIN', value: lastLogin),
-          ]),
+                value: aadharVerified
+                    ? '\u2713 Verified'
+                    : '\u2717 Not Verified',
+                valueColor: aadharVerified
+                    ? const Color(0xFF059669)
+                    : const Color(0xFFDC2626),
+              ),
+              ProfileInfoItem(label: 'ACCOUNT CREATED', value: createdAt),
+              ProfileInfoItem(label: 'LAST LOGIN', value: lastLogin),
+            ],
+          ),
         ),
         const SizedBox(height: 10),
 
         // Subscription
-        ProfileSectionCard(
-          title: subscriptionActive ? 'SUBSCRIPTION ACTIVE' : 'SUBSCRIPTION REQUIRED',
-          icon: subscriptionActive
-              ? Icons.workspace_premium_rounded
-              : Icons.lock_outline_rounded,
-          color: subscriptionActive
-              ? const Color(0xFF059669)
-              : const Color(0xFFF59E0B),
-          child: Builder(builder: (ctx) {
+        Builder(
+          builder: (ctx) {
             final ics = Theme.of(ctx).colorScheme;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (subscriptionPlan != null) ...[
-                  ProfileInfoGrid(items: [
-                    ProfileInfoItem(
-                        label: 'PLAN AMOUNT',
-                        value: '\u20b9${subscriptionPlan!['price']}'),
-                    ProfileInfoItem(
-                        label: 'DURATION',
-                        value: '${subscriptionPlan!['durationDays']} days'),
-                    if ((subscriptionPlan!['pricePerDay'] as num?) != null)
-                      ProfileInfoItem(
-                          label: 'PER DAY',
-                          value:
-                              '\u20b9${(subscriptionPlan!['pricePerDay'] as num).toStringAsFixed(2)}'),
-                  ]),
-                  const SizedBox(height: 12),
-                ] else ...[
-                  Text(
-                    subscriptionActive
-                        ? 'You are visible to contractors and can apply for jobs freely.'
-                        : 'Get more interactions and find more job opportunities.',
-                    style: TextStyle(
-                        fontSize: 13,
-                        color: ics.onSurface.withValues(alpha: 0.75),
-                        height: 1.5),
+
+            // Subscription date fields (read from profileData with fallbacks)
+            final subscribedAtRaw =
+                (widget.profileData?['subscribedAt'] ??
+                        widget.profileData?['subscriptionStartDate'] ??
+                        widget.profileData?['displayActivatedAt'] ??
+                        '')
+                    .toString();
+            final subscriptionEndRaw =
+                (widget.profileData?['subscriptionEndDate'] ??
+                        widget.profileData?['subscriptionExpiry'] ??
+                        widget.profileData?['subscriptionExpiresAt'] ??
+                        '')
+                    .toString();
+
+            final subscribedOn = subscribedAtRaw.isNotEmpty
+                ? _formatDate(subscribedAtRaw)
+                : null;
+
+            // Calculate end date: prefer API field, fallback to activatedAt + durationDays
+            final durationDaysVal =
+                (widget.subscriptionPlan?['durationDays'] as num?)?.toInt();
+            final startDateTime = subscribedAtRaw.isNotEmpty
+                ? DateTime.tryParse(subscribedAtRaw)
+                : null;
+
+            DateTime? endDate = subscriptionEndRaw.isNotEmpty
+                ? DateTime.tryParse(subscriptionEndRaw)
+                : (startDateTime != null && durationDaysVal != null
+                    ? startDateTime.add(Duration(days: durationDaysVal))
+                    : null);
+
+            final expiresOn = endDate != null ? _formatDate(endDate.toIso8601String()) : null;
+
+            final daysRemaining = endDate != null
+                ? endDate.difference(DateTime.now()).inDays
+                : null;
+
+            if (widget.subscriptionActive) {
+              // ── ACTIVE STATE ─────────────────────────────────────────
+              return Container(
+                decoration: BoxDecoration(
+                  color: ics.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: const Color(0xFF059669).withValues(alpha: 0.35),
                   ),
-                  const SizedBox(height: 12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF059669).withValues(alpha: 0.08),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(13),
+                        ),
+                        border: Border(
+                          bottom: BorderSide(
+                            color: const Color(
+                              0xFF059669,
+                            ).withValues(alpha: 0.2),
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.workspace_premium_rounded,
+                            color: Color(0xFF059669),
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'SUBSCRIPTION ACTIVE',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: ics.onSurface,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF059669),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              '● ACTIVE',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Info rows
+                    Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        children: [
+                          // Days remaining — prominent
+                          if (daysRemaining != null) ...[
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                color: daysRemaining <= 7
+                                    ? const Color(
+                                        0xFFDC2626,
+                                      ).withValues(alpha: 0.07)
+                                    : const Color(
+                                        0xFF059669,
+                                      ).withValues(alpha: 0.07),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: daysRemaining <= 7
+                                      ? const Color(
+                                          0xFFDC2626,
+                                        ).withValues(alpha: 0.25)
+                                      : const Color(
+                                          0xFF059669,
+                                        ).withValues(alpha: 0.25),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    daysRemaining <= 7
+                                        ? Icons.timer_outlined
+                                        : Icons.hourglass_bottom_rounded,
+                                    size: 28,
+                                    color: daysRemaining <= 7
+                                        ? const Color(0xFFDC2626)
+                                        : const Color(0xFF059669),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'DAYS REMAINING',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w700,
+                                          color: ics.onSurface.withValues(
+                                            alpha: 0.45,
+                                          ),
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        daysRemaining <= 0
+                                            ? 'Expires today'
+                                            : '$daysRemaining ${daysRemaining == 1 ? 'day' : 'days'} left',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          color: daysRemaining <= 7
+                                              ? const Color(0xFFDC2626)
+                                              : const Color(0xFF059669),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+
+                          // Activated on + Valid till grid
+                          Row(
+                            children: [
+                              if (subscribedOn != null)
+                                Expanded(
+                                  child: _subInfoTile(
+                                    ctx,
+                                    label: 'ACTIVATED ON',
+                                    value: subscribedOn,
+                                    icon: Icons.play_circle_outline_rounded,
+                                    color: const Color(0xFF059669),
+                                  ),
+                                ),
+                              if (subscribedOn != null && expiresOn != null)
+                                const SizedBox(width: 8),
+                              if (expiresOn != null)
+                                Expanded(
+                                  child: _subInfoTile(
+                                    ctx,
+                                    label: 'VALID TILL',
+                                    value: expiresOn,
+                                    icon: Icons.event_rounded,
+                                    color:
+                                        daysRemaining != null &&
+                                            daysRemaining <= 7
+                                        ? const Color(0xFFDC2626)
+                                        : const Color(0xFF059669),
+                                  ),
+                                ),
+                              // Fallback when no dates available
+                              if (subscribedOn == null && expiresOn == null)
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: ics.onSurface.withValues(
+                                        alpha: 0.04,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: ics.outline.withValues(
+                                          alpha: 0.18,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Your profile is visible to contractors and you can apply for jobs freely.',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: ics.onSurface.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 12),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // ── INACTIVE STATE ────────────────────────────────────────
+            final price = widget.subscriptionPlan?['price'];
+            final durationDays = widget.subscriptionPlan?['durationDays'];
+            final pricePerDay = widget.subscriptionPlan?['pricePerDay'] as num?;
+
+            return Container(
+              decoration: BoxDecoration(
+                color: ics.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
                 ],
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => onShowSubscription(subscriptionPlan),
-                    icon: Icon(
-                        subscriptionActive
-                            ? Icons.manage_accounts_rounded
-                            : Icons.payment_rounded,
-                        size: 18),
-                    label: Text(subscriptionActive
-                        ? 'Manage Subscription'
-                        : 'Pay Now \u2014 Get Visible'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: subscriptionActive
-                          ? const Color(0xFF059669)
-                          : const Color(0xFF2563EB),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      textStyle: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(13),
+                      ),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: const Color(
+                            0xFFF59E0B,
+                          ).withValues(alpha: 0.25),
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.lock_outline_rounded,
+                          color: Color(0xFFF59E0B),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'SUBSCRIPTION REQUIRED',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: ics.onSurface,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+
+                  Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Price + Duration
+                        if (price != null || durationDays != null) ...[
+                          Row(
+                            children: [
+                              if (price != null)
+                                Expanded(
+                                  child: _subInfoTile(
+                                    ctx,
+                                    label: 'PLAN AMOUNT',
+                                    value: '₹$price',
+                                    icon: Icons.currency_rupee_rounded,
+                                    color: const Color(0xFF2563EB),
+                                  ),
+                                ),
+                              if (price != null && durationDays != null)
+                                const SizedBox(width: 8),
+                              if (durationDays != null)
+                                Expanded(
+                                  child: _subInfoTile(
+                                    ctx,
+                                    label: 'VALIDITY',
+                                    value: '$durationDays days',
+                                    icon: Icons.date_range_rounded,
+                                    color: const Color(0xFF7C3AED),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          if (pricePerDay != null) ...[
+                            const SizedBox(height: 8),
+                            _subInfoTile(
+                              ctx,
+                              label: 'COST PER DAY',
+                              value: '₹${pricePerDay.toStringAsFixed(2)}',
+                              icon: Icons.today_rounded,
+                              color: const Color(0xFF059669),
+                              fullWidth: true,
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                        ],
+
+                        // Benefits
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFF2563EB,
+                            ).withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: const Color(
+                                0xFF2563EB,
+                              ).withValues(alpha: 0.15),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'WHAT YOU GET',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF2563EB),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ...[
+                                'Your profile becomes visible to contractors',
+                                'Apply for jobs without restrictions',
+                                'Get discovered by top contractors',
+                                'Access full contact details of employers',
+                              ].map(
+                                (benefit) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 6),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(
+                                        Icons.check_circle_rounded,
+                                        size: 15,
+                                        color: Color(0xFF2563EB),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          benefit,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: ics.onSurface.withValues(
+                                              alpha: 0.75,
+                                            ),
+                                            height: 1.3,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Pay button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () => widget.onShowSubscription(
+                              widget.subscriptionPlan,
+                            ),
+                            icon: const Icon(Icons.payment_rounded, size: 18),
+                            label: const Text('Pay Now \u2014 Get Visible'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2563EB),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             );
-          }),
+          },
         ),
         const SizedBox(height: 10),
 
         // Actions
-        Builder(builder: (ctx) {
-          final ics = Theme.of(ctx).colorScheme;
-          return Container(
-            decoration: BoxDecoration(
-              color: ics.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: ics.outline.withValues(alpha: 0.2)),
+        Builder(
+          builder: (ctx) {
+            final ics = Theme.of(ctx).colorScheme;
+            return Container(
+              decoration: BoxDecoration(
+                color: ics.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: ics.outline.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                children: [
+                  ProfileActionTile(
+                    icon: Icons.settings_outlined,
+                    label: 'Settings',
+                    onTap: widget.onSettings,
+                  ),
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    color: ics.outline.withValues(alpha: 0.2),
+                  ),
+                  ProfileActionTile(
+                    icon: Icons.refresh_rounded,
+                    label: 'Refresh Profile',
+                    onTap: widget.onRetry,
+                  ),
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    color: ics.outline.withValues(alpha: 0.2),
+                  ),
+                  ProfileActionTile(
+                    icon: Icons.logout_rounded,
+                    label: 'Logout',
+                    color: const Color(0xFFDC2626),
+                    onTap: widget.onLogout,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // App Version
+        if (_appVersion.isNotEmpty)
+          Center(
+            child: Text(
+              'App Version $_appVersion',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.4),
+                fontWeight: FontWeight.w500,
+              ),
             ),
-            child: Column(
-              children: [
-                ProfileActionTile(
-                  icon: Icons.settings_outlined,
-                  label: 'Settings',
-                  onTap: onSettings,
-                ),
-                Divider(height: 1, indent: 56, color: ics.outline.withValues(alpha: 0.2)),
-                ProfileActionTile(
-                  icon: Icons.refresh_rounded,
-                  label: 'Refresh Profile',
-                  onTap: onRetry,
-                ),
-                Divider(height: 1, indent: 56, color: ics.outline.withValues(alpha: 0.2)),
-                ProfileActionTile(
-                  icon: Icons.logout_rounded,
-                  label: 'Logout',
-                  color: const Color(0xFFDC2626),
-                  onTap: onLogout,
-                ),
-              ],
-            ),
-          );
-        }),
+          ),
       ],
     );
   }
