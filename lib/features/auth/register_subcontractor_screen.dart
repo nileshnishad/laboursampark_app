@@ -414,12 +414,13 @@ class _RegisterSubContractorScreenState
     required Color color,
     required List<Widget> children,
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: cs.outline),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -472,11 +473,11 @@ class _RegisterSubContractorScreenState
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
@@ -491,7 +492,7 @@ class _RegisterSubContractorScreenState
       borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
     ),
     filled: true,
-    fillColor: const Color(0xFFFAFAFA),
+    fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
   );
 
   Widget _uploadTile({
@@ -504,6 +505,7 @@ class _RegisterSubContractorScreenState
     required VoidCallback onTap,
   }) {
     final done = url != null;
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: uploading ? null : onTap,
       child: Container(
@@ -513,14 +515,14 @@ class _RegisterSubContractorScreenState
               ? const Color(0xFFF5F3FF)
               : hasFile
               ? const Color(0xFFFFF7ED)
-              : const Color(0xFFFAFAFA),
+              : cs.surfaceContainerLow,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: done
                 ? _primary
                 : hasFile
                 ? const Color(0xFFF59E0B)
-                : const Color(0xFFD1D5DB),
+                : cs.outline,
           ),
         ),
         child: Row(
@@ -548,7 +550,7 @@ class _RegisterSubContractorScreenState
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: done ? _primary : const Color(0xFF374151),
+                      color: done ? _primary : cs.onSurface,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -590,10 +592,10 @@ class _RegisterSubContractorScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF111827),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 1,
         surfaceTintColor: Colors.transparent,
@@ -936,12 +938,12 @@ class _RegisterSubContractorScreenState
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
+                        Text(
                           'Business Types *',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF374151),
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -958,20 +960,20 @@ class _RegisterSubContractorScreenState
                           vertical: 16,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFAFAFA),
+                          color: Theme.of(context).colorScheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: _selectedBusinessTypeIds.isEmpty
-                                ? const Color(0xFFD1D5DB)
+                                ? Theme.of(context).colorScheme.outline
                                 : _primary,
                           ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.category_outlined,
                               size: 20,
-                              color: Color(0xFF6B7280),
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -1220,13 +1222,13 @@ class _RegisterSubContractorScreenState
                           ),
                         ),
                         const SizedBox(width: 10),
-                        const Expanded(
+                        Expanded(
                           child: Text.rich(
                             TextSpan(
                               text: 'I agree to the ',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Color(0xFF374151),
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
                               ),
                               children: [
                                 TextSpan(
@@ -1299,9 +1301,9 @@ class _RegisterSubContractorScreenState
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Container(
           height: MediaQuery.of(context).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             children: [
@@ -1384,12 +1386,12 @@ class _RegisterSubContractorScreenState
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? _primary.withValues(alpha: 0.08)
-                                    : const Color(0xFFF9FAFB),
+                                    : Theme.of(context).colorScheme.surfaceContainerLow,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isSelected
                                       ? _primary
-                                      : const Color(0xFFE5E7EB),
+                                      : Theme.of(context).colorScheme.outline,
                                   width: isSelected ? 1.5 : 1,
                                 ),
                               ),
@@ -1417,7 +1419,7 @@ class _RegisterSubContractorScreenState
                                             fontWeight: FontWeight.w600,
                                             color: isSelected
                                                 ? _primary
-                                                : const Color(0xFF111827),
+                                                : Theme.of(context).colorScheme.onSurface,
                                           ),
                                         ),
                                         const SizedBox(height: 2),
@@ -1447,7 +1449,7 @@ class _RegisterSubContractorScreenState
                   bottom: 16 + MediaQuery.of(context).padding.bottom,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.05),

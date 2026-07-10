@@ -247,9 +247,9 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Container(
           height: MediaQuery.of(context).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             children: [
@@ -266,23 +266,25 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                   children: [
                     const Icon(Icons.handyman_outlined, color: _primary),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'Select Skills',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
                             'Choose multiple skills that match your expertise',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF6B7280),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.55),
                             ),
                           ),
                         ],
@@ -300,10 +302,14 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                 child: _skillsLoading
                     ? const Center(child: CircularProgressIndicator())
                     : _availableSkills.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           'No skills available',
-                          style: TextStyle(color: Color(0xFF6B7280)),
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.55),
+                          ),
                         ),
                       )
                     : ListView.builder(
@@ -328,12 +334,14 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                                     ? const Color(
                                         0xFF059669,
                                       ).withValues(alpha: 0.08)
-                                    : const Color(0xFFF9FAFB),
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerLow,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isSelected
                                       ? const Color(0xFF059669)
-                                      : const Color(0xFFE5E7EB),
+                                      : Theme.of(context).colorScheme.outline,
                                   width: isSelected ? 1.5 : 1,
                                 ),
                               ),
@@ -361,15 +369,20 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                                             fontWeight: FontWeight.w600,
                                             color: isSelected
                                                 ? const Color(0xFF059669)
-                                                : const Color(0xFF111827),
+                                                : Theme.of(
+                                                    context,
+                                                  ).colorScheme.onSurface,
                                           ),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
                                           skill.hiName,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
-                                            color: Color(0xFF6B7280),
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.55),
                                           ),
                                         ),
                                       ],
@@ -391,7 +404,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                   bottom: 16 + MediaQuery.of(context).padding.bottom,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.05),
@@ -405,10 +418,12 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                     Expanded(
                       child: Text(
                         '${_selectedSkillIds.length} skill${_selectedSkillIds.length == 1 ? '' : 's'} selected',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF6B7280),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ),
@@ -559,12 +574,13 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
     required Color color,
     required List<Widget> children,
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: cs.outline),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -617,11 +633,11 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
@@ -636,16 +652,17 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
       borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
     ),
     filled: true,
-    fillColor: const Color(0xFFFAFAFA),
+    fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
   );
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF111827),
+        backgroundColor: theme.colorScheme.surface,
+        foregroundColor: theme.colorScheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 1,
         surfaceTintColor: Colors.transparent,
@@ -1045,66 +1062,73 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                     ),
                     const SizedBox(height: 14),
                     // Skills Multi-Select Button
-                    InkWell(
-                      onTap: _skillsLoading ? null : _showSkillsBottomSheet,
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFAFAFA),
+                    Builder(
+                      builder: (context) {
+                        final cs = Theme.of(context).colorScheme;
+                        return InkWell(
+                          onTap: _skillsLoading ? null : _showSkillsBottomSheet,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: _selectedSkillIds.isEmpty
-                                ? const Color(0xFFD1D5DB)
-                                : const Color(0xFF059669),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              color: cs.surfaceContainerLow,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: _selectedSkillIds.isEmpty
+                                    ? cs.outline
+                                    : const Color(0xFF059669),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.handyman_outlined,
+                                  size: 20,
+                                  color: cs.onSurface.withValues(alpha: 0.5),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _skillsLoading
+                                      ? Text(
+                                          'Loading skills...',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: cs.onSurface.withValues(
+                                              alpha: 0.4,
+                                            ),
+                                          ),
+                                        )
+                                      : _selectedSkillIds.isEmpty
+                                      ? Text(
+                                          'Select Skills *',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: cs.onSurface.withValues(
+                                              alpha: 0.4,
+                                            ),
+                                          ),
+                                        )
+                                      : Text(
+                                          '${_selectedSkillIds.length} skill${_selectedSkillIds.length == 1 ? '' : 's'} selected',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF059669),
+                                          ),
+                                        ),
+                                ),
+                                Icon(
+                                  Icons.arrow_drop_down,
+                                  color: cs.onSurface.withValues(alpha: 0.5),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.handyman_outlined,
-                              size: 20,
-                              color: Color(0xFF6B7280),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _skillsLoading
-                                  ? const Text(
-                                      'Loading skills...',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Color(0xFF9CA3AF),
-                                      ),
-                                    )
-                                  : _selectedSkillIds.isEmpty
-                                  ? const Text(
-                                      'Select Skills *',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Color(0xFF9CA3AF),
-                                      ),
-                                    )
-                                  : Text(
-                                      '${_selectedSkillIds.length} skill${_selectedSkillIds.length == 1 ? '' : 's'} selected',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF059669),
-                                      ),
-                                    ),
-                            ),
-                            Icon(
-                              Icons.arrow_drop_down,
-                              color: _skillsLoading
-                                  ? const Color(0xFF9CA3AF)
-                                  : const Color(0xFF6B7280),
-                            ),
-                          ],
-                        ),
-                      ),
+                        );
+                      },
                     ),
                     if (_selectedSkillIds.isNotEmpty) ...[
                       const SizedBox(height: 10),

@@ -12,8 +12,8 @@ class UserTypeSelectionScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF111827),
+        backgroundColor: theme.colorScheme.surface,
+        foregroundColor: theme.colorScheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 1,
         surfaceTintColor: Colors.transparent,
@@ -26,85 +26,92 @@ class UserTypeSelectionScreen extends StatelessWidget {
         top: false,
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header
-            Center(
-              child: Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF2563EB).withOpacity(0.15),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Center(
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF2563EB).withOpacity(0.15),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.asset(
+                      Theme.of(context).brightness == Brightness.dark
+                          ? 'assets/images/app_logo_dark.png'
+                          : 'assets/images/app_logo.png',
+                      fit: BoxFit.contain,
                     ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.asset(
-                    Theme.of(context).brightness == Brightness.dark
-                        ? 'assets/images/app_logo_dark.png'
-                        : 'assets/images/app_logo.png',
-                    fit: BoxFit.contain,
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Choose Your Role',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w800,
+              const SizedBox(height: 20),
+              Text(
+                'Choose Your Role',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Select the type of account that best describes you',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF6B7280),
+              const SizedBox(height: 8),
+              Text(
+                'Select the type of account that best describes you',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF6B7280),
+                ),
               ),
-            ),
-            const SizedBox(height: 36),
-            _UserTypeCard(
-              title: 'Labour',
-              subtitle: 'Find jobs & connect with contractors near you',
-              icon: Icons.construction_rounded,
-              color: const Color(0xFF2563EB),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const RegisterLabourScreen()),
+              const SizedBox(height: 36),
+              _UserTypeCard(
+                title: 'Labour',
+                subtitle: 'Find jobs & connect with contractors near you',
+                icon: Icons.construction_rounded,
+                color: const Color(0xFF2563EB),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const RegisterLabourScreen(),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            _UserTypeCard(
-              title: 'Sub-Contractor',
-              subtitle: 'Manage your team and take on sub-contracted work',
-              icon: Icons.engineering_rounded,
-              color: const Color(0xFF7C3AED),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const RegisterSubContractorScreen()),
+              const SizedBox(height: 16),
+              _UserTypeCard(
+                title: 'Sub-Contractor',
+                subtitle: 'Manage your team and take on sub-contracted work',
+                icon: Icons.engineering_rounded,
+                color: const Color(0xFF7C3AED),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const RegisterSubContractorScreen(),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            _UserTypeCard(
-              title: 'Contractor',
-              subtitle: 'Post jobs and hire skilled workers for your projects',
-              icon: Icons.business_center_rounded,
-              color: const Color(0xFF059669),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const RegisterContractorScreen()),
+              const SizedBox(height: 16),
+              _UserTypeCard(
+                title: 'Contractor',
+                subtitle:
+                    'Post jobs and hire skilled workers for your projects',
+                icon: Icons.business_center_rounded,
+                color: const Color(0xFF059669),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const RegisterContractorScreen(),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 32),
-          ],
-        ),
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );
@@ -128,8 +135,9 @@ class _UserTypeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Material(
-      color: Colors.white,
+      color: theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -138,7 +146,7 @@ class _UserTypeCard extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            border: Border.all(color: theme.colorScheme.outline),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
@@ -165,18 +173,20 @@ class _UserTypeCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF111827),
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF6B7280),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
                         height: 1.4,
                       ),
                     ),

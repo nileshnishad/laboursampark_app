@@ -702,27 +702,62 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1976D2).withValues(alpha: 0.08),
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF1565C0).withValues(alpha: 0.12),
+                      const Color(0xFF1976D2).withValues(alpha: 0.06),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF1976D2).withValues(alpha: 0.25),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '$currency $price',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1976D2),
-                      ),
+                    // Per-day hero price
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '₹$pricePerDay',
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFF1976D2),
+                            height: 1,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            '/ day',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF1976D2),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      'for $durationDays days (₹$pricePerDay/day)',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.7,
+                    // Total billed
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Billed as $currency $price for $durationDays days',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
                         ),
                       ),
                     ),
@@ -764,16 +799,21 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1976D2),
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
+            icon: const Icon(Icons.payment_rounded, size: 16),
+            label: Text(AppLocalizations.of(dialogContext).proceedToPayment),
             onPressed: () async {
               Navigator.pop(dialogContext);
               await _initiatePayment(context, resolvedPlan);
             },
-            child: Text(AppLocalizations.of(dialogContext).proceedToPayment),
           ),
         ],
       ),
@@ -1221,24 +1261,29 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                         ),
                       ),
                       const SizedBox(width: 10),
-                      ElevatedButton(
+                      ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1976D2),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
+                            horizontal: 12,
                             vertical: 8,
                           ),
                           textStyle: const TextStyle(
                             fontSize: 12,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
                           ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 2,
                         ),
+                        icon: const Icon(Icons.lock_open_rounded, size: 14),
+                        label: const Text('Subscribe'),
                         onPressed: () => _showSubscriptionDetails(
                           context,
                           _subscriptionPlan,
                         ),
-                        child: Text(AppLocalizations.of(context).goNow),
                       ),
                     ],
                   ),
