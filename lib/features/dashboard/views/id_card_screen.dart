@@ -6,7 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../../common/models/skill_model.dart';
+import '../../../core/app_state.dart';
+import '../../../services/skills_service.dart';
 
 // ── Public entry-point ────────────────────────────────────────────────────────
 
@@ -21,13 +25,15 @@ class IdCardScreen extends StatelessWidget {
   });
 
   static void show(
-      BuildContext context, Map<String, dynamic>? profile, String userType) {
+    BuildContext context,
+    Map<String, dynamic>? profile,
+    String userType,
+  ) {
     if (profile == null) return;
     Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) =>
-            IdCardScreen(profileData: profile, userType: userType),
+        builder: (_) => IdCardScreen(profileData: profile, userType: userType),
       ),
     );
   }
@@ -44,8 +50,7 @@ class _IdCardPage extends StatefulWidget {
   final Map<String, dynamic> profileData;
   final String userType;
 
-  const _IdCardPage(
-      {required this.profileData, required this.userType});
+  const _IdCardPage({required this.profileData, required this.userType});
 
   @override
   State<_IdCardPage> createState() => _IdCardPageState();
@@ -57,6 +62,7 @@ class _IdCardPageState extends State<_IdCardPage>
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
   bool _sharing = false;
+  List<SkillModel> _allSkills = [];
 
   final GlobalKey _cardKey = GlobalKey();
 
@@ -64,14 +70,47 @@ class _IdCardPageState extends State<_IdCardPage>
   void initState() {
     super.initState();
     _anim = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 600));
-    _fadeAnim =
-        CurvedAnimation(parent: _anim, curve: Curves.easeOut);
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _fadeAnim = CurvedAnimation(parent: _anim, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(
-            begin: const Offset(0, 0.08), end: Offset.zero)
-        .animate(
-            CurvedAnimation(parent: _anim, curve: Curves.easeOutCubic));
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _anim, curve: Curves.easeOutCubic));
     _anim.forward();
+    _loadSkills();
+  }
+
+  Future<void> _loadSkills() async {
+    final cached = SkillsService.getCachedSkills();
+    if (cached != null && cached.isNotEmpty) {
+      if (mounted) setState(() => _allSkills = cached);
+      return;
+    }
+    final result = await SkillsService.getAllSkills();
+    if (mounted && result['success'] == true) {
+      setState(
+        () => _allSkills = (result['skills'] as List<SkillModel>? ?? []),
+      );
+    }
+  }
+
+  /// Maps a list of skill IDs to localized display names.
+  List<String> _resolveSkillNames(List<String> ids, String langCode) {
+    if (_allSkills.isEmpty) return ids;
+    return ids.map((id) {
+      final match = _allSkills.where((s) => s.id == id).firstOrNull;
+      if (match == null) return id;
+      switch (langCode) {
+        case 'hi':
+          return match.hiName.isNotEmpty ? match.hiName : match.enName;
+        case 'mr':
+          return match.mrName.isNotEmpty ? match.mrName : match.enName;
+        default:
+          return match.enName.isNotEmpty ? match.enName : id;
+      }
+    }).toList();
   }
 
   @override
@@ -115,10 +154,7 @@ class _IdCardPageState extends State<_IdCardPage>
 
   List<String> _asList(dynamic v) {
     if (v is List) {
-      return v
-          .whereType<String>()
-          .where((s) => s.trim().isNotEmpty)
-          .toList();
+      return v.whereType<String>().where((s) => s.trim().isNotEmpty).toList();
     }
     return [];
   }
@@ -126,10 +162,8 @@ class _IdCardPageState extends State<_IdCardPage>
   String _locationStr() {
     final d = widget.profileData;
     final loc = d['location'] as Map<String, dynamic>?;
-    final city =
-        (d['city'] ?? loc?['city'] ?? '').toString().trim();
-    final state =
-        (d['state'] ?? loc?['state'] ?? '').toString().trim();
+    final city = (d['city'] ?? loc?['city'] ?? '').toString().trim();
+    final state = (d['state'] ?? loc?['state'] ?? '').toString().trim();
     if (city.isNotEmpty && state.isNotEmpty) return '$city, $state';
     if (city.isNotEmpty) return city;
     if (state.isNotEmpty) return state;
@@ -143,17 +177,16 @@ class _IdCardPageState extends State<_IdCardPage>
     try {
       // Capture the full card as PNG at 3× resolution
       final boundary =
-          _cardKey.currentContext!.findRenderObject()
-              as RenderRepaintBoundary;
+          _cardKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       final bytes = byteData!.buffer.asUint8List();
 
       // Save to temp file
       final dir = await getTemporaryDirectory();
       final file = File(
-          '${dir.path}/laboursampark_id_${DateTime.now().millisecondsSinceEpoch}.png');
+        '${dir.path}/laboursampark_id_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
       await file.writeAsBytes(bytes);
 
       if (!ctx.mounted) return;
@@ -162,13 +195,14 @@ class _IdCardPageState extends State<_IdCardPage>
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'image/png')],
         subject: 'LabourSampark ID — $_fullName',
-        text: 'LabourSampark ID Card\n$_fullName | $_userTypeLabel\nLabourSampark — Connecting Workers. Building Futures.',
+        text:
+            'LabourSampark ID Card\n$_fullName | $_userTypeLabel\nLabourSampark — Connecting Workers. Building Futures.',
       );
     } catch (e) {
       if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          SnackBar(content: Text('Could not share card: $e')),
-        );
+        ScaffoldMessenger.of(
+          ctx,
+        ).showSnackBar(SnackBar(content: Text('Could not share card: $e')));
       }
     } finally {
       if (mounted) setState(() => _sharing = false);
@@ -189,16 +223,20 @@ class _IdCardPageState extends State<_IdCardPage>
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              size: 18, color: cs.onSurface),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 18,
+            color: cs.onSurface,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           'My ID Card',
           style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: cs.onSurface),
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: cs.onSurface,
+          ),
         ),
         actions: [
           Padding(
@@ -208,11 +246,12 @@ class _IdCardPageState extends State<_IdCardPage>
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Color(0xFF2563EB)))
+                      strokeWidth: 2.5,
+                      color: Color(0xFF2563EB),
+                    ),
+                  )
                 : IconButton(
-                    icon: Icon(Icons.ios_share_rounded,
-                        color: accent),
+                    icon: Icon(Icons.ios_share_rounded, color: accent),
                     tooltip: 'Share',
                     onPressed: () => _shareCard(context),
                   ),
@@ -220,14 +259,16 @@ class _IdCardPageState extends State<_IdCardPage>
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Divider(
-              height: 1,
-              color: cs.outline.withValues(alpha: 0.15)),
+          child: Divider(height: 1, color: cs.outline.withValues(alpha: 0.15)),
         ),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
-            20, 24, 20, MediaQuery.of(context).padding.bottom + 32),
+          20,
+          24,
+          20,
+          MediaQuery.of(context).padding.bottom + 32,
+        ),
         child: Column(
           children: [
             FadeTransition(
@@ -240,7 +281,7 @@ class _IdCardPageState extends State<_IdCardPage>
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 18),
             _buildShareButton(context, accent),
           ],
         ),
@@ -252,153 +293,180 @@ class _IdCardPageState extends State<_IdCardPage>
 
   Widget _buildCard(ColorScheme cs, Color accent) {
     final d = widget.profileData;
+    final langCode = context.read<AppState>().locale?.languageCode ?? 'en';
     final photoUrl = (d['profilePhotoUrl'] ?? '').toString().trim();
-    final rating =
-        (d['rating'] ?? d['averageRating'] ?? 0.0) as num;
-    final jobsDone = (d['totalJobsDone'] ??
-            d['jobsCompleted'] ??
-            d['completedJobs'] ??
-            0) as num;
+    final rating = (d['rating'] ?? d['averageRating'] ?? 0.0) as num;
+    final jobsDone =
+        (d['totalJobsDone'] ?? d['jobsCompleted'] ?? d['completedJobs'] ?? 0)
+            as num;
     final bio = (d['bio'] ?? d['about'] ?? '').toString().trim();
-    final experience =
-        (d['experience'] ?? '').toString().trim();
-    final skills = _asList(d['skills']);
+    final experience = (d['experience'] ?? '').toString().trim();
+    final skillIds = _asList(d['skills']);
+    final skills = _resolveSkillNames(skillIds, langCode);
     final workTypes = _asList(d['workTypes']);
-    final services = _asList(
-        d['servicesOffered'] ?? d['serviceCategories']);
+    final services = _asList(d['servicesOffered'] ?? d['serviceCategories']);
     final languages = _asList(d['languages']);
-    final companyName =
-        (d['companyName'] ?? '').toString().trim();
+    final companyName = (d['companyName'] ?? '').toString().trim();
     final location = _locationStr();
     final mobile = (d['mobile'] ?? '').toString().trim();
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         color: cs.surface,
-        border:
-            Border.all(color: accent.withValues(alpha: 0.18), width: 1.5),
+        border: Border.all(color: accent.withValues(alpha: 0.18), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: accent.withValues(alpha: 0.12),
-            blurRadius: 32,
-            offset: const Offset(0, 8),
+            color: accent.withValues(alpha: 0.10),
+            blurRadius: 24,
+            offset: const Offset(0, 6),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Stack(
         children: [
-          // ── Header band ─────────────────────────────────────────────
-          _buildHeader(cs, accent, photoUrl),
-
-          // ── Body ─────────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Stats row
-                _buildStatsRow(accent, rating, jobsDone),
-                const SizedBox(height: 20),
-
-                // Bio
-                if (bio.isNotEmpty) ...[
-                  _buildInfoRow(
-                    icon: Icons.notes_rounded,
-                    label: 'About',
-                    value: bio,
-                    color: accent,
-                    maxLines: 3,
+          // ── Watermark logo ───────────────────────────────────────────
+          Positioned.fill(
+            child: Align(
+              alignment: Alignment.center,
+              child: Opacity(
+                opacity: 0.045,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 80),
+                  child: Image.asset(
+                    'assets/images/app_logo.png',
+                    width: 200,
+                    height: 200,
+                    fit: BoxFit.contain,
                   ),
-                  const SizedBox(height: 14),
-                ],
-
-                // Experience
-                if (experience.isNotEmpty) ...[
-                  _buildInfoRow(
-                    icon: Icons.timeline_outlined,
-                    label: 'Experience',
-                    value: experience,
-                    color: accent,
-                  ),
-                  const SizedBox(height: 14),
-                ],
-
-                // Business name (contractor)
-                if (_isContractor && companyName.isNotEmpty) ...[
-                  _buildInfoRow(
-                    icon: Icons.business_outlined,
-                    label: 'Company',
-                    value: companyName,
-                    color: accent,
-                  ),
-                  const SizedBox(height: 14),
-                ],
-
-                // Location
-                if (location.isNotEmpty) ...[
-                  _buildInfoRow(
-                    icon: Icons.location_on_outlined,
-                    label: 'Location',
-                    value: location,
-                    color: accent,
-                  ),
-                  const SizedBox(height: 14),
-                ],
-
-                // Mobile
-                if (mobile.isNotEmpty) ...[
-                  _buildInfoRow(
-                    icon: Icons.phone_outlined,
-                    label: 'Mobile',
-                    value: mobile,
-                    color: accent,
-                  ),
-                  const SizedBox(height: 14),
-                ],
-
-                // Divider
-                Divider(
-                    color: accent.withValues(alpha: 0.12),
-                    height: 24),
-
-                // Skills / Work types / Services
-                if (!_isContractor && skills.isNotEmpty) ...[
-                  _buildChipSection(
-                      'Skills', skills, accent,
-                      Icons.build_outlined),
-                  const SizedBox(height: 12),
-                ],
-                if (!_isContractor && workTypes.isNotEmpty) ...[
-                  _buildChipSection(
-                      'Work Types', workTypes,
-                      const Color(0xFF059669),
-                      Icons.assignment_outlined),
-                  const SizedBox(height: 12),
-                ],
-                if (_isContractor && services.isNotEmpty) ...[
-                  _buildChipSection(
-                      'Services Offered', services, accent,
-                      Icons.handyman_outlined),
-                  const SizedBox(height: 12),
-                ],
-                if (languages.isNotEmpty)
-                  _buildChipSection(
-                      'Languages', languages,
-                      const Color(0xFFF59E0B),
-                      Icons.translate_rounded),
-
-                // Footer branding
-                const SizedBox(height: 20),
-                _buildFooter(accent),
-              ],
+                ),
+              ),
             ),
+          ),
+          // ── Card content ─────────────────────────────────────────────
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Header band ─────────────────────────────────────────────
+              _buildHeader(cs, accent, photoUrl),
+
+              // ── Body ─────────────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Stats row
+                    _buildStatsRow(accent, rating, jobsDone),
+                    const SizedBox(height: 10),
+
+                    // Bio
+                    if (bio.isNotEmpty) ...[
+                      _buildInfoRow(
+                        icon: Icons.notes_rounded,
+                        label: 'About',
+                        value: bio,
+                        color: accent,
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+
+                    // Experience
+                    if (experience.isNotEmpty) ...[
+                      _buildInfoRow(
+                        icon: Icons.timeline_outlined,
+                        label: 'Experience',
+                        value: experience,
+                        color: accent,
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+
+                    // Business name (contractor)
+                    if (_isContractor && companyName.isNotEmpty) ...[
+                      _buildInfoRow(
+                        icon: Icons.business_outlined,
+                        label: 'Company',
+                        value: companyName,
+                        color: accent,
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+
+                    // Location
+                    if (location.isNotEmpty) ...[
+                      _buildInfoRow(
+                        icon: Icons.location_on_outlined,
+                        label: 'Location',
+                        value: location,
+                        color: accent,
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+
+                    // Mobile
+                    if (mobile.isNotEmpty) ...[
+                      _buildInfoRow(
+                        icon: Icons.phone_outlined,
+                        label: 'Mobile',
+                        value: mobile,
+                        color: accent,
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+
+                    // Divider
+                    Divider(color: accent.withValues(alpha: 0.12), height: 18),
+
+                    // Skills / Work types / Services
+                    if (!_isContractor && skills.isNotEmpty) ...[
+                      _buildChipSection(
+                        'Skills',
+                        skills,
+                        accent,
+                        Icons.build_outlined,
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    if (!_isContractor && workTypes.isNotEmpty) ...[
+                      _buildChipSection(
+                        'Work Types',
+                        workTypes,
+                        const Color(0xFF059669),
+                        Icons.assignment_outlined,
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    if (_isContractor && services.isNotEmpty) ...[
+                      _buildChipSection(
+                        'Services Offered',
+                        services,
+                        accent,
+                        Icons.handyman_outlined,
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    if (languages.isNotEmpty)
+                      _buildChipSection(
+                        'Languages',
+                        languages,
+                        const Color(0xFFF59E0B),
+                        Icons.translate_rounded,
+                      ),
+
+                    // Footer branding
+                    const SizedBox(height: 14),
+                    _buildFooter(accent),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -407,48 +475,46 @@ class _IdCardPageState extends State<_IdCardPage>
 
   // ── Header ────────────────────────────────────────────────────────────────
 
-  Widget _buildHeader(
-      ColorScheme cs, Color accent, String photoUrl) {
+  Widget _buildHeader(ColorScheme cs, Color accent, String photoUrl) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(19)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
         gradient: LinearGradient(
           colors: [accent, accent.withValues(alpha: 0.75)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
       child: Row(
         children: [
           // Profile photo
           Container(
-            width: 72,
-            height: 72,
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border:
-                  Border.all(color: Colors.white, width: 2.5),
+              border: Border.all(color: Colors.white, width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                )
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
               ],
               color: Colors.white.withValues(alpha: 0.15),
             ),
             child: ClipOval(
               child: photoUrl.isNotEmpty
-                  ? Image.network(photoUrl,
+                  ? Image.network(
+                      photoUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          _placeholderAvatar())
+                      errorBuilder: (_, __, ___) => _placeholderAvatar(),
+                    )
                   : _placeholderAvatar(),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           // Name + type
           Expanded(
             child: Column(
@@ -457,7 +523,7 @@ class _IdCardPageState extends State<_IdCardPage>
                 Text(
                   _fullName.isEmpty ? 'User' : _fullName,
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 17,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
                     letterSpacing: 0.2,
@@ -465,17 +531,19 @@ class _IdCardPageState extends State<_IdCardPage>
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color:
-                            Colors.white.withValues(alpha: 0.45),
-                        width: 1),
+                      color: Colors.white.withValues(alpha: 0.4),
+                      width: 1,
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -484,17 +552,17 @@ class _IdCardPageState extends State<_IdCardPage>
                         _isContractor
                             ? Icons.business_center_rounded
                             : Icons.engineering_rounded,
-                        size: 12,
+                        size: 11,
                         color: Colors.white,
                       ),
-                      const SizedBox(width: 5),
+                      const SizedBox(width: 4),
                       Text(
                         _userTypeLabel,
                         style: const TextStyle(
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
-                          letterSpacing: 0.4,
+                          letterSpacing: 0.3,
                         ),
                       ),
                     ],
@@ -505,21 +573,21 @@ class _IdCardPageState extends State<_IdCardPage>
           ),
           // LabourSampark app logo
           Container(
-            width: 48,
-            height: 48,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.18),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                )
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               child: Image.asset(
                 'assets/images/app_logo.png',
                 fit: BoxFit.contain,
@@ -532,24 +600,20 @@ class _IdCardPageState extends State<_IdCardPage>
   }
 
   Widget _placeholderAvatar() => Container(
-        color: Colors.white.withValues(alpha: 0.2),
-        child: const Icon(Icons.person_rounded,
-            size: 38, color: Colors.white),
-      );
+    color: Colors.white.withValues(alpha: 0.2),
+    child: const Icon(Icons.person_rounded, size: 38, color: Colors.white),
+  );
 
   // ── Stats row ─────────────────────────────────────────────────────────────
 
-  Widget _buildStatsRow(
-      Color accent, num rating, num jobsDone) {
+  Widget _buildStatsRow(Color accent, num rating, num jobsDone) {
     return Row(
       children: [
         Expanded(
           child: _StatTile(
             icon: Icons.star_rounded,
             iconColor: const Color(0xFFF59E0B),
-            value: rating == 0
-                ? '—'
-                : rating.toStringAsFixed(1),
+            value: rating == 0 ? '—' : rating.toStringAsFixed(1),
             label: 'Rating',
             accent: const Color(0xFFF59E0B),
           ),
@@ -623,10 +687,9 @@ class _IdCardPageState extends State<_IdCardPage>
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.85),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.85),
                 ),
               ),
             ],
@@ -639,7 +702,11 @@ class _IdCardPageState extends State<_IdCardPage>
   // ── Chip section ──────────────────────────────────────────────────────────
 
   Widget _buildChipSection(
-      String label, List<String> items, Color color, IconData icon) {
+    String label,
+    List<String> items,
+    Color color,
+    IconData icon,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -664,24 +731,27 @@ class _IdCardPageState extends State<_IdCardPage>
           runSpacing: 6,
           children: items
               .take(8)
-              .map((s) => Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.07),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color: color.withValues(alpha: 0.22)),
+              .map(
+                (s) => Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: color.withValues(alpha: 0.22)),
+                  ),
+                  child: Text(
+                    s,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: color,
                     ),
-                    child: Text(
-                      s,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: color,
-                      ),
-                    ),
-                  ))
+                  ),
+                ),
+              )
               .toList(),
         ),
       ],
@@ -692,8 +762,7 @@ class _IdCardPageState extends State<_IdCardPage>
 
   Widget _buildFooter(Color accent) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
@@ -708,14 +777,13 @@ class _IdCardPageState extends State<_IdCardPage>
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(9),
-              border: Border.all(
-                  color: accent.withValues(alpha: 0.2)),
+              border: Border.all(color: accent.withValues(alpha: 0.2)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
-                )
+                ),
               ],
             ),
             child: ClipRRect(
@@ -759,10 +827,9 @@ class _IdCardPageState extends State<_IdCardPage>
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.45),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.45),
                     letterSpacing: 0.2,
                   ),
                 ),
@@ -788,17 +855,19 @@ class _IdCardPageState extends State<_IdCardPage>
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2.5, color: Colors.white))
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
             : const Icon(Icons.ios_share_rounded, size: 18),
         label: Text(_sharing ? 'Preparing…' : 'Share My ID Card'),
         style: FilledButton.styleFrom(
           backgroundColor: accent,
-          disabledBackgroundColor:
-              accent.withValues(alpha: 0.5),
+          disabledBackgroundColor: accent.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
-          textStyle: const TextStyle(
-              fontSize: 15, fontWeight: FontWeight.w800),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
         ),
       ),
     );
@@ -826,13 +895,11 @@ class _StatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 10, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-            color: accent.withValues(alpha: 0.15)),
+        border: Border.all(color: accent.withValues(alpha: 0.15)),
       ),
       child: Column(
         children: [

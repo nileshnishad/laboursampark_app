@@ -24,15 +24,28 @@ class _SplashScreenState extends State<SplashScreen> {
     Future.delayed(const Duration(seconds: 2), () async {
       if (!mounted) return;
       // Check for Play Store update (Android only, release builds only)
-      if (!kIsWeb) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         try {
           final updateInfo = await InAppUpdate.checkForUpdate();
-          if (updateInfo.updateAvailability == UpdateAvailability.updateAvailable) {
+          if (updateInfo.updateAvailability ==
+              UpdateAvailability.updateAvailable) {
             if (updateInfo.immediateUpdateAllowed) {
               await InAppUpdate.performImmediateUpdate();
             } else if (updateInfo.flexibleUpdateAllowed) {
               await InAppUpdate.startFlexibleUpdate();
-              await InAppUpdate.completeFlexibleUpdate();
+              // Wait for the flexible update download to complete before
+              // installing — calling completeFlexibleUpdate() too early fails.
+              bool downloaded = false;
+              for (int i = 0; i < 30 && !downloaded; i++) {
+                await Future.delayed(const Duration(seconds: 2));
+                final status = await InAppUpdate.checkForUpdate();
+                if (status.installStatus == InstallStatus.downloaded) {
+                  downloaded = true;
+                }
+              }
+              if (downloaded) {
+                await InAppUpdate.completeFlexibleUpdate();
+              }
             }
           }
         } catch (_) {
@@ -51,8 +64,14 @@ class _SplashScreenState extends State<SplashScreen> {
           final otpVerified = await AuthService.isOtpVerified();
           if (!otpVerified) {
             final userData = await AuthService.getUserData();
-            final phone = (userData?['phone'] ?? userData?['mobile'] ?? userData?['mobileNumber'] ?? '').toString();
-            final userId = (userData?['_id'] ?? userData?['id'] ?? '').toString();
+            final phone =
+                (userData?['phone'] ??
+                        userData?['mobile'] ??
+                        userData?['mobileNumber'] ??
+                        '')
+                    .toString();
+            final userId = (userData?['_id'] ?? userData?['id'] ?? '')
+                .toString();
             if (!mounted) return;
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
@@ -160,11 +179,12 @@ class _LSLogo extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(26),
         child: Image.asset(
-          isDark ? 'assets/images/app_logo_dark.png' : 'assets/images/app_logo.png',
+          isDark
+              ? 'assets/images/app_logo_dark.png'
+              : 'assets/images/app_logo.png',
           fit: BoxFit.cover,
         ),
       ),
     );
   }
 }
-
