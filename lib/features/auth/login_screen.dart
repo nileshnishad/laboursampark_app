@@ -9,6 +9,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../services/api_service.dart';
 import '../../common/widgets/app_primary_button.dart';
 import '../../common/widgets/app_text_field.dart';
+import '../../common/widgets/language_picker.dart';
+import '../../l10n/app_localizations.dart';
 import '../../core/user_controller.dart';
 import '../../core/auth_service.dart';
 import '../../utils/toast_utils.dart';
@@ -287,7 +289,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 32),
               Text(
-                'Welcome Back',
+                AppLocalizations.of(context).welcomeBack,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w800,
@@ -295,7 +297,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Sign in to your account',
+                AppLocalizations.of(context).signInToYourAccount,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
@@ -304,8 +306,8 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 40),
               AppTextField(
                 controller: _emailOrMobileController,
-                label: 'Email or mobile number',
-                hint: 'name@example.com or +91xxxxxxxxxx',
+                label: AppLocalizations.of(context).emailOrMobileNumber,
+                hint: AppLocalizations.of(context).emailOrMobileHint,
                 prefixIcon: Icons.person_outline_rounded,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
@@ -313,13 +315,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 errorText:
                     _autoValidate &&
                         _emailOrMobileController.text.trim().isEmpty
-                    ? 'Please enter email or mobile'
+                    ? AppLocalizations.of(context).emailRequired
                     : null,
               ),
               const SizedBox(height: 16),
               AppTextField(
                 controller: _passwordController,
-                label: 'Password',
+                label: AppLocalizations.of(context).password,
                 prefixIcon: Icons.lock_outline_rounded,
                 obscureText: _obscurePassword,
                 textInputAction: TextInputAction.done,
@@ -338,7 +340,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 errorText:
                     _autoValidate && _passwordController.text.trim().isEmpty
-                    ? 'Please enter password'
+                    ? AppLocalizations.of(context).passwordRequired
                     : null,
               ),
               const SizedBox(height: 12),
@@ -361,7 +363,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text('Remember me', style: theme.textTheme.bodyMedium),
+                      Text(
+                        AppLocalizations.of(context).rememberMe,
+                        style: theme.textTheme.bodyMedium,
+                      ),
                     ],
                   ),
                   TextButton(
@@ -378,7 +383,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(
-                      'Forgot Password?',
+                      AppLocalizations.of(context).forgotPassword,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.primary,
@@ -389,7 +394,9 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 24),
               AppPrimaryButton(
-                label: _isSubmitting ? 'Signing in...' : 'Sign In',
+                label: _isSubmitting
+                    ? AppLocalizations.of(context).signingIn
+                    : AppLocalizations.of(context).signIn,
                 isLoading: _isSubmitting,
                 icon: Icons.login_rounded,
                 onPressed: _submitLogin,
@@ -450,7 +457,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(
-                    "Don't have an account? ",
+                    AppLocalizations.of(context).dontHaveAnAccount,
                     style: theme.textTheme.bodyMedium,
                   ),
                   InkWell(
@@ -468,7 +475,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         vertical: 2,
                       ),
                       child: Text(
-                        'Create Account',
+                        AppLocalizations.of(context).createAccount,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.w700,
@@ -480,11 +487,15 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Need help? Call support: +91 9172272305',
+                AppLocalizations.of(context).needHelpCallSupport,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: IntrinsicWidth(child: RegistrationLocaleSwitcher()),
               ),
             ],
           ),

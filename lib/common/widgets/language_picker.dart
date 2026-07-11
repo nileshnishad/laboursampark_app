@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../core/app_state.dart';
 
 /// All supported languages — [englishName] is sent to the API,
 /// [nativeName] is shown in the UI in the language's own script.
@@ -87,7 +90,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.06),
+              color: color.withOpacity(0.06),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(20),
               ),
@@ -112,7 +115,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                         'Choose all languages you can speak',
                         style: TextStyle(
                           fontSize: 12,
-                          color: cs.onSurface.withValues(alpha: 0.55),
+                          color: cs.onSurface.withOpacity(0.55),
                         ),
                       ),
                     ],
@@ -150,13 +153,11 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? color.withValues(alpha: 0.1)
+                          ? color.withOpacity(0.1)
                           : cs.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected
-                            ? color
-                            : cs.outline.withValues(alpha: 0.4),
+                        color: isSelected ? color : cs.outline.withOpacity(0.4),
                         width: isSelected ? 1.5 : 1,
                       ),
                     ),
@@ -169,7 +170,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                           size: 18,
                           color: isSelected
                               ? color
-                              : cs.onSurface.withValues(alpha: 0.3),
+                              : cs.onSurface.withOpacity(0.3),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -190,7 +191,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                                 lang.englishName,
                                 style: TextStyle(
                                   fontSize: 10,
-                                  color: cs.onSurface.withValues(alpha: 0.45),
+                                  color: cs.onSurface.withOpacity(0.45),
                                 ),
                               ),
                             ],
@@ -216,7 +217,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
               color: cs.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: Colors.black.withOpacity(0.05),
                   blurRadius: 10,
                   offset: const Offset(0, -3),
                 ),
@@ -230,7 +231,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: cs.onSurface.withValues(alpha: 0.6),
+                      color: cs.onSurface.withOpacity(0.6),
                     ),
                   ),
                 ),
@@ -261,6 +262,90 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
   }
 }
 
+/// A small top-of-form widget for registration screens that lets unauthenticated
+/// users switch the app label language quickly. It only changes UI labels.
+class RegistrationLocaleSwitcher extends StatelessWidget {
+  const RegistrationLocaleSwitcher({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+    final current = appState.locale?.languageCode ?? 'en';
+
+    String nativeLabel(String enName) {
+      try {
+        return kAllLanguages
+            .firstWhere((l) => l.englishName == enName)
+            .nativeName;
+      } catch (_) {
+        return enName;
+      }
+    }
+
+    final supported = [
+      {'code': 'en', 'label': 'EN'},
+      {'code': 'hi', 'label': nativeLabel('Hindi')},
+      {'code': 'mr', 'label': nativeLabel('Marathi')},
+    ];
+
+    // More compact single-row chips suitable for AppBar actions
+    return SizedBox(
+      height: 32,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: supported.asMap().entries.map((entry) {
+          final item = entry.value;
+          final idx = entry.key;
+          final selectedItem = item['code'] == current;
+
+          return Padding(
+            padding: EdgeInsets.only(left: idx == 0 ? 0 : 6),
+            child: GestureDetector(
+              onTap: () {
+                final code = item['code']!;
+                final locale = Locale(code);
+                if (code != current) {
+                  Provider.of<AppState>(
+                    context,
+                    listen: false,
+                  ).setLocale(locale);
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: selectedItem
+                      ? Theme.of(context).colorScheme.primary.withOpacity(0.08)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: selectedItem
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.12),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  item['label']!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: selectedItem
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
 /// A tappable chip-display widget that opens the language picker bottom sheet.
 /// Drop-in replacement for the languages _ChipEditor.
 class LanguageSelectorField extends StatelessWidget {
@@ -281,10 +366,9 @@ class LanguageSelectorField extends StatelessWidget {
     // Map English names to native display names
     String nativeName(String en) {
       return kAllLanguages
-              .where((l) => l.englishName == en)
-              .map((l) => l.nativeName)
-              .firstOrNull ??
-          en;
+          .where((l) => l.englishName == en)
+          .map((l) => l.nativeName)
+          .firstWhere((_) => true, orElse: () => en);
     }
 
     return GestureDetector(
@@ -296,9 +380,9 @@ class LanguageSelectorField extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 4),
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
         decoration: BoxDecoration(
-          color: cs.onSurface.withValues(alpha: 0.02),
+          color: cs.onSurface.withOpacity(0.02),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: cs.outline.withValues(alpha: 0.18)),
+          border: Border.all(color: cs.outline.withOpacity(0.18)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,7 +411,7 @@ class LanguageSelectorField extends StatelessWidget {
                 'Tap to select languages',
                 style: TextStyle(
                   fontSize: 12,
-                  color: cs.onSurface.withValues(alpha: 0.35),
+                  color: cs.onSurface.withOpacity(0.35),
                 ),
               )
             else
@@ -343,11 +427,9 @@ class LanguageSelectorField extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(10, 5, 6, 5),
                       decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.08),
+                        color: color.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: color.withValues(alpha: 0.25),
-                        ),
+                        border: Border.all(color: color.withOpacity(0.25)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

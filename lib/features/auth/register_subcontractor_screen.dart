@@ -11,8 +11,12 @@ import '../../utils/toast_utils.dart';
 import 'login_screen.dart';
 import '../../common/models/business_type_model.dart';
 import '../../common/widgets/language_picker.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/business_type_service.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
+import '../../core/app_state.dart';
 
 // ── Static options ─────────────────────────────────────────────────────────
 
@@ -70,24 +74,6 @@ class _RegisterSubContractorScreenState
         if (!mounted) return;
         setState(() => _fetchingLocation = false);
         ToastUtils.showError('Please enable location services');
-        return;
-      }
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          if (!mounted) return;
-          setState(() => _fetchingLocation = false);
-          ToastUtils.showError('Location permission denied');
-          return;
-        }
-      }
-      if (permission == LocationPermission.deniedForever) {
-        if (!mounted) return;
-        setState(() => _fetchingLocation = false);
-        ToastUtils.showError(
-          'Location permission permanently denied. Enable from settings.',
-        );
         return;
       }
       Position position = await Geolocator.getCurrentPosition(
@@ -231,6 +217,17 @@ class _RegisterSubContractorScreenState
     }
   }
 
+  void _updateLocaleFromSelectedLanguages(List<String> selected) {
+    final appState = Provider.of<AppState>(context, listen: false);
+    if (selected.contains('Hindi')) {
+      appState.setLocale(const Locale('hi'));
+    } else if (selected.contains('Marathi')) {
+      appState.setLocale(const Locale('mr'));
+    } else if (selected.contains('English')) {
+      appState.setLocale(const Locale('en'));
+    }
+  }
+
   Widget _buildPasswordRequirement(String text, bool isMet) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -348,16 +345,26 @@ class _RegisterSubContractorScreenState
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedBusinessTypeIds.isEmpty) {
-      ToastUtils.showError('Select at least one business type');
+      ToastUtils.showError(
+        AppLocalizations.of(context).selectAtLeastOneBusinessType,
+      );
+      return;
+    }
+    if (_selectedLanguages.isEmpty) {
+      ToastUtils.showError(
+        AppLocalizations.of(context).selectAtLeastOneLanguage,
+      );
       return;
     }
     if (!_acceptTerms) {
-      ToastUtils.showError('Please accept Terms & Conditions');
+      ToastUtils.showError(AppLocalizations.of(context).pleaseAcceptTerms);
       return;
     }
     if ((_logoBytes != null && _logoUrl == null) ||
         (_licenseBytes != null && _licenseUrl == null)) {
-      ToastUtils.showError('Please wait — files are still uploading');
+      ToastUtils.showError(
+        AppLocalizations.of(context).pleaseWaitFilesUploading,
+      );
       return;
     }
 
@@ -562,9 +569,9 @@ class _RegisterSubContractorScreenState
                   const SizedBox(height: 2),
                   Text(
                     uploading
-                        ? 'Uploading...'
+                        ? AppLocalizations.of(context).uploading
                         : done
-                        ? 'Uploaded ✓'
+                        ? AppLocalizations.of(context).uploaded
                         : hint,
                     style: TextStyle(
                       fontSize: 11,
@@ -605,10 +612,16 @@ class _RegisterSubContractorScreenState
         elevation: 0,
         scrolledUnderElevation: 1,
         surfaceTintColor: Colors.transparent,
-        title: const Text(
-          'Register as Sub-Contractor',
+        title: Text(
+          AppLocalizations.of(context).registerAsSubcontractor,
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: RegistrationLocaleSwitcher(),
+          ),
+        ],
       ),
       body: SafeArea(
         top: false,
@@ -692,8 +705,8 @@ class _RegisterSubContractorScreenState
                 Center(
                   child: Text(
                     _logoUrl != null
-                        ? 'Company logo uploaded ✓'
-                        : 'Tap to add company logo',
+                        ? AppLocalizations.of(context).companyLogoUploaded
+                        : AppLocalizations.of(context).tapToAddCompanyLogo,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -707,7 +720,7 @@ class _RegisterSubContractorScreenState
 
                 // ── Personal Info ─────────────────────────────
                 _sectionCard(
-                  title: 'Personal Information',
+                  title: AppLocalizations.of(context).personalInformation,
                   icon: Icons.person_outline_rounded,
                   color: const Color(0xFF2563EB),
                   children: [
@@ -715,15 +728,15 @@ class _RegisterSubContractorScreenState
                       controller: _nameController,
                       textCapitalization: TextCapitalization.words,
                       decoration: _dec(
-                        'Full Name *',
-                        hint: 'Owner / Manager name',
+                        '${AppLocalizations.of(context).fullName} *',
+                        hint: AppLocalizations.of(context).ownerManagerNameHint,
                         prefix: const Icon(
                           Icons.person_outline_rounded,
                           size: 20,
                         ),
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Full name is required'
+                          ? AppLocalizations.of(context).fullNameRequired
                           : null,
                     ),
                     const SizedBox(height: 14),
@@ -736,7 +749,7 @@ class _RegisterSubContractorScreenState
                           initialDate: _selectedDob ?? DateTime(now.year - 30),
                           firstDate: DateTime(1950),
                           lastDate: DateTime(now.year - 18, now.month, now.day),
-                          helpText: 'Select Date of Birth',
+                          helpText: AppLocalizations.of(context).dateOfBirth,
                         );
                         if (picked != null)
                           setState(() => _selectedDob = picked);
@@ -766,7 +779,7 @@ class _RegisterSubContractorScreenState
                             Expanded(
                               child: Text(
                                 _selectedDob == null
-                                    ? 'Date of Birth'
+                                    ? AppLocalizations.of(context).dateOfBirth
                                     : '${_selectedDob!.day.toString().padLeft(2, '0')}/${_selectedDob!.month.toString().padLeft(2, '0')}/${_selectedDob!.year}',
                                 style: TextStyle(
                                   fontSize: 15,
@@ -793,8 +806,8 @@ class _RegisterSubContractorScreenState
                     TextFormField(
                       controller: _emailController,
                       decoration: _dec(
-                        'Email Address *',
-                        hint: 'name@company.com',
+                        '${AppLocalizations.of(context).email} *',
+                        hint: AppLocalizations.of(context).emailHint,
                         prefix: const Icon(Icons.email_outlined, size: 20),
                       ),
                       keyboardType: TextInputType.emailAddress,
@@ -816,8 +829,8 @@ class _RegisterSubContractorScreenState
                     TextFormField(
                       controller: _mobileController,
                       decoration: _dec(
-                        'Mobile Number *',
-                        hint: 'XXXXX XXXXX',
+                        '${AppLocalizations.of(context).mobileNumber} *',
+                        hint: AppLocalizations.of(context).mobileNumberHint,
                         prefix: const Icon(Icons.phone_outlined, size: 20),
                       ),
                       keyboardType: TextInputType.phone,
@@ -827,10 +840,12 @@ class _RegisterSubContractorScreenState
                       ],
                       validator: (v) {
                         if (v == null || v.trim().isEmpty)
-                          return 'Mobile number is required';
+                          return AppLocalizations.of(
+                            context,
+                          ).mobileNumberRequired;
                         final digits = v.trim();
                         if (digits.length != 10)
-                          return 'Enter a valid 10-digit mobile number';
+                          return AppLocalizations.of(context).enterValidMobile;
                         return null;
                       },
                     ),
@@ -840,7 +855,7 @@ class _RegisterSubContractorScreenState
 
                 // ── Account Security ──────────────────────────
                 _sectionCard(
-                  title: 'Account Security',
+                  title: AppLocalizations.of(context).accountSecurity,
                   icon: Icons.lock_outline_rounded,
                   color: _primary,
                   children: [
@@ -864,7 +879,9 @@ class _RegisterSubContractorScreenState
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'Password Requirements:',
+                                AppLocalizations.of(
+                                  context,
+                                ).passwordRequirementsLabel,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -875,19 +892,19 @@ class _RegisterSubContractorScreenState
                           ),
                           const SizedBox(height: 8),
                           _buildPasswordRequirement(
-                            'At least 8 characters',
+                            AppLocalizations.of(context).atLeast8Chars,
                             _hasMinLength(_passwordController.text),
                           ),
                           _buildPasswordRequirement(
-                            'One uppercase letter (A-Z)',
+                            AppLocalizations.of(context).oneUppercase,
                             _hasUppercase(_passwordController.text),
                           ),
                           _buildPasswordRequirement(
-                            'One lowercase letter (a-z)',
+                            AppLocalizations.of(context).oneLowercase,
                             _hasLowercase(_passwordController.text),
                           ),
                           _buildPasswordRequirement(
-                            'One number (0-9)',
+                            AppLocalizations.of(context).oneNumber,
                             _hasNumber(_passwordController.text),
                           ),
                         ],
@@ -897,9 +914,8 @@ class _RegisterSubContractorScreenState
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       decoration: _dec(
-                        'Password *',
-                        hint:
-                            'Minimum 8 characters with uppercase, lowercase & number',
+                        '${AppLocalizations.of(context).password} *',
+                        hint: AppLocalizations.of(context).passwordHint,
                         prefix: const Icon(
                           Icons.lock_outline_rounded,
                           size: 20,
@@ -930,7 +946,7 @@ class _RegisterSubContractorScreenState
 
                 // ── Business Info ─────────────────────────────
                 _sectionCard(
-                  title: 'Business Information',
+                  title: AppLocalizations.of(context).businessInformation,
                   icon: Icons.engineering_outlined,
                   color: _primary,
                   children: [
@@ -938,12 +954,12 @@ class _RegisterSubContractorScreenState
                       controller: _businessNameController,
                       textCapitalization: TextCapitalization.words,
                       decoration: _dec(
-                        'Business Name *',
-                        hint: 'Your company / firm name',
+                        '${AppLocalizations.of(context).businessName} *',
+                        hint: AppLocalizations.of(context).businessNameHint,
                         prefix: const Icon(Icons.storefront_outlined, size: 20),
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Business name is required'
+                          ? AppLocalizations.of(context).businessNameRequired
                           : null,
                     ),
                     const SizedBox(height: 14),
@@ -962,7 +978,7 @@ class _RegisterSubContractorScreenState
                     DropdownButtonFormField<String>(
                       value: _experienceRange,
                       decoration: _dec(
-                        'Experience Range *',
+                        AppLocalizations.of(context).experienceRange,
                         prefix: const Icon(Icons.timeline_outlined, size: 20),
                       ),
                       items: _scExperienceOptions
@@ -978,7 +994,7 @@ class _RegisterSubContractorScreenState
                     DropdownButtonFormField<String>(
                       value: _teamSize,
                       decoration: _dec(
-                        'Team Size *',
+                        AppLocalizations.of(context).teamSize,
                         prefix: const Icon(Icons.groups_outlined, size: 20),
                       ),
                       items: _scTeamSizeOptions
@@ -1008,7 +1024,7 @@ class _RegisterSubContractorScreenState
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Business Types *',
+                          AppLocalizations.of(context).businessTypes,
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -1051,24 +1067,30 @@ class _RegisterSubContractorScreenState
                             const SizedBox(width: 12),
                             Expanded(
                               child: _businessTypesLoading
-                                  ? const Text(
-                                      'Loading business types...',
+                                  ? Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      ).loadingBusinessTypes,
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: Color(0xFF9CA3AF),
                                       ),
                                     )
                                   : _availableBusinessTypes.isEmpty
-                                  ? const Text(
-                                      'No business types available',
+                                  ? Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      ).noBusinessTypesAvailable,
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: Color(0xFF9CA3AF),
                                       ),
                                     )
                                   : _selectedBusinessTypeIds.isEmpty
-                                  ? const Text(
-                                      'Select Business Types *',
+                                  ? Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      ).selectBusinessTypes,
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: Color(0xFF9CA3AF),
@@ -1133,7 +1155,7 @@ class _RegisterSubContractorScreenState
                       controller: _aboutController,
                       maxLines: 3,
                       decoration: _dec(
-                        'About Your Business',
+                        AppLocalizations.of(context).aboutYourBusiness,
                         hint: 'Brief description of your work...',
                         prefix: const Padding(
                           padding: EdgeInsets.only(bottom: 40),
@@ -1147,7 +1169,7 @@ class _RegisterSubContractorScreenState
 
                 // ── Location ──────────────────────────────────
                 _sectionCard(
-                  title: 'Location',
+                  title: AppLocalizations.of(context).locationSection,
                   icon: Icons.location_on_outlined,
                   color: const Color(0xFFF59E0B),
                   children: [
@@ -1198,7 +1220,7 @@ class _RegisterSubContractorScreenState
                     TextFormField(
                       controller: _cityController,
                       decoration: _dec(
-                        'City *',
+                        AppLocalizations.of(context).cityLabel,
                         hint: 'e.g. Mumbai',
                         prefix: const Icon(
                           Icons.location_city_outlined,
@@ -1213,7 +1235,7 @@ class _RegisterSubContractorScreenState
                     TextFormField(
                       controller: _stateController,
                       decoration: _dec(
-                        'State *',
+                        AppLocalizations.of(context).stateLabel,
                         hint: 'e.g. Maharashtra',
                         prefix: const Icon(Icons.map_outlined, size: 20),
                       ),
@@ -1225,7 +1247,7 @@ class _RegisterSubContractorScreenState
                     TextFormField(
                       controller: _pincodeController,
                       decoration: _dec(
-                        'Pincode *',
+                        AppLocalizations.of(context).pincodeLabel,
                         hint: 'e.g. 400001',
                         prefix: const Icon(Icons.pin_drop_outlined, size: 20),
                       ),
@@ -1239,8 +1261,8 @@ class _RegisterSubContractorScreenState
                       controller: _addressController,
                       maxLines: 2,
                       decoration: _dec(
-                        'Full Address *',
-                        hint: 'Street, Area, Landmark...',
+                        AppLocalizations.of(context).fullAddress,
+                        hint: AppLocalizations.of(context).addressHint,
                         prefix: const Padding(
                           padding: EdgeInsets.only(bottom: 24),
                           child: Icon(Icons.home_outlined, size: 20),
@@ -1256,13 +1278,13 @@ class _RegisterSubContractorScreenState
 
                 // ── Documents ─────────────────────────────────
                 _sectionCard(
-                  title: 'Documents',
+                  title: AppLocalizations.of(context).documents,
                   icon: Icons.folder_outlined,
                   color: _primary,
                   children: [
                     _uploadTile(
-                      label: 'Business License / GST / PAN',
-                      hint: 'Tap to upload license, GST, or PAN image',
+                      label: AppLocalizations.of(context).businessLicense,
+                      hint: AppLocalizations.of(context).tapToUploadLicense,
                       icon: Icons.description_outlined,
                       hasFile: _licenseBytes != null,
                       uploading: _licenseUploading,
@@ -1278,7 +1300,18 @@ class _RegisterSubContractorScreenState
                   onChanged: (v) => setState(() {
                     _selectedLanguages.clear();
                     _selectedLanguages.addAll(v);
+                    _updateLocaleFromSelectedLanguages(v);
                   }),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  AppLocalizations.of(context).chooseSupportedLanguage,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.65),
+                  ),
                 ),
                 const SizedBox(height: 14),
 
@@ -1307,7 +1340,9 @@ class _RegisterSubContractorScreenState
                         Expanded(
                           child: Text.rich(
                             TextSpan(
-                              text: 'I agree to the ',
+                              text: AppLocalizations.of(
+                                context,
+                              ).acceptTermsText,
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Theme.of(
@@ -1316,7 +1351,9 @@ class _RegisterSubContractorScreenState
                               ),
                               children: [
                                 TextSpan(
-                                  text: 'Terms & Conditions',
+                                  text: AppLocalizations.of(
+                                    context,
+                                  ).termsAndConditions,
                                   style: TextStyle(
                                     color: _primary,
                                     fontWeight: FontWeight.w600,
@@ -1351,7 +1388,9 @@ class _RegisterSubContractorScreenState
                           )
                         : const Icon(Icons.check_circle_outline_rounded),
                     label: Text(
-                      _submitting ? 'Creating Account...' : 'Create Account',
+                      _submitting
+                          ? AppLocalizations.of(context).creatingAccount
+                          : AppLocalizations.of(context).createAccount,
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
@@ -1404,12 +1443,12 @@ class _RegisterSubContractorScreenState
                   children: [
                     const Icon(Icons.category_outlined, color: _primary),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Select Business Types',
+                            AppLocalizations.of(context).selectBusinessTypes,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -1417,7 +1456,7 @@ class _RegisterSubContractorScreenState
                           ),
                           SizedBox(height: 2),
                           Text(
-                            'Choose all business types that apply',
+                            AppLocalizations.of(context).chooseBusinessTypes,
                             style: TextStyle(
                               fontSize: 12,
                               color: Color(0xFF6B7280),
@@ -1438,9 +1477,9 @@ class _RegisterSubContractorScreenState
                 child: _businessTypesLoading
                     ? const Center(child: CircularProgressIndicator())
                     : _availableBusinessTypes.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
-                          'No business types available',
+                          AppLocalizations.of(context).noBusinessTypesAvailable,
                           style: TextStyle(color: Color(0xFF6B7280)),
                         ),
                       )
@@ -1571,8 +1610,8 @@ class _RegisterSubContractorScreenState
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: const Text(
-                        'Done',
+                      child: Text(
+                        AppLocalizations.of(context).done,
                         style: TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),

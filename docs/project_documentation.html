@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Labour Sampark App - Project Documentation</title>
+  <style>
+    :root {
+      --bg: #f4f8ff;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --accent: #2563eb;
+      --accent-2: #0ea5e9;
+      --border: rgba(15, 23, 42, 0.08);
+      --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+    body { line-height: 1.65; }
+    .page { max-width: 1040px; margin: 0 auto; padding: 40px 24px; }
+    .hero { display: grid; gap: 24px; margin-bottom: 36px; }
+    .hero h1 { margin: 0; font-size: clamp(2.4rem, 3vw, 3.6rem); line-height: 1.02; }
+    .hero p { margin: 0; max-width: 760px; color: var(--muted); font-size: 1.05rem; }
+    .badge { display: inline-flex; align-items: center; gap: 10px; padding: 0.65rem 1rem; border-radius: 999px; background: rgba(37, 99, 235, 0.12); color: var(--accent); font-weight: 700; font-size: 0.95rem; }
+    .grid { display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    section { background: var(--card); border: 1px solid var(--border); border-radius: 24px; box-shadow: var(--shadow); padding: 28px; }
+    section h2 { margin-top: 0; color: var(--accent); }
+    section p, section li { font-size: 1rem; color: var(--text); }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .split-item { background: #f8fbff; border-radius: 20px; border: 1px solid rgba(37, 99, 235, 0.1); padding: 22px; }
+    .tag { display: inline-block; margin: 8px 6px 0 0; padding: 0.5rem 0.85rem; border-radius: 999px; background: rgba(37, 99, 235, 0.12); color: var(--accent); font-size: 0.9rem; }
+    .footer { margin-top: 36px; text-align: center; color: var(--muted); font-size: 0.95rem; }
+    ul { padding-left: 20px; margin-top: 12px; }
+    li { margin-bottom: 10px; }
+    .code { display: inline-block; padding: 0.15rem 0.35rem; background: #e2e8f0; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    @media (max-width: 720px) { .split { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div>
+        <span class="badge">Labour Sampark App</span>
+        <h1>Project Documentation</h1>
+        <p>Labour Sampark is a Flutter mobile app that connects labourers, contractors, and subcontractors with fast login, verification, notifications, and dashboard workflows.</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section>
+        <h2>Business Purpose</h2>
+        <p>This project is built to simplify hiring and job coordination between labourers and contractors. It provides a digital platform for:</p>
+        <ul>
+          <li>Quick worker discovery and contractor contact.</li>
+          <li>OTP-based secure verification for trusted access.</li>
+          <li>Real-time communication and notifications via Firebase Messaging.</li>
+          <li>Improved operational efficiency for labour-based businesses.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Target Audience</h2>
+        <div class="split">
+          <div class="split-item">
+            <h3>Business Stakeholders</h3>
+            <ul>
+              <li>Contractors and companies that need reliable labour resources.</li>
+              <li>Labourers seeking work opportunities and quick onboarding.</li>
+              <li>Operations teams needing notifications and session-based access.</li>
+            </ul>
+          </div>
+          <div class="split-item">
+            <h3>Technical Team</h3>
+            <ul>
+              <li>Built with Flutter for cross-platform mobile deployment.</li>
+              <li>Firebase backend support for messaging, crash reporting, and analytics.</li>
+              <li>Persistent local session storage with <span class="code">SharedPreferences</span>.</li>
+              <li>Modern state handling via <span class="code">Provider</span> and <span class="code">GetX</span>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section>
+      <h2>Technical Overview</h2>
+      <p>The codebase is organized with a standard Flutter app structure and uses Firebase for remote features. Key responsibilities are:</p>
+      <ul>
+        <li><strong>Startup:</strong> `lib/main.dart` handles Firebase initialization, notification setup, and app lifecycle checking.</li>
+        <li><strong>Authentication:</strong> `lib/core/auth_service.dart` manages login state, tokens, and OTP verification flags.</li>
+        <li><strong>Screens:</strong> `SplashScreen`, `LoginScreen`, `MobileVerifyScreen`, and `UserDashboardScreen` define the main app flow.</li>
+        <li><strong>Notifications:</strong> Real-time Firebase Cloud Messaging in both foreground and background.</li>
+        <li><strong>Local storage:</strong> Uses `SharedPreferences` and `hive` for session and preferences data.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Core Features</h2>
+      <ul>
+        <li>Branding and native splash using `flutter_native_splash`.</li>
+        <li>OTP verification flow for mobile users.</li>
+        <li>Crash reporting through `firebase_crashlytics`.</li>
+        <li>Push notifications and deep linking via `firebase_messaging`.</li>
+        <li>In-app update support for Android using `in_app_update`.</li>
+        <li>Responsive UI scaling with `flutter_screenutil`.</li>
+        <li>Location services via `geolocator` and `geocoding` for future location-aware functionality.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Project Status</h2>
+      <ul>
+        <li>App is currently at version <strong>1.0.9+14</strong>.</li>
+        <li>Most startup, login, OTP, and dashboard navigation are implemented.</li>
+        <li>Core backend connectivity is present via `ApiService` and Firebase integrations.</li>
+        <li>Further work may include expanded dashboard features, role-based screens, and improved business analytics.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Tech Stack</h2>
+      <div class="grid">
+        <div>
+          <h3>Flutter Packages</h3>
+          <span class="tag">flutter</span>
+          <span class="tag">get</span>
+          <span class="tag">provider</span>
+          <span class="tag">dio</span>
+          <span class="tag">firebase_core</span>
+          <span class="tag">firebase_messaging</span>
+          <span class="tag">firebase_crashlytics</span>
+          <span class="tag">flutter_local_notifications</span>
+          <span class="tag">shared_preferences</span>
+          <span class="tag">hive</span>
+          <span class="tag">flutter_screenutil</span>
+        </div>
+        <div>
+          <h3>Infrastructure</h3>
+          <span class="tag">Firebase</span>
+          <span class="tag">FCM Notifications</span>
+          <span class="tag">Crashlytics</span>
+          <span class="tag">Android App Bundle</span>
+          <span class="tag">iOS Support</span>
+          <span class="tag">In-app update</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>How to Build</h2>
+      <ul>
+        <li>Install Flutter SDK and configure Android/iOS tooling.</li>
+        <li>Run <span class="code">flutter pub get</span> in the project root.</li>
+        <li>Use <span class="code">flutter run</span> to launch on a device or emulator.</li>
+        <li>Use <span class="code">flutter build appbundle --release</span> for Android production build.</li>
+        <li>Ensure Firebase configuration files exist for Android and iOS.</li>
+      </ul>
+    </section>
+
+    <div class="footer">
+      <p>Documentation generated for the Labour Sampark app. Designed for both technical engineers and business stakeholders.</p>
+    </div>
+  </div>
+</body>
+</html>

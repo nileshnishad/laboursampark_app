@@ -5,12 +5,16 @@ import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../common/models/skill_model.dart';
 import '../../common/widgets/language_picker.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
 import '../../services/s3_upload_service.dart';
 import '../../services/skills_service.dart';
 import '../../utils/toast_utils.dart';
 import 'login_screen.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
+import '../../core/app_state.dart';
 
 // ── Experience options ─────────────────────────────────────────────────────
 const _experienceOptions = [
@@ -112,6 +116,17 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
       ToastUtils.showError(
         result['message']?.toString() ?? 'Failed to load skills',
       );
+    }
+  }
+
+  void _updateLocaleFromSelectedLanguages(List<String> selected) {
+    final appState = Provider.of<AppState>(context, listen: false);
+    if (selected.contains('Hindi')) {
+      appState.setLocale(const Locale('hi'));
+    } else if (selected.contains('Marathi')) {
+      appState.setLocale(const Locale('mr'));
+    } else if (selected.contains('English')) {
+      appState.setLocale(const Locale('en'));
     }
   }
 
@@ -281,7 +296,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Choose multiple skills that match your expertise',
+                            AppLocalizations.of(context).chooseSkills,
                             style: TextStyle(
                               fontSize: 12,
                               color: Theme.of(
@@ -306,7 +321,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                     : _availableSkills.isEmpty
                     ? Center(
                         child: Text(
-                          'No skills available',
+                          AppLocalizations.of(context).noSkillsAvailable,
                           style: TextStyle(
                             color: Theme.of(
                               context,
@@ -442,9 +457,9 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: const Text(
-                        'Done',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                      child: Text(
+                        AppLocalizations.of(context).done,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -517,8 +532,14 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
       ToastUtils.showError('Select at least one skill');
       return;
     }
+    if (_selectedLanguages.isEmpty) {
+      ToastUtils.showError(
+        AppLocalizations.of(context).selectAtLeastOneLanguage,
+      );
+      return;
+    }
     if (!_acceptTerms) {
-      ToastUtils.showError('Please accept Terms & Conditions');
+      ToastUtils.showError(AppLocalizations.of(context).pleaseAcceptTerms);
       return;
     }
     if (_photoBytes != null && _photoUrl == null) {
@@ -669,10 +690,16 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
         elevation: 0,
         scrolledUnderElevation: 1,
         surfaceTintColor: Colors.transparent,
-        title: const Text(
-          'Register as Labour',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+        title: Text(
+          AppLocalizations.of(context).registerAsLabour,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: RegistrationLocaleSwitcher(),
+          ),
+        ],
       ),
       body: SafeArea(
         top: false,
@@ -756,8 +783,8 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                 Center(
                   child: Text(
                     _photoUrl != null
-                        ? 'Photo uploaded ✓'
-                        : 'Tap to add profile photo',
+                        ? AppLocalizations.of(context).companyLogoUploaded
+                        : AppLocalizations.of(context).tapToAddCompanyLogo,
                     style: TextStyle(
                       fontSize: 12,
                       color: _photoUrl != null
@@ -771,7 +798,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
 
                 // ── Personal Information ───────────────────────
                 _sectionCard(
-                  title: 'Personal Information',
+                  title: AppLocalizations.of(context).personalInformation,
                   icon: Icons.person_outline_rounded,
                   color: _primary,
                   children: [
@@ -779,7 +806,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                       controller: _nameController,
                       textCapitalization: TextCapitalization.words,
                       decoration: _dec(
-                        'Full Name *',
+                        '${AppLocalizations.of(context).fullName} *',
                         hint: 'Enter your full name',
                         prefix: const Icon(
                           Icons.person_outline_rounded,
@@ -787,7 +814,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                         ),
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Full name is required'
+                          ? AppLocalizations.of(context).fullNameRequired
                           : null,
                     ),
                     const SizedBox(height: 14),
@@ -800,7 +827,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                           initialDate: _selectedDob ?? DateTime(now.year - 25),
                           firstDate: DateTime(1950),
                           lastDate: DateTime(now.year - 18, now.month, now.day),
-                          helpText: 'Select Date of Birth',
+                          helpText: AppLocalizations.of(context).dateOfBirth,
                         );
                         if (picked != null)
                           setState(() => _selectedDob = picked);
@@ -830,7 +857,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                             Expanded(
                               child: Text(
                                 _selectedDob == null
-                                    ? 'Date of Birth *'
+                                    ? '${AppLocalizations.of(context).dateOfBirth} *'
                                     : '${_selectedDob!.day.toString().padLeft(2, '0')}/${_selectedDob!.month.toString().padLeft(2, '0')}/${_selectedDob!.year}',
                                 style: TextStyle(
                                   fontSize: 15,
@@ -856,8 +883,8 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                     TextFormField(
                       controller: _emailController,
                       decoration: _dec(
-                        'Email Address *',
-                        hint: 'name@example.com',
+                        '${AppLocalizations.of(context).email} *',
+                        hint: AppLocalizations.of(context).emailExampleHint,
                         prefix: const Icon(Icons.email_outlined, size: 20),
                       ),
                       keyboardType: TextInputType.emailAddress,
@@ -870,8 +897,9 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                       ],
                       validator: (v) {
                         if (v == null || v.trim().isEmpty)
-                          return 'Email is required';
-                        if (!v.contains('@')) return 'Enter valid email';
+                          return AppLocalizations.of(context).emailRequired;
+                        if (!v.contains('@'))
+                          return AppLocalizations.of(context).enterValidEmail;
                         return null;
                       },
                     ),
@@ -879,8 +907,8 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                     TextFormField(
                       controller: _mobileController,
                       decoration: _dec(
-                        'Mobile Number *',
-                        hint: 'XXXXX XXXXX',
+                        '${AppLocalizations.of(context).mobileNumber} *',
+                        hint: AppLocalizations.of(context).mobileNumberHint,
                         prefix: const Icon(Icons.phone_outlined, size: 20),
                       ),
                       keyboardType: TextInputType.phone,
@@ -890,10 +918,12 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                       ],
                       validator: (v) {
                         if (v == null || v.trim().isEmpty)
-                          return 'Mobile number is required';
+                          return AppLocalizations.of(
+                            context,
+                          ).mobileNumberRequired;
                         final digits = v.trim();
                         if (digits.length != 10)
-                          return 'Enter a valid 10-digit mobile number';
+                          return AppLocalizations.of(context).enterValidMobile;
                         return null;
                       },
                     ),
@@ -927,7 +957,9 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'Password Requirements:',
+                                AppLocalizations.of(
+                                  context,
+                                ).passwordRequirementsLabel,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -938,19 +970,19 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                           ),
                           const SizedBox(height: 8),
                           _buildPasswordRequirement(
-                            'At least 8 characters',
+                            AppLocalizations.of(context).atLeast8Chars,
                             _hasMinLength(_passwordController.text),
                           ),
                           _buildPasswordRequirement(
-                            'One uppercase letter (A-Z)',
+                            AppLocalizations.of(context).oneUppercase,
                             _hasUppercase(_passwordController.text),
                           ),
                           _buildPasswordRequirement(
-                            'One lowercase letter (a-z)',
+                            AppLocalizations.of(context).oneLowercase,
                             _hasLowercase(_passwordController.text),
                           ),
                           _buildPasswordRequirement(
-                            'One number (0-9)',
+                            AppLocalizations.of(context).oneNumber,
                             _hasNumber(_passwordController.text),
                           ),
                         ],
@@ -960,9 +992,8 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       decoration: _dec(
-                        'Password *',
-                        hint:
-                            'Minimum 8 characters with uppercase, lowercase & number',
+                        '${AppLocalizations.of(context).password} *',
+                        hint: AppLocalizations.of(context).passwordHint,
                         prefix: const Icon(
                           Icons.lock_outline_rounded,
                           size: 20,
@@ -981,9 +1012,9 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                       ),
                       validator: (v) {
                         if (v == null || v.trim().isEmpty)
-                          return 'Password is required';
+                          return AppLocalizations.of(context).passwordRequired;
                         if (!_isPasswordValid(v.trim()))
-                          return 'Password does not meet requirements';
+                          return AppLocalizations.of(context).passwordInvalid;
                         return null;
                       },
                     ),
@@ -993,7 +1024,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
 
                 // ── Location ───────────────────────────────────
                 _sectionCard(
-                  title: 'Location',
+                  title: 'Address & Location',
                   icon: Icons.location_on_outlined,
                   color: const Color(0xFFF59E0B),
                   children: [
@@ -1058,13 +1089,13 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                     TextFormField(
                       controller: _pincodeController,
                       decoration: _dec(
-                        'Pincode *',
-                        hint: 'e.g. 400001',
+                        AppLocalizations.of(context).pincodeLabel,
+                        hint: AppLocalizations.of(context).pincodeHint,
                         prefix: const Icon(Icons.pin_drop_outlined, size: 20),
                       ),
                       keyboardType: TextInputType.number,
                       validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Pincode is required'
+                          ? AppLocalizations.of(context).pincodeRequired
                           : null,
                     ),
                     const SizedBox(height: 14),
@@ -1072,15 +1103,15 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                       controller: _addressController,
                       maxLines: 2,
                       decoration: _dec(
-                        'Full Address *',
-                        hint: 'House no., Street, Area...',
+                        AppLocalizations.of(context).fullAddress,
+                        hint: AppLocalizations.of(context).houseAddressHint,
                         prefix: const Padding(
                           padding: EdgeInsets.only(bottom: 24),
                           child: Icon(Icons.home_outlined, size: 20),
                         ),
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Address is required'
+                          ? AppLocalizations.of(context).addressRequired
                           : null,
                     ),
                   ],
@@ -1140,7 +1171,9 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                                 Expanded(
                                   child: _skillsLoading
                                       ? Text(
-                                          'Loading skills...',
+                                          AppLocalizations.of(
+                                            context,
+                                          ).loadingBusinessTypes,
                                           style: TextStyle(
                                             fontSize: 14,
                                             color: cs.onSurface.withValues(
@@ -1150,7 +1183,9 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                                         )
                                       : _selectedSkillIds.isEmpty
                                       ? Text(
-                                          'Select Skills *',
+                                          AppLocalizations.of(
+                                            context,
+                                          ).selectSkills,
                                           style: TextStyle(
                                             fontSize: 14,
                                             color: cs.onSurface.withValues(
@@ -1247,15 +1282,26 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                       onChanged: (v) => setState(() {
                         _selectedLanguages.clear();
                         _selectedLanguages.addAll(v);
+                        _updateLocaleFromSelectedLanguages(v);
                       }),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      AppLocalizations.of(context).chooseSupportedLanguage,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.65),
+                      ),
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
                       controller: _bioController,
                       maxLines: 3,
                       decoration: _dec(
-                        'About Yourself',
-                        hint: 'Brief description about your work...',
+                        AppLocalizations.of(context).aboutYourself,
+                        hint: AppLocalizations.of(context).bioHint,
                         prefix: const Padding(
                           padding: EdgeInsets.only(bottom: 40),
                           child: Icon(Icons.info_outline_rounded, size: 20),
@@ -1288,17 +1334,21 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        const Expanded(
+                        Expanded(
                           child: Text.rich(
                             TextSpan(
-                              text: 'I agree to the ',
-                              style: TextStyle(
+                              text: AppLocalizations.of(
+                                context,
+                              ).acceptTermsText,
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: Color(0xFF374151),
                               ),
                               children: [
                                 TextSpan(
-                                  text: 'Terms & Conditions',
+                                  text: AppLocalizations.of(
+                                    context,
+                                  ).termsAndConditions,
                                   style: TextStyle(
                                     color: _primary,
                                     fontWeight: FontWeight.w600,
@@ -1332,7 +1382,9 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                           )
                         : const Icon(Icons.check_circle_outline_rounded),
                     label: Text(
-                      _submitting ? 'Creating Account...' : 'Create Account',
+                      _submitting
+                          ? AppLocalizations.of(context).creatingAccount
+                          : AppLocalizations.of(context).createAccount,
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
