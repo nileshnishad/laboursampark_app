@@ -10,6 +10,7 @@ class MarketplaceUser {
   final int completedJobs;
   final bool availability;
   final String experienceLabel;
+  final List<String> skills;
   final String? logoUrl;
   final String? profilePhotoUrl;
 
@@ -25,6 +26,7 @@ class MarketplaceUser {
     required this.completedJobs,
     required this.availability,
     required this.experienceLabel,
+    required this.skills,
     required this.logoUrl,
     required this.profilePhotoUrl,
   });
@@ -32,9 +34,8 @@ class MarketplaceUser {
   factory MarketplaceUser.fromJson(Map<String, dynamic> json) {
     final location = json['location'] as Map<String, dynamic>?;
     final fallbackCity = (location?['city'] ?? '').toString();
-    final rawExperience =
-        (json['experience'] ?? json['experienceRange'] ?? '')
-            .toString();
+    final rawExperience = (json['experience'] ?? json['experienceRange'] ?? '')
+        .toString();
 
     return MarketplaceUser(
       id: (json['_id'] ?? '').toString(),
@@ -47,11 +48,14 @@ class MarketplaceUser {
       rating: (json['rating'] as num?)?.toDouble() ?? 0,
       completedJobs: (json['completedJobs'] as num?)?.toInt() ?? 0,
       availability: (json['availability'] as bool?) ?? false,
-      experienceLabel:
-          rawExperience.isEmpty ? 'N/A' : rawExperience,
+      experienceLabel: rawExperience.isEmpty ? 'N/A' : rawExperience,
+      skills: ((json['skills'] as List?) ?? [])
+          .whereType<String>()
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList(),
       logoUrl: _normalizeUrl(json['companyLogoUrl'] as String?),
-      profilePhotoUrl:
-          _normalizeUrl(json['profilePhotoUrl'] as String?),
+      profilePhotoUrl: _normalizeUrl(json['profilePhotoUrl'] as String?),
     );
   }
 

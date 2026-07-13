@@ -53,6 +53,33 @@ class AppLocalizations {
       'fetching_location': 'Fetching Location...',
       'city': 'City *',
       'state': 'State *',
+      'city_dropdown': 'City',
+      'state_dropdown': 'State',
+      'area_dropdown': 'Area',
+      'minimum_rating': 'Minimum rating',
+      'experience_years': 'Experience (years)',
+      'skills': 'Skills',
+      'business_types_label': 'Business types',
+      'apply_filter': 'Apply filter',
+      'clear': 'Clear',
+      'advanced_filter': 'Advanced filter',
+      'worker_id_card_title': 'Labour ID Card',
+      'profession_unknown': 'Profession not specified',
+      'available': 'Available',
+      'busy': 'Busy',
+      'rating_label': 'Rating',
+      'contact_label': 'Contact',
+      'not_available': 'Not available',
+      'search_labour': 'Search labour',
+      'search_labour_hint': 'Name, city, or mobile',
+      'no_labour_profiles_found': 'No labour profiles found',
+      'try_another_search_keyword': 'Try another search keyword.',
+      'filter_label': 'Filter',
+      'labour_profiles': 'Labour Profiles',
+      'labour_profile_card_title': 'Labour Profile',
+      'view_details': 'View details',
+      'availability_label': 'Availability',
+      'any': 'Any',
       'pincode': 'Pincode *',
       'address': 'Full Address *',
       'done': 'Done',
@@ -197,6 +224,33 @@ class AppLocalizations {
       'fetching_location': 'स्थान लाया जा रहा है...',
       'city': 'शहर *',
       'state': 'राज्य *',
+      'city_dropdown': 'शहर',
+      'state_dropdown': 'राज्य',
+      'area_dropdown': 'क्षेत्र',
+      'minimum_rating': 'न्यूनतम रेटिंग',
+      'experience_years': 'अनुभव (वर्ष)',
+      'skills': 'कौशल',
+      'business_types_label': 'व्यवसाय प्रकार',
+      'apply_filter': 'फ़िल्टर लागू करें',
+      'clear': 'साफ़ करें',
+      'advanced_filter': 'उन्नत फ़िल्टर',
+      'worker_id_card_title': 'मज़दूर आईडी कार्ड',
+      'profession_unknown': 'पेशा निर्दिष्ट नहीं',
+      'available': 'उपलब्ध',
+      'busy': 'व्यस्त',
+      'rating_label': 'रेटिंग',
+      'contact_label': 'संपर्क',
+      'not_available': 'उपलब्ध नहीं',
+      'search_labour': 'मज़दूर खोजें',
+      'search_labour_hint': 'नाम, शहर, या मोबाइल',
+      'no_labour_profiles_found': 'कोई मजदूर प्रोफ़ाइल नहीं मिली',
+      'try_another_search_keyword': 'कोई अन्य खोज कीवर्ड आज़माएँ।',
+      'filter_label': 'फ़िल्टर',
+      'labour_profiles': 'मज़दूर प्रोफ़ाइल',
+      'labour_profile_card_title': 'मज़दूर प्रोफ़ाइल',
+      'view_details': 'विवरण देखें',
+      'availability_label': 'उपलब्धता',
+      'any': 'कोई भी',
       'pincode': 'पिनकोड *',
       'address': 'पूरा पता *',
       'done': 'समाप्त',
@@ -328,19 +382,49 @@ class AppLocalizations {
       'sign_in': 'साइन इन करा',
       'signing_in': 'साइन इन केला जात आहे...',
       'dont_have_an_account': 'खाते नाही का?',
-      'need_help_call_support': 'मदतीची गरज आहे? समर्थनाला कॉल करा: +91 9172272305',
+      'need_help_call_support':
+          'मदतीची गरज आहे? समर्थनाला कॉल करा: +91 9172272305',
       'choose_your_role': 'आपला रोल निवडा',
       'choose_role_description': 'तुमच्यासाठी सर्वोत्तम खाते प्रकार निवडा',
       'labour_role_title': 'कामगार',
-      'labour_role_description': 'जॉब शोधा आणि तुमच्या आसपासच्या कॉन्ट्रॅक्टरशी संपर्क साधा',
+      'labour_role_description':
+          'जॉब शोधा आणि तुमच्या आसपासच्या कॉन्ट्रॅक्टरशी संपर्क साधा',
       'subcontractor_role_title': 'सब-ठेकेदार',
-      'subcontractor_role_description': 'आपल्या टीमचे व्यवस्थापन करा आणि सब-कॉन्ट्रॅक्ट काम घ्या',
+      'subcontractor_role_description':
+          'आपल्या टीमचे व्यवस्थापन करा आणि सब-कॉन्ट्रॅक्ट काम घ्या',
       'contractor_role_title': 'ठेकेदार',
-      'contractor_role_description': 'आपले प्रकल्प पोस्ट करा आणि कुशल कामगारांची नेमणूक करा',
+      'contractor_role_description':
+          'आपले प्रकल्प पोस्ट करा आणि कुशल कामगारांची नेमणूक करा',
       'use_current_location': 'सध्याचे स्थान वापरा',
       'fetching_location': 'स्थान मिळवत आहे...',
       'city': 'शहर *',
       'state': 'राज्य *',
+      'city_dropdown': 'शहर',
+      'state_dropdown': 'राज्य',
+      'minimum_rating': 'किमान रेटिंग',
+      'experience_years': 'अनुभव (वर्ष)',
+      'skills': 'कौशल्ये',
+      'business_types_label': 'व्यवसाय प्रकार',
+      'apply_filter': 'फिल्टर लागू करा',
+      'clear': 'क्लिअर',
+      'advanced_filter': 'प्रगत फिल्टर',
+      'worker_id_card_title': 'मजूर आयडी कार्ड',
+      'profession_unknown': 'व्यवसाय निर्दिष्ट केलेला नाही',
+      'available': 'उपलब्ध',
+      'busy': 'व्यस्त',
+      'rating_label': 'रेटिंग',
+      'contact_label': 'संपर्क',
+      'not_available': 'उपलब्ध नाही',
+      'search_labour': 'मजूर शोधा',
+      'search_labour_hint': 'नाव, शहर किंवा मोबाइल',
+      'no_labour_profiles_found': 'कोणतीही मजूर प्रोफाइल आढळली नाही',
+      'try_another_search_keyword': 'इतर शोध कीवर्ड वापरून पहा.',
+      'filter_label': 'फिल्टर',
+      'labour_profiles': 'कामगार प्रोफाइल',
+      'labour_profile_card_title': 'कामगार प्रोफाइल',
+      'view_details': 'तपशील पहा',
+      'availability_label': 'उपलब्धता',
+      'any': 'कोणतेही',
       'pincode': 'पिनकोड *',
       'address': 'पूर्ण पत्ता *',
       'done': 'पूर्ण',
@@ -543,6 +627,33 @@ class AppLocalizations {
   String get fetchingLocation => _t('fetching_location');
   String get cityLabel => _t('city');
   String get stateLabel => _t('state');
+  String get cityLabelDropdown => _t('city_dropdown');
+  String get stateLabelDropdown => _t('state_dropdown');
+  String get areaLabelDropdown => _t('area_dropdown');
+  String get workerIdCardTitle => _t('worker_id_card_title');
+  String get professionUnknown => _t('profession_unknown');
+  String get available => _t('available');
+  String get busy => _t('busy');
+  String get ratingLabel => _t('rating_label');
+  String get contactLabel => _t('contact_label');
+  String get notAvailable => _t('not_available');
+  String get searchLabour => _t('search_labour');
+  String get searchLabourHint => _t('search_labour_hint');
+  String get noLabourProfilesFound => _t('no_labour_profiles_found');
+  String get tryAnotherSearchKeyword => _t('try_another_search_keyword');
+  String get filterLabel => _t('filter_label');
+  String get labourProfiles => _t('labour_profiles');
+  String get labourProfileCardTitle => _t('labour_profile_card_title');
+  String get viewDetails => _t('view_details');
+  String get availabilityLabel => _t('availability_label');
+  String get minimumRatingLabel => _t('minimum_rating');
+  String get experienceYearsLabel => _t('experience_years');
+  String get skillsLabel => _t('skills');
+  String get businessTypesLabel => _t('business_types_label');
+  String get applyFilterButtonLabel => _t('apply_filter');
+  String get clearLabel => _t('clear');
+  String get advancedFilterLabel => _t('advanced_filter');
+  String get anyLabel => _t('any');
   String get pincodeLabel => _t('pincode');
   String get addressLabel => _t('address');
   String get done => _t('done');

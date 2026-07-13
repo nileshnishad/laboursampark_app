@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../core/app_interceptor.dart';
@@ -7,6 +6,7 @@ import '../core/env.dart';
 import '../core/errors/app_error.dart';
 import '../core/errors/error_messages.dart';
 import '../core/services/network_service.dart';
+import '../features/dashboard/models/marketplace_filter.dart';
 
 class ApiService {
   static final Dio _dio = Dio(
@@ -177,14 +177,20 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> fetchContractors() async {
+  static Future<Map<String, dynamic>> fetchContractors({
+    MarketplaceFilter? filter,
+  }) async {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {
       return {'success': false, 'message': ErrorMessages.noInternet};
     }
 
     try {
-      final response = await _dio.get('${Env.baseUrl}/api/users/contractors');
+      final params = filter?.toQueryParameters(isLabour: false) ?? {};
+      final response = await _dio.get(
+        '${Env.baseUrl}/api/users/contractors',
+        queryParameters: params.isEmpty ? null : params,
+      );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       return {
@@ -196,14 +202,20 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> fetchLabours() async {
+  static Future<Map<String, dynamic>> fetchLabours({
+    MarketplaceFilter? filter,
+  }) async {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {
       return {'success': false, 'message': ErrorMessages.noInternet};
     }
 
     try {
-      final response = await _dio.get('${Env.baseUrl}/api/users/labours');
+      final params = filter?.toQueryParameters(isLabour: true) ?? {};
+      final response = await _dio.get(
+        '${Env.baseUrl}/api/users/labours',
+        queryParameters: params.isEmpty ? null : params,
+      );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       return {
