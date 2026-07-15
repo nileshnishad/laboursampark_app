@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'services/app_logger.dart';
 
 class AuthService {
   static const String _keyIsLoggedIn = 'is_logged_in';
@@ -18,6 +19,10 @@ class AuthService {
   static Future<void> setLoggedIn(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyIsLoggedIn, value);
+    await AppLogger.instance.info(
+      value ? 'login_state_saved' : 'logout_state_saved',
+      message: value ? 'User marked as logged in' : 'User marked as logged out',
+    );
   }
 
   static Future<void> setAuthToken(String token) async {
@@ -52,7 +57,8 @@ class AuthService {
     await prefs.remove(_keyAuthToken);
     await prefs.remove(_keyUserData);
     await prefs.remove(_keyOtpVerified);
-    // Note: We don't clear remember me credentials on logout, 
+    await AppLogger.instance.info('logout', message: 'Session cleared');
+    // Note: We don't clear remember me credentials on logout,
     // so user can still use them for next login if they want
   }
 
@@ -77,7 +83,10 @@ class AuthService {
     return prefs.getBool(_keyRememberMe) ?? false;
   }
 
-  static Future<void> saveRememberedCredentials(String emailOrMobile, String password) async {
+  static Future<void> saveRememberedCredentials(
+    String emailOrMobile,
+    String password,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyRememberedEmail, emailOrMobile);
     await prefs.setString(_keyRememberedPassword, password);

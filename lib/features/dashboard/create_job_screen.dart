@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/user_controller.dart';
+import '../../core/services/app_logger.dart';
 import '../../services/api_service.dart';
 import '../../services/skills_service.dart';
 import '../../common/models/skill_model.dart';
@@ -23,28 +24,29 @@ class CreateJobScreen extends StatefulWidget {
 }
 
 class _CreateJobScreenState extends State<CreateJobScreen> {
-    void _showBusinessTypesBottomSheet() {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => StatefulBuilder(
-          builder: (context, setModalState) => BusinessTypesBottomSheet(
-            availableBusinessTypes: _availableBusinessTypes,
-            selectedBusinessTypeIds: _selectedBusinessTypeIds,
-            primaryColor: _primaryColor,
-            onSelectionChanged: (selected) {
-              setState(() {
-                _selectedBusinessTypeIds
-                  ..clear()
-                  ..addAll(selected);
-              });
-              setModalState(() {});
-            },
-          ),
+  void _showBusinessTypesBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => BusinessTypesBottomSheet(
+          availableBusinessTypes: _availableBusinessTypes,
+          selectedBusinessTypeIds: _selectedBusinessTypeIds,
+          primaryColor: _primaryColor,
+          onSelectionChanged: (selected) {
+            setState(() {
+              _selectedBusinessTypeIds
+                ..clear()
+                ..addAll(selected);
+            });
+            setModalState(() {});
+          },
         ),
-      );
-    }
+      ),
+    );
+  }
+
   // For business name and business types (sub_contractor)
   final TextEditingController _businessNameController = TextEditingController();
   bool _businessTypesLoading = false;
@@ -72,7 +74,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   // State
   String _target = 'labour'; // 'labour' | 'sub_contractor' | 'both'
   final List<String> _skills = [];
-  final List<_NewImageItem> _newImages = []; // newly picked images (auto-uploaded)
+  final List<_NewImageItem> _newImages =
+      []; // newly picked images (auto-uploaded)
   // Existing remote image URLs (edit mode)
   List<String> _existingImageUrls = [];
   bool _submitting = false;
@@ -99,7 +102,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       _skills.addAll(job.requiredSkills);
       _existingImageUrls = List<String>.from(job.images);
       // Determine target
-      if (job.target.contains('labour') && job.target.contains('sub_contractor')) {
+      if (job.target.contains('labour') &&
+          job.target.contains('sub_contractor')) {
         _target = 'both';
       } else if (job.target.contains('sub_contractor')) {
         _target = 'sub_contractor';
@@ -111,7 +115,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     // Now fetch based on _target
     debugPrint('initState: after job check, _target = $_target');
     if (_target == 'sub_contractor') {
-      debugPrint('initState: Fetching business types for sub_contractor target');
+      debugPrint(
+        'initState: Fetching business types for sub_contractor target',
+      );
       _fetchBusinessTypes();
     }
     if (_target == 'labour') {
@@ -122,8 +128,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
 
   @override
   void dispose() {
-        _businessNameController.dispose();
-      // ...existing code...
+    _businessNameController.dispose();
+    // ...existing code...
     _titleController.dispose();
     _workersController.dispose();
     _skillsInputController.dispose();
@@ -220,29 +226,30 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   }
 
   // ── Skills chip input ─────────────────────────────────────────────────────
- 
-      Future<void> _fetchSkills() async {
-        setState(() => _skillsLoading = true);
-        final result = await SkillsService.getAllSkills();
-        if (!mounted) return;
-        if (result['success'] == true) {
-          final list = result['skills'] ?? result['data'];
-          if (list != null && list is List) {
-            setState(() {
-              _availableSkills = List<SkillModel>.from(list);
-              _skillsLoading = false;
-            });
-          } else {
-            setState(() => _skillsLoading = false);
-            _showSnack('No skills found');
-          }
-        } else {
-          setState(() => _skillsLoading = false);
-          _showSnack(result['message']?.toString() ?? 'Failed to load skills');
-        }
+
+  Future<void> _fetchSkills() async {
+    setState(() => _skillsLoading = true);
+    final result = await SkillsService.getAllSkills();
+    if (!mounted) return;
+    if (result['success'] == true) {
+      final list = result['skills'] ?? result['data'];
+      if (list != null && list is List) {
+        setState(() {
+          _availableSkills = List<SkillModel>.from(list);
+          _skillsLoading = false;
+        });
+      } else {
+        setState(() => _skillsLoading = false);
+        _showSnack('No skills found');
       }
-    // ── Business types (sub_contractor) ───────────────────────────────────────
-    Future<void> _fetchBusinessTypes() async {
+    } else {
+      setState(() => _skillsLoading = false);
+      _showSnack(result['message']?.toString() ?? 'Failed to load skills');
+    }
+  }
+
+  // ── Business types (sub_contractor) ───────────────────────────────────────
+  Future<void> _fetchBusinessTypes() async {
     setState(() => _businessTypesLoading = true);
     final result = await BusinessTypeService.getAllBusinessTypes();
     print('>>> Business types fetch result: $result');
@@ -260,7 +267,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       }
     } else {
       setState(() => _businessTypesLoading = false);
-      _showSnack(result['message']?.toString() ?? 'Failed to load business types');
+      _showSnack(
+        result['message']?.toString() ?? 'Failed to load business types',
+      );
     }
   }
 
@@ -282,19 +291,36 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: _primaryColor.withOpacity(0.05),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.handyman_outlined, color: Color(0xFF2563EB)),
+                    const Icon(
+                      Icons.handyman_outlined,
+                      color: Color(0xFF2563EB),
+                    ),
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Select Skills', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                          Text(
+                            'Select Skills',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                           SizedBox(height: 2),
-                          Text('Choose multiple skills for this job', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                          Text(
+                            'Choose multiple skills for this job',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF6B7280),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -309,61 +335,78 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 child: _skillsLoading
                     ? const Center(child: CircularProgressIndicator())
                     : _availableSkills.isEmpty
-                        ? const Center(child: Text('No skills available', style: TextStyle(color: Color(0xFF6B7280))))
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _availableSkills.length,
-                            itemBuilder: (context, index) {
-                              final skill = _availableSkills[index];
-                              final skillId = skill.id;
-                              final isSelected = _selectedSkillIds.contains(skillId);
-                              return InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    if (isSelected) {
-                                      _selectedSkillIds.remove(skillId);
-                                    } else {
-                                      _selectedSkillIds.add(skillId);
-                                    }
-                                  });
-                                  setModalState(() {});
-                                },
+                    ? const Center(
+                        child: Text(
+                          'No skills available',
+                          style: TextStyle(color: Color(0xFF6B7280)),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _availableSkills.length,
+                        itemBuilder: (context, index) {
+                          final skill = _availableSkills[index];
+                          final skillId = skill.id;
+                          final isSelected = _selectedSkillIds.contains(
+                            skillId,
+                          );
+                          return InkWell(
+                            onTap: () {
+                              setState(() {
+                                if (isSelected) {
+                                  _selectedSkillIds.remove(skillId);
+                                } else {
+                                  _selectedSkillIds.add(skillId);
+                                }
+                              });
+                              setModalState(() {});
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? _primaryColor.withOpacity(0.08)
+                                    : const Color(0xFFF9FAFB),
                                 borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: isSelected ? _primaryColor.withOpacity(0.08) : const Color(0xFFF9FAFB),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: isSelected ? _primaryColor : const Color(0xFFE5E7EB),
-                                      width: isSelected ? 1.5 : 1,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? _primaryColor
+                                      : const Color(0xFFE5E7EB),
+                                  width: isSelected ? 1.5 : 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    isSelected
+                                        ? Icons.check_circle
+                                        : Icons.circle_outlined,
+                                    color: isSelected
+                                        ? _primaryColor
+                                        : const Color(0xFF9CA3AF),
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      skill.enName,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: isSelected
+                                            ? _primaryColor
+                                            : const Color(0xFF111827),
+                                      ),
                                     ),
                                   ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        isSelected ? Icons.check_circle : Icons.circle_outlined,
-                                        color: isSelected ? _primaryColor : const Color(0xFF9CA3AF),
-                                        size: 22,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          skill.enName,
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                            color: isSelected ? _primaryColor : const Color(0xFF111827),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
               ),
               Container(
                 padding: EdgeInsets.only(
@@ -387,7 +430,11 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     Expanded(
                       child: Text(
                         '${_selectedSkillIds.length} selected',
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF6B7280),
+                        ),
                       ),
                     ),
                     ElevatedButton(
@@ -395,10 +442,18 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _primaryColor,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
-                      child: const Text('Done', style: TextStyle(fontWeight: FontWeight.w600)),
+                      child: const Text(
+                        'Done',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ],
                 ),
@@ -413,21 +468,27 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   // ── Form submit ───────────────────────────────────────────────────────────────────
 
   Future<void> _submit() async {
-  debugPrint('══════════ [submit] FORM STATE ══════════');
-  debugPrint('[submit] _target: \'$_target\'');
-  debugPrint('[submit] _selectedSkillIds: \'$_selectedSkillIds\'');
-  debugPrint('[submit] _selectedBusinessTypeIds: \'$_selectedBusinessTypeIds\'');
-  debugPrint('[submit] _titleController: \'${_titleController.text}\'');
-  debugPrint('[submit] _descriptionController: \'${_descriptionController.text}\'');
-  debugPrint('[submit] _workersController: \'${_workersController.text}\'');
-  debugPrint('[submit] _cityController: \'${_cityController.text}\'');
-  debugPrint('[submit] _areaController: \'${_areaController.text}\'');
-  debugPrint('[submit] _pincodeController: \'${_pincodeController.text}\'');
-  debugPrint('[submit] _stateController: \'${_stateController.text}\'');
-  debugPrint('[submit] _addressController: \'${_addressController.text}\'');
-  debugPrint('[submit] _budgetController: \'${_budgetController.text}\'');
-  debugPrint('[submit] _existingImageUrls: $_existingImageUrls');
-  debugPrint('[submit] _newImages: ${_newImages.map((img) => img.uploadedUrl).toList()}');
+    debugPrint('══════════ [submit] FORM STATE ══════════');
+    debugPrint('[submit] _target: \'$_target\'');
+    debugPrint('[submit] _selectedSkillIds: \'$_selectedSkillIds\'');
+    debugPrint(
+      '[submit] _selectedBusinessTypeIds: \'$_selectedBusinessTypeIds\'',
+    );
+    debugPrint('[submit] _titleController: \'${_titleController.text}\'');
+    debugPrint(
+      '[submit] _descriptionController: \'${_descriptionController.text}\'',
+    );
+    debugPrint('[submit] _workersController: \'${_workersController.text}\'');
+    debugPrint('[submit] _cityController: \'${_cityController.text}\'');
+    debugPrint('[submit] _areaController: \'${_areaController.text}\'');
+    debugPrint('[submit] _pincodeController: \'${_pincodeController.text}\'');
+    debugPrint('[submit] _stateController: \'${_stateController.text}\'');
+    debugPrint('[submit] _addressController: \'${_addressController.text}\'');
+    debugPrint('[submit] _budgetController: \'${_budgetController.text}\'');
+    debugPrint('[submit] _existingImageUrls: $_existingImageUrls');
+    debugPrint(
+      '[submit] _newImages: ${_newImages.map((img) => img.uploadedUrl).toList()}',
+    );
 
     if (!_formKey.currentState!.validate()) return;
     if (_target == 'labour' && _selectedSkillIds.isEmpty) {
@@ -452,7 +513,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
 
     setState(() => _submitting = true);
 
-    final token = Get.find<UserController>().token.value ?? ''; 
+    final token = Get.find<UserController>().token.value ?? '';
     debugPrint('[submit] token: $token');
 
     // Images already uploaded — just collect URLs
@@ -465,7 +526,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     final allImageUrls = [..._existingImageUrls, ...newImageUrls];
 
     debugPrint('══════════ [submit] IMAGE STATE ══════════');
-    debugPrint('[submit] _existingImageUrls (${_existingImageUrls.length}): $_existingImageUrls');
+    debugPrint(
+      '[submit] _existingImageUrls (${_existingImageUrls.length}): $_existingImageUrls',
+    );
     debugPrint('[submit] newImageUrls (${newImageUrls.length}): $newImageUrls');
     debugPrint('[submit] allImageUrls (${allImageUrls.length}): $allImageUrls');
     debugPrint('══════════════════════════════════════════');
@@ -479,8 +542,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       'description': _descriptionController.text.trim(),
       if (_target == 'labour')
         'workersNeeded': int.tryParse(_workersController.text.trim()) ?? 1,
-      if (_target == 'labour')
-        'requiredSkills': _selectedSkillIds,
+      if (_target == 'labour') 'requiredSkills': _selectedSkillIds,
       if (_target == 'sub_contractor')
         'businessTypes': _selectedBusinessTypeIds,
       'target': targetList,
@@ -497,10 +559,19 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     };
     debugPrint('[submit] jobData payload: ' + jobData.toString());
 
+    await AppLogger.instance.info(
+      _isEditMode ? 'job_update_attempt' : 'job_create_attempt',
+      message: _isEditMode ? 'Job update attempted' : 'Job create attempted',
+      data: {'jobTitle': _titleController.text.trim()},
+    );
+
     Map<String, dynamic> result;
     if (_isEditMode) {
       result = await ApiService.updateJob(
-          token: token, jobId: widget.existingJob!.id, jobData: jobData);
+        token: token,
+        jobId: widget.existingJob!.id,
+        jobData: jobData,
+      );
     } else {
       result = await ApiService.createJob(token: token, jobData: jobData);
     }
@@ -508,24 +579,45 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
 
     setState(() => _submitting = false);
 
-    if (result['success'] == true || result['_id'] != null || result['data'] != null) {
+    if (result['success'] == true ||
+        result['_id'] != null ||
+        result['data'] != null) {
+      await AppLogger.instance.info(
+        _isEditMode ? 'job_update_success' : 'job_create_success',
+        message: _isEditMode
+            ? 'Job updated successfully'
+            : 'Job created successfully',
+        data: {'jobTitle': _titleController.text.trim()},
+      );
       _showSnack(
-          _isEditMode ? 'Job updated successfully!' : 'Job posted successfully!',
-          isError: false);
+        _isEditMode ? 'Job updated successfully!' : 'Job posted successfully!',
+        isError: false,
+      );
       Navigator.of(context).pop(true);
     } else {
-      _showSnack(result['message']?.toString() ??
-          (_isEditMode ? 'Failed to update job' : 'Failed to create job'));
+      await AppLogger.instance.error(
+        _isEditMode ? 'job_update_failed' : 'job_create_failed',
+        message: _isEditMode ? 'Job update failed' : 'Job create failed',
+        data: {'message': result['message']},
+      );
+      _showSnack(
+        result['message']?.toString() ??
+            (_isEditMode ? 'Failed to update job' : 'Failed to create job'),
+      );
     }
   }
 
   void _showSnack(String msg, {bool isError = true}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: isError ? const Color(0xFFDC2626) : const Color(0xFF059669),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError
+            ? const Color(0xFFDC2626)
+            : const Color(0xFF059669),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -544,7 +636,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
         scrolledUnderElevation: 1,
         surfaceTintColor: Colors.transparent,
         title: Text(
-          _isEditMode ? 'Edit Job' : (isContractor ? 'Create New Job' : 'Post a Job'),
+          _isEditMode
+              ? 'Edit Job'
+              : (isContractor ? 'Create New Job' : 'Post a Job'),
           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
         ),
         actions: [
@@ -554,16 +648,27 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2563EB)),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF2563EB),
+                    ),
                   )
                 : TextButton(
                     onPressed: _submit,
                     style: TextButton.styleFrom(
                       backgroundColor: primary,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     child: Text(_isEditMode ? 'Save Changes' : 'Post Job'),
                   ),
@@ -573,7 +678,12 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).viewPadding.bottom + 24),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            MediaQuery.of(context).viewPadding.bottom + 24,
+          ),
           children: [
             // ── Job Details section ──────────────────────────
             _SectionCard(
@@ -585,7 +695,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 _field(
                   controller: _titleController,
                   hint: 'e.g., Building Renovation Work',
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Title is required' : null,
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'Title is required'
+                      : null,
                 ),
                 const SizedBox(height: 14),
                 Row(
@@ -601,22 +713,37 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                             value: _target,
                             items: widget.userType == 'contractor'
                                 ? const [
-                                    DropdownMenuItem(value: 'labour', child: Text('Labour')),
-                                    DropdownMenuItem(value: 'sub_contractor', child: Text('Sub-Contractor')),
+                                    DropdownMenuItem(
+                                      value: 'labour',
+                                      child: Text('Labour'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'sub_contractor',
+                                      child: Text('Sub-Contractor'),
+                                    ),
                                   ]
                                 : const [
-                                    DropdownMenuItem(value: 'labour', child: Text('Labour')),
+                                    DropdownMenuItem(
+                                      value: 'labour',
+                                      child: Text('Labour'),
+                                    ),
                                   ],
                             onChanged: (v) {
                               final newTarget = v ?? _target;
-                              debugPrint('Dropdown: Target changed to $newTarget');
+                              debugPrint(
+                                'Dropdown: Target changed to $newTarget',
+                              );
                               setState(() {
                                 _target = newTarget;
                                 if (_target == 'sub_contractor') {
-                                  debugPrint('Dropdown: Fetching business types for sub_contractor target');
+                                  debugPrint(
+                                    'Dropdown: Fetching business types for sub_contractor target',
+                                  );
                                   _fetchBusinessTypes();
                                 } else if (_target == 'labour') {
-                                  debugPrint('Dropdown: Fetching skills for labour target');
+                                  debugPrint(
+                                    'Dropdown: Fetching skills for labour target',
+                                  );
                                   _fetchSkills();
                                 }
                               });
@@ -637,9 +764,12 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                               controller: _workersController,
                               hint: 'e.g., 5',
                               keyboardType: TextInputType.number,
-                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
                               validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'Required';
+                                if (v == null || v.trim().isEmpty)
+                                  return 'Required';
                                 final n = int.tryParse(v.trim());
                                 if (n == null || n < 1) return 'Min 1';
                                 return null;
@@ -658,27 +788,59 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     onTap: _skillsLoading ? null : _showSkillsBottomSheet,
                     borderRadius: BorderRadius.circular(10),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 16,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFAFAFA),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: _selectedSkillIds.isEmpty ? const Color(0xFFD1D5DB) : _primaryColor,
+                          color: _selectedSkillIds.isEmpty
+                              ? const Color(0xFFD1D5DB)
+                              : _primaryColor,
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.handyman_outlined, size: 20, color: Color(0xFF6B7280)),
+                          const Icon(
+                            Icons.handyman_outlined,
+                            size: 20,
+                            color: Color(0xFF6B7280),
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: _skillsLoading
-                                ? const Text('Loading skills...', style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)))
+                                ? const Text(
+                                    'Loading skills...',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF9CA3AF),
+                                    ),
+                                  )
                                 : _selectedSkillIds.isEmpty
-                                    ? const Text('Select Skills *', style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)))
-                                    : Text('${_selectedSkillIds.length} skill${_selectedSkillIds.length == 1 ? '' : 's'} selected',
-                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: _primaryColor)),
+                                ? const Text(
+                                    'Select Skills *',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF9CA3AF),
+                                    ),
+                                  )
+                                : Text(
+                                    '${_selectedSkillIds.length} skill${_selectedSkillIds.length == 1 ? '' : 's'} selected',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: _primaryColor,
+                                    ),
+                                  ),
                           ),
-                          Icon(Icons.arrow_drop_down, color: _skillsLoading ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280)),
+                          Icon(
+                            Icons.arrow_drop_down,
+                            color: _skillsLoading
+                                ? const Color(0xFF9CA3AF)
+                                : const Color(0xFF6B7280),
+                          ),
                         ],
                       ),
                     ),
@@ -691,13 +853,26 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                       children: _selectedSkillIds.map((skillId) {
                         final skill = _availableSkills.firstWhere(
                           (s) => s.id == skillId,
-                          orElse: () => SkillModel(id: skillId, enName: skillId, hiName: '', mrName: ''),
+                          orElse: () => SkillModel(
+                            id: skillId,
+                            enName: skillId,
+                            hiName: '',
+                            mrName: '',
+                          ),
                         );
                         return Chip(
-                          label: Text(skill.enName, style: TextStyle(fontWeight: FontWeight.w600, color: _primaryColor)),
+                          label: Text(
+                            skill.enName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: _primaryColor,
+                            ),
+                          ),
                           backgroundColor: _primaryColor.withOpacity(0.1),
                           deleteIcon: const Icon(Icons.close, size: 16),
-                          onDeleted: () => setState(() => _selectedSkillIds.remove(skill.id)),
+                          onDeleted: () => setState(
+                            () => _selectedSkillIds.remove(skill.id),
+                          ),
                         );
                       }).toList(),
                     ),
@@ -705,25 +880,51 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                   if (_selectedSkillIds.isEmpty && _target == 'labour')
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text('Select at least one skill', style: TextStyle(fontSize: 11, color: Colors.red.shade400)),
+                      child: Text(
+                        'Select at least one skill',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.red.shade400,
+                        ),
+                      ),
                     ),
                 ] else if (_target == 'sub_contractor') ...[
-                  Row(children: [
-                    Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(color: _primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                      child: Icon(Icons.category_outlined, size: 14, color: _primaryColor),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text('Business Types *',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF374151))),
-                  ]),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: _primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          Icons.category_outlined,
+                          size: 14,
+                          color: _primaryColor,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Business Types *',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF374151),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 10),
                   InkWell(
-                    onTap: _businessTypesLoading ? null : _showBusinessTypesBottomSheet,
+                    onTap: _businessTypesLoading
+                        ? null
+                        : _showBusinessTypesBottomSheet,
                     borderRadius: BorderRadius.circular(10),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 16,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFAFAFA),
                         borderRadius: BorderRadius.circular(10),
@@ -735,33 +936,51 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.category_outlined, size: 20, color: Color(0xFF6B7280)),
+                          const Icon(
+                            Icons.category_outlined,
+                            size: 20,
+                            color: Color(0xFF6B7280),
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: _businessTypesLoading
                                 ? const Text(
                                     'Loading business types...',
-                                    style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF9CA3AF),
+                                    ),
                                   )
                                 : _availableBusinessTypes.isEmpty
-                                    ? const Text('No business types available', style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)))
-                                    : _selectedBusinessTypeIds.isEmpty
-                                        ? const Text(
-                                            'Select Business Types *',
-                                            style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
-                                          )
-                                        : Text(
-                                            '${_selectedBusinessTypeIds.length} selected',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: _primaryColor,
-                                            ),
-                                          ),
+                                ? const Text(
+                                    'No business types available',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF9CA3AF),
+                                    ),
+                                  )
+                                : _selectedBusinessTypeIds.isEmpty
+                                ? const Text(
+                                    'Select Business Types *',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF9CA3AF),
+                                    ),
+                                  )
+                                : Text(
+                                    '${_selectedBusinessTypeIds.length} selected',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: _primaryColor,
+                                    ),
+                                  ),
                           ),
                           Icon(
                             Icons.arrow_drop_down,
-                            color: _businessTypesLoading ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
+                            color: _businessTypesLoading
+                                ? const Color(0xFF9CA3AF)
+                                : const Color(0xFF6B7280),
                           ),
                         ],
                       ),
@@ -775,7 +994,13 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                       children: _selectedBusinessTypeIds.map((id) {
                         final type = _availableBusinessTypes.firstWhere(
                           (t) => t.id == id,
-                          orElse: () => BusinessTypeModel(id: id, enName: id, hiName: '', mrName: '', category: ''),
+                          orElse: () => BusinessTypeModel(
+                            id: id,
+                            enName: id,
+                            hiName: '',
+                            mrName: '',
+                            category: '',
+                          ),
                         );
                         return Chip(
                           label: Text(
@@ -786,28 +1011,45 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                           ),
                           backgroundColor: _primaryColor.withOpacity(0.1),
                           deleteIcon: const Icon(Icons.close, size: 16),
-                          onDeleted: () => setState(() => _selectedBusinessTypeIds.remove(type.id)),
+                          onDeleted: () => setState(
+                            () => _selectedBusinessTypeIds.remove(type.id),
+                          ),
                         );
                       }).toList(),
                     ),
                   ],
-                  if (!_businessTypesLoading && _selectedBusinessTypeIds.isEmpty && _target == 'sub_contractor')
+                  if (!_businessTypesLoading &&
+                      _selectedBusinessTypeIds.isEmpty &&
+                      _target == 'sub_contractor')
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text('Select at least one business type', style: TextStyle(fontSize: 11, color: Colors.red.shade400)),
+                      child: Text(
+                        'Select at least one business type',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.red.shade400,
+                        ),
+                      ),
                     ),
                 ],
                 const SizedBox(height: 14),
-                _label('Description', required: true), 
+                _label('Description', required: true),
                 TextFormField(
                   controller: _descriptionController,
                   maxLines: 4,
                   decoration: InputDecoration(
-                    hintText: 'Explain work scope, timeline, special requirements...',
-                    hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+                    hintText:
+                        'Explain work scope, timeline, special requirements...',
+                    hintStyle: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF9CA3AF),
+                    ),
                     filled: true,
                     fillColor: const Color(0xFFF9FAFB),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -821,7 +1063,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                       borderSide: BorderSide(color: primary, width: 1.5),
                     ),
                   ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Description is required' : null,
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'Description is required'
+                      : null,
                 ),
                 const SizedBox(height: 14),
                 // Estimated Budget field removed as per request
@@ -845,7 +1089,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                           _field(
                             controller: _cityController,
                             hint: 'Mumbai',
-                            validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                            validator: (v) => v == null || v.trim().isEmpty
+                                ? 'Required'
+                                : null,
                           ),
                         ],
                       ),
@@ -859,7 +1105,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                           _field(
                             controller: _areaController,
                             hint: 'Bandra',
-                            validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                            validator: (v) => v == null || v.trim().isEmpty
+                                ? 'Required'
+                                : null,
                           ),
                         ],
                       ),
@@ -878,9 +1126,13 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                             controller: _pincodeController,
                             hint: '400050',
                             keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(6),
+                            ],
                             validator: (v) {
-                              if (v == null || v.trim().isEmpty) return 'Required';
+                              if (v == null || v.trim().isEmpty)
+                                return 'Required';
                               if (v.trim().length != 6) return '6 digits';
                               return null;
                             },
@@ -908,8 +1160,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 _field(
                   controller: _addressController,
                   hint: 'Plot 12, Bandra West...',
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Address is required' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Address is required'
+                      : null,
                 ),
               ],
             ),
@@ -924,7 +1177,11 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 if (_newImages.isEmpty && _existingImageUrls.isEmpty)
                   const Text(
                     'Add site photos to help applicants understand the work location (max 5).',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF6B7280), height: 1.4),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF6B7280),
+                      height: 1.4,
+                    ),
                   ),
                 const SizedBox(height: 12),
                 Wrap(
@@ -942,14 +1199,21 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                             height: 88,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFF059669), width: 1.5),
+                              border: Border.all(
+                                color: const Color(0xFF059669),
+                                width: 1.5,
+                              ),
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(9),
-                              child: Image.network(url, fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => const Icon(
-                                      Icons.broken_image_outlined,
-                                      color: Color(0xFFD1D5DB))),
+                              child: Image.network(
+                                url,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.broken_image_outlined,
+                                  color: Color(0xFFD1D5DB),
+                                ),
+                              ),
                             ),
                           ),
                           Positioned(
@@ -957,7 +1221,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                             right: 4,
                             child: GestureDetector(
                               onTap: () => setState(
-                                  () => _existingImageUrls.removeAt(i)),
+                                () => _existingImageUrls.removeAt(i),
+                              ),
                               child: Container(
                                 width: 22,
                                 height: 22,
@@ -965,8 +1230,11 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                                   color: Colors.black.withValues(alpha: 0.6),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.close,
-                                    size: 13, color: Colors.white),
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 13,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
@@ -987,8 +1255,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                                 color: img.status == _UploadStatus.failed
                                     ? const Color(0xFFDC2626)
                                     : img.status == _UploadStatus.done
-                                        ? const Color(0xFF059669)
-                                        : const Color(0xFFE5E7EB),
+                                    ? const Color(0xFF059669)
+                                    : const Color(0xFFE5E7EB),
                                 width: 1.5,
                               ),
                             ),
@@ -997,12 +1265,17 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(9),
-                                  child: Image.memory(img.bytes, fit: BoxFit.cover),
+                                  child: Image.memory(
+                                    img.bytes,
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                                 if (img.status == _UploadStatus.uploading)
                                   Container(
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withValues(alpha: 0.4),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.4,
+                                      ),
                                       borderRadius: BorderRadius.circular(9),
                                     ),
                                     child: const Center(
@@ -1033,7 +1306,11 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                                     color: Colors.black.withValues(alpha: 0.6),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.close, size: 13, color: Colors.white),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 13,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1049,7 +1326,11 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                                   color: Color(0xFF059669),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.check, size: 12, color: Colors.white),
+                                child: const Icon(
+                                  Icons.check,
+                                  size: 12,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           // Failed — tap to retry
@@ -1059,7 +1340,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                               right: 4,
                               child: GestureDetector(
                                 onTap: () {
-                                  setState(() => img.status = _UploadStatus.uploading);
+                                  setState(
+                                    () => img.status = _UploadStatus.uploading,
+                                  );
                                   _uploadSingleImage(img);
                                 },
                                 child: Container(
@@ -1069,7 +1352,11 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                                     color: Color(0xFFDC2626),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.refresh, size: 12, color: Colors.white),
+                                  child: const Icon(
+                                    Icons.refresh,
+                                    size: 12,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1087,16 +1374,29 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                             color: const Color(0xFFFFF7ED),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                              color: const Color(
+                                0xFFF59E0B,
+                              ).withValues(alpha: 0.5),
                               style: BorderStyle.solid,
                             ),
                           ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: const [
-                              Icon(Icons.add_photo_alternate_outlined, color: Color(0xFFF59E0B), size: 28),
+                              Icon(
+                                Icons.add_photo_alternate_outlined,
+                                color: Color(0xFFF59E0B),
+                                size: 28,
+                              ),
                               SizedBox(height: 4),
-                              Text('Add', style: TextStyle(fontSize: 11, color: Color(0xFFF59E0B), fontWeight: FontWeight.w700)),
+                              Text(
+                                'Add',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFFF59E0B),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -1108,7 +1408,10 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       '${_newImages.length + _existingImageUrls.length}/5 image${(_newImages.length + _existingImageUrls.length) > 1 ? 's' : ''} selected',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF6B7280),
+                      ),
                     ),
                   ),
               ],
@@ -1125,18 +1428,27 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                   backgroundColor: primary,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor: primary.withValues(alpha: 0.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   elevation: 0,
                 ),
                 child: _submitting
                     ? const SizedBox(
                         width: 22,
                         height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
                       )
                     : Text(
                         _isEditMode ? 'Save Changes' : 'Post Job',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.3),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                        ),
                       ),
               ),
             ),
@@ -1154,14 +1466,26 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       child: RichText(
         text: TextSpan(
           text: text,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151), letterSpacing: 0.2),
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF374151),
+            letterSpacing: 0.2,
+          ),
           children: [
             if (required)
-              const TextSpan(text: ' *', style: TextStyle(color: Color(0xFFDC2626))),
+              const TextSpan(
+                text: ' *',
+                style: TextStyle(color: Color(0xFFDC2626)),
+              ),
             if (optional)
               const TextSpan(
                 text: '  (opt)',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w400, color: Color(0xFF9CA3AF)),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xFF9CA3AF),
+                ),
               ),
           ],
         ),
@@ -1190,7 +1514,10 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
         hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
         filled: true,
         fillColor: const Color(0xFFF9FAFB),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -1241,7 +1568,11 @@ class _SectionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -1282,7 +1613,11 @@ class _DropdownField extends StatelessWidget {
   final List<DropdownMenuItem<String>> items;
   final void Function(String?) onChanged;
 
-  const _DropdownField({required this.value, required this.items, required this.onChanged});
+  const _DropdownField({
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1297,8 +1632,15 @@ class _DropdownField extends StatelessWidget {
         value: value,
         isExpanded: true,
         underline: const SizedBox.shrink(),
-        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6B7280)),
-        style: const TextStyle(fontSize: 14, color: Color(0xFF111827), fontFamily: 'Poppins'),
+        icon: const Icon(
+          Icons.keyboard_arrow_down_rounded,
+          color: Color(0xFF6B7280),
+        ),
+        style: const TextStyle(
+          fontSize: 14,
+          color: Color(0xFF111827),
+          fontFamily: 'Poppins',
+        ),
         items: items,
         onChanged: onChanged,
       ),

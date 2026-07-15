@@ -10,6 +10,7 @@ import '../../../common/widgets/language_picker.dart';
 import '../../../core/app_state.dart';
 import '../../../core/user_controller.dart';
 import '../../../core/auth_service.dart';
+import '../../../core/services/app_logger.dart';
 import '../../../services/api_service.dart';
 import '../../../services/s3_upload_service.dart';
 import '../../../services/skills_service.dart';
@@ -553,10 +554,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'companyLogoUrl': logoUrl,
     };
 
+    await AppLogger.instance.info(
+      'profile_update_attempt',
+      message: 'Profile update attempted',
+      data: {'userType': _isContractor ? 'contractor' : 'labour'},
+    );
     final res = await ApiService.updateProfile(fields: body, token: token);
     setState(() => _saving = false);
 
     if (res['success'] == true) {
+      await AppLogger.instance.info(
+        'profile_update_success',
+        message: 'Profile updated successfully',
+      );
       final updated = (res['data'] as Map<String, dynamic>?) ?? {};
       final merged = <String, dynamic>{
         ...(widget.profileData ?? {}),
@@ -566,6 +576,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       widget.onSaved(merged);
       if (mounted) Navigator.of(context).pop();
     } else {
+      await AppLogger.instance.error(
+        'profile_update_failed',
+        message: 'Profile update failed',
+        data: {'message': res['message']},
+      );
       setState(() {
         _error = (res['message'] ?? 'Update failed. Please try again.')
             .toString();

@@ -54,21 +54,23 @@ class _LabourListViewState extends State<LabourListView> {
   }
 
   String _resolveSkillLabel(List<String> skillIds, String locale) {
+    final labels = <String>[];
     for (final id in skillIds) {
       final index = _availableSkills.indexWhere((skill) => skill.id == id);
-      if (index != -1) {
-        final skill = _availableSkills[index];
-        switch (locale.toLowerCase()) {
-          case 'hi':
-            return skill.hiName.isNotEmpty ? skill.hiName : skill.enName;
-          case 'mr':
-            return skill.mrName.isNotEmpty ? skill.mrName : skill.enName;
-          default:
-            return skill.enName;
-        }
+      if (index == -1) continue;
+
+      final skill = _availableSkills[index];
+      final label = switch (locale.toLowerCase()) {
+        'hi' => skill.hiName.isNotEmpty ? skill.hiName : skill.enName,
+        'mr' => skill.mrName.isNotEmpty ? skill.mrName : skill.enName,
+        _ => skill.enName,
+      };
+
+      if (label.isNotEmpty) {
+        labels.add(label);
       }
     }
-    return '';
+    return labels.join(', ');
   }
 
   Future<void> _loadLabours({bool useSavedCity = true}) async {
@@ -102,8 +104,9 @@ class _LabourListViewState extends State<LabourListView> {
         _loading = false;
       });
     } else {
+      final loc = AppLocalizations.of(context);
       setState(() {
-        _error = (response['message'] ?? 'Unable to load labours').toString();
+        _error = (response['message'] ?? loc.couldNotLoadLabourList).toString();
         _loading = false;
       });
     }
@@ -130,50 +133,29 @@ class _LabourListViewState extends State<LabourListView> {
         children: [
           AppStateMessage(
             icon: Icons.badge_outlined,
-            title: 'Could not load labour list',
+            title: loc.couldNotLoadLabourList,
             subtitle: _error!,
           ),
-          TextButton(onPressed: _loadLabours, child: const Text('Retry')),
+          TextButton(onPressed: _loadLabours, child: Text(loc.retry)),
         ],
       );
     }
 
-    final width = MediaQuery.of(context).size.width;
-    final crossAxisCount = width >= 1600
-        ? 4
-        : width >= 1100
-        ? 3
-        : width >= 760
-        ? 2
-        : 1;
-    final crossAxisSpacing = 12.0;
-    final horizontalPadding = width >= 1100 ? 28.0 : 16.0;
-    final itemWidth =
-        (width - horizontalPadding - crossAxisSpacing * (crossAxisCount - 1)) /
-        crossAxisCount;
-    final desiredItemHeight = width >= 1600
-        ? 380
-        : width >= 1100
-        ? 360
-        : width >= 760
-        ? 380
-        : 380;
-    final childAspectRatio = itemWidth / desiredItemHeight;
-
-    return RefreshIndicator(
-      onRefresh: () => _loadLabours(useSavedCity: false),
-      child: ListView(
-        padding: const EdgeInsets.all(14),
+    final headerSection = Padding(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (!widget.canViewSensitiveData)
             Card(
               color: Theme.of(
                 context,
               ).colorScheme.primary.withValues(alpha: 0.10),
-              child: const Padding(
-                padding: EdgeInsets.all(12),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
                 child: Text(
-                  'Subscription inactive. Labour contact details are masked. Activate subscription to unlock full details and apply/create actions.',
+                  loc.subscriptionInactiveLabourMasked,
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
             ),
@@ -233,47 +215,56 @@ class _LabourListViewState extends State<LabourListView> {
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
-                'Active filter: ${_filter.city.isNotEmpty ? 'City=${_filter.city}; ' : ''}${_filter.minRating > 0 ? 'Rating≥${_filter.minRating}; ' : ''}${_filter.minExperience > 0 ? 'Experience≥${_filter.minExperience}; ' : ''}${_filter.skillIds.isNotEmpty ? 'Skills=${_filter.skillIds.length}; ' : ''}'
+                '${loc.activeFilterLabel} ${_filter.city.isNotEmpty ? '${loc.filterCity}${_filter.city}; ' : ''}${_filter.minRating > 0 ? '${loc.filterRating}${_filter.minRating}; ' : ''}${_filter.minExperience > 0 ? '${loc.filterExperience}${_filter.minExperience}; ' : ''}${_filter.skillIds.isNotEmpty ? '${loc.filterSkills}${_filter.skillIds.length}; ' : ''}'
                     .trim(),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ),
-          if (filtered.isEmpty)
-            AppStateMessage(
-              icon: Icons.credit_card_off,
-              title: loc.noLabourProfilesFound,
-              subtitle: loc.tryAnotherSearchKeyword,
-            )
-          else
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: EdgeInsets.zero,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: crossAxisSpacing,
-                mainAxisSpacing: crossAxisSpacing,
-                childAspectRatio: childAspectRatio,
-              ),
-              itemCount: filtered.length,
-              itemBuilder: (_, index) {
-                final user = filtered[index];
-                final skillLabel = _resolveSkillLabel(
-                  user.skills,
-                  Localizations.localeOf(context).languageCode,
-                );
-
-                return LabourIdCard(
-                  user: user,
-                  skillLabel: skillLabel,
-                  canViewSensitiveData: widget.canViewSensitiveData,
-                );
-              },
-            ),
         ],
       ),
+    );
+
+    final contentSection = filtered.isEmpty
+        ? ListView(
+            padding: const EdgeInsets.only(left: 14, right: 14, bottom: 14),
+            children: [
+              AppStateMessage(
+                icon: Icons.credit_card_off,
+                title: loc.noLabourProfilesFound,
+                subtitle: loc.tryAnotherSearchKeyword,
+              ),
+            ],
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.only(left: 14, right: 14, bottom: 14),
+            itemCount: filtered.length,
+            itemBuilder: (_, index) {
+              final user = filtered[index];
+              final skillLabel = _resolveSkillLabel(
+                user.skills,
+                Localizations.localeOf(context).languageCode,
+              );
+
+              return LabourIdCard(
+                user: user,
+                skillLabel: skillLabel,
+                canViewSensitiveData: widget.canViewSensitiveData,
+              );
+            },
+          );
+
+    return Column(
+      children: [
+        headerSection,
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () => _loadLabours(useSavedCity: false),
+            child: contentSection,
+          ),
+        ),
+      ],
     );
   }
 }

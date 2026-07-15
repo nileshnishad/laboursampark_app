@@ -13,6 +13,7 @@ import '../../common/widgets/language_picker.dart';
 import '../../l10n/app_localizations.dart';
 import '../../core/user_controller.dart';
 import '../../core/auth_service.dart';
+import '../../core/services/app_logger.dart';
 import '../../utils/toast_utils.dart';
 
 /// Custom formatter to restrict mobile number input to 10 digits max
@@ -129,6 +130,11 @@ class _LoginScreenState extends State<LoginScreen> {
       final emailOrMobile = _emailOrMobileController.text.trim().toLowerCase();
       final password = _passwordController.text.trim();
 
+      await AppLogger.instance.info(
+        'login_attempt',
+        message: 'Login attempted',
+        data: {'identifier': emailOrMobile},
+      );
       final res = await ApiService.login(emailOrMobile, password);
 
       if (res['success'] == true && res['data'] != null) {
@@ -159,6 +165,14 @@ class _LoginScreenState extends State<LoginScreen> {
         await AuthService.setAuthToken(token);
         await AuthService.setUserData(user);
         await AuthService.setLoggedIn(true);
+        await AppLogger.instance.info(
+          'login_success',
+          message: 'User logged in successfully',
+          data: {
+            'userType': userType,
+            'userId': user['_id'] ?? user['id'] ?? '',
+          },
+        );
         // Register FCM token to backend (non-blocking)
         final fcmToken = await FirebaseMessaging.instance.getToken();
         if (fcmToken != null) {
@@ -223,9 +237,19 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(builder: (_) => const UserDashboardScreen()),
         );
       } else {
+        await AppLogger.instance.warning(
+          'login_failed',
+          message: 'Login failed',
+          data: {'message': res['message']},
+        );
         ToastUtils.showError(res['message'] ?? 'Login failed');
       }
     } catch (e) {
+      await AppLogger.instance.error(
+        'login_exception',
+        message: 'Login threw an exception',
+        error: e,
+      );
       ToastUtils.showError('Login failed: $e');
     } finally {
       if (mounted) {

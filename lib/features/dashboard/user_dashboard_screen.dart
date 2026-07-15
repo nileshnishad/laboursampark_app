@@ -7,6 +7,7 @@ import 'package:app_links/app_links.dart';
 import '../../core/user_controller.dart';
 import '../../core/auth_service.dart';
 import '../../core/app_state.dart';
+import '../../core/services/app_logger.dart';
 import '../../core/services/permission_service.dart';
 import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
@@ -344,6 +345,10 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     final userController = Get.find<UserController>();
     userController.clearUser();
     await AuthService.clearSession();
+    await AppLogger.instance.info(
+      'logout',
+      message: 'User logged out from dashboard',
+    );
     if (!mounted) return;
     Navigator.of(
       context,
@@ -749,7 +754,10 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                     const SizedBox(height: 4),
                     // Total billed
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(6),
@@ -757,7 +765,9 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                       child: Text(
                         'Billed as $currency $price for $durationDays days',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.65,
+                          ),
                         ),
                       ),
                     ),

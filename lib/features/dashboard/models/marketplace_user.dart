@@ -11,6 +11,7 @@ class MarketplaceUser {
   final bool availability;
   final String experienceLabel;
   final List<String> skills;
+  final List<String> businessTypes;
   final String? logoUrl;
   final String? profilePhotoUrl;
 
@@ -27,6 +28,7 @@ class MarketplaceUser {
     required this.availability,
     required this.experienceLabel,
     required this.skills,
+    required this.businessTypes,
     required this.logoUrl,
     required this.profilePhotoUrl,
   });
@@ -53,6 +55,23 @@ class MarketplaceUser {
           .whereType<String>()
           .map((e) => e.trim())
           .where((e) => e.isNotEmpty)
+          .toList(),
+      businessTypes: ((json['businessTypes'] as List?) ?? [])
+          .map((type) {
+            if (type is String) return type.trim();
+            if (type is Map<String, dynamic>) {
+              return (type['id'] ??
+                      type['name'] ??
+                      type['enName'] ??
+                      type['hiName'] ??
+                      type['mrName'] ??
+                      '')
+                  .toString()
+                  .trim();
+            }
+            return type.toString().trim();
+          })
+          .where((type) => type.isNotEmpty)
           .toList(),
       logoUrl: _normalizeUrl(json['companyLogoUrl'] as String?),
       profilePhotoUrl: _normalizeUrl(json['profilePhotoUrl'] as String?),

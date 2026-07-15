@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../core/auth_service.dart';
 import '../../core/user_controller.dart';
 import '../../services/api_service.dart';
+import '../../core/services/app_logger.dart';
 import '../dashboard/user_dashboard_screen.dart';
 import 'login_screen.dart';
 
@@ -24,8 +25,10 @@ class MobileVerifyScreen extends StatefulWidget {
 }
 
 class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
-  final List<TextEditingController> _controllers =
-      List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _controllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   late String _currentPhone;
@@ -56,7 +59,10 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
   void _startEditPhone() {
     final digits = _currentPhone.replaceAll('+91', '').replaceAll(' ', '');
     _phoneEditController.text = digits;
-    setState(() { _editingPhone = true; _error = null; });
+    setState(() {
+      _editingPhone = true;
+      _error = null;
+    });
   }
 
   Future<void> _sendOtp() async {
@@ -71,11 +77,22 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
       _editingPhone = false;
       for (final c in _controllers) c.clear();
     }
-    setState(() { _sending = true; _error = null; });
+    setState(() {
+      _sending = true;
+      _error = null;
+    });
+    await AppLogger.instance.info(
+      'otp_send_requested',
+      message: 'OTP send requested',
+      data: {'phone': _currentPhone, 'userId': widget.userId ?? ''},
+    );
     final res = await ApiService.sendOtp(_currentPhone, userId: widget.userId);
     if (!mounted) return;
     if (res['success'] == true) {
-      setState(() { _otpSent = true; _sending = false; });
+      setState(() {
+        _otpSent = true;
+        _sending = false;
+      });
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted) _focusNodes[0].requestFocus();
       });
@@ -92,11 +109,23 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
       setState(() => _error = 'Please enter the 6-digit OTP');
       return;
     }
-    setState(() { _verifying = true; _error = null; });
+    setState(() {
+      _verifying = true;
+      _error = null;
+    });
+    await AppLogger.instance.info(
+      'otp_verify_attempt',
+      message: 'OTP verification attempted',
+      data: {'phone': _currentPhone},
+    );
     final res = await ApiService.verifyOtp(_currentPhone, _otp);
     if (!mounted) return;
     if (res['success'] == true) {
       await AuthService.setOtpVerified(true);
+      await AppLogger.instance.info(
+        'otp_verified',
+        message: 'Mobile number verified',
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -134,7 +163,9 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFDC2626)),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFDC2626),
+            ),
             child: const Text('Logout'),
           ),
         ],
@@ -144,6 +175,10 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
     final userController = Get.find<UserController>();
     userController.clearUser();
     await AuthService.clearSession();
+    await AppLogger.instance.info(
+      'logout',
+      message: 'User logged out from mobile verify screen',
+    );
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -182,7 +217,11 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
         leading: BackButton(color: const Color(0xFF111827)),
         title: const Text(
           'Verify Mobile Number',
-          style: TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w700, fontSize: 18),
+          style: TextStyle(
+            color: Color(0xFF111827),
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
         ),
         actions: [
           IconButton(
@@ -200,11 +239,19 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 12),
-              const Icon(Icons.phone_android, size: 52, color: Color(0xFF2563EB)),
+              const Icon(
+                Icons.phone_android,
+                size: 52,
+                color: Color(0xFF2563EB),
+              ),
               const SizedBox(height: 20),
               const Text(
                 'Mobile Verification Required',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF111827),
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -221,7 +268,9 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
                       child: TextFormField(
                         controller: _phoneEditController,
                         keyboardType: TextInputType.phone,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
                         maxLength: 10,
                         decoration: InputDecoration(
                           counterText: '',
@@ -229,10 +278,15 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
                           labelText: 'Mobile Number',
                           filled: true,
                           fillColor: const Color(0xFFF1F5F9),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF2563EB),
+                              width: 2,
+                            ),
                           ),
                         ),
                         autofocus: true,
@@ -240,14 +294,23 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
                     ),
                     const SizedBox(width: 8),
                     TextButton(
-                      onPressed: () => setState(() { _editingPhone = false; _error = null; }),
-                      child: const Text('Cancel', style: TextStyle(color: Color(0xFF6B7280))),
+                      onPressed: () => setState(() {
+                        _editingPhone = false;
+                        _error = null;
+                      }),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: Color(0xFF6B7280)),
+                      ),
                     ),
                   ],
                 ),
               ] else ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(12),
@@ -255,21 +318,37 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.phone, color: Color(0xFF2563EB), size: 20),
+                      const Icon(
+                        Icons.phone,
+                        color: Color(0xFF2563EB),
+                        size: 20,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           _currentPhone,
                           style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1E293B),
+                          ),
                         ),
                       ),
                       if (!_otpSent)
                         TextButton.icon(
                           onPressed: _startEditPhone,
-                          icon: const Icon(Icons.edit, size: 16, color: Color(0xFF2563EB)),
-                          label: const Text('Edit',
-                              style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.w600)),
+                          icon: const Icon(
+                            Icons.edit,
+                            size: 16,
+                            color: Color(0xFF2563EB),
+                          ),
+                          label: const Text(
+                            'Edit',
+                            style: TextStyle(
+                              color: Color(0xFF2563EB),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           style: TextButton.styleFrom(padding: EdgeInsets.zero),
                         ),
                     ],
@@ -287,18 +366,36 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2563EB),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: _sending
-                        ? const SizedBox(width: 22, height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                        : const Text('Send OTP', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Send OTP',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                   ),
                 ),
               ] else ...[
                 const Text(
                   'Enter the 6-digit OTP sent to your number',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF374151)),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF374151),
+                  ),
                 ),
                 const SizedBox(height: 16),
 
@@ -319,19 +416,25 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
                           textAlignVertical: TextAlignVertical.center,
                           keyboardType: TextInputType.number,
                           maxLength: 1,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           enableInteractiveSelection: false,
                           showCursor: true,
                           decoration: InputDecoration(
                             counterText: '',
-                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 14,
+                            ),
                             filled: true,
                             fillColor: isFilled
                                 ? const Color(0xFFEFF6FF)
                                 : const Color(0xFFF8FAFC),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFCBD5E1),
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -344,13 +447,16 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: const BorderSide(
-                                  color: Color(0xFF2563EB), width: 2),
+                                color: Color(0xFF2563EB),
+                                width: 2,
+                              ),
                             ),
                           ),
                           style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF1E293B)),
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF1E293B),
+                          ),
                           onChanged: (v) => _onOtpDigit(i, v),
                         ),
                       ),
@@ -367,12 +473,26 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF059669),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: _verifying
-                        ? const SizedBox(width: 22, height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                        : const Text('Verify OTP', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Verify OTP',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -383,7 +503,10 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
                     onPressed: _sending ? null : _sendOtp,
                     child: Text(
                       _sending ? 'Sending...' : 'Resend OTP',
-                      style: const TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        color: Color(0xFF2563EB),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -392,7 +515,10 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
               if (_error != null) ...[
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFEF2F2),
                     borderRadius: BorderRadius.circular(8),
@@ -400,11 +526,20 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 18),
+                      const Icon(
+                        Icons.error_outline,
+                        color: Color(0xFFDC2626),
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(_error!,
-                            style: const TextStyle(color: Color(0xFFDC2626), fontSize: 13)),
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(
+                            color: Color(0xFFDC2626),
+                            fontSize: 13,
+                          ),
+                        ),
                       ),
                     ],
                   ),

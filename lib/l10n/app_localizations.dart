@@ -75,6 +75,28 @@ class AppLocalizations {
       'no_labour_profiles_found': 'No labour profiles found',
       'try_another_search_keyword': 'Try another search keyword.',
       'filter_label': 'Filter',
+      'retry': 'Retry',
+      'could_not_load_contractors': 'Could not load contractors',
+      'could_not_load_labour_list': 'Could not load labour list',
+      'subscription_inactive_contractor_masked':
+          'Subscription inactive. Contact details are masked. Activate subscription to view full details and use job actions.',
+      'subscription_inactive_labour_masked':
+          'Subscription inactive. Labour contact details are masked. Activate subscription to unlock full details and apply/create actions.',
+      'contractor_profiles': 'Contractor Profiles',
+      'search_contractor': 'Search contractor',
+      'search_contractor_hint': 'Name, city, or mobile',
+      'active_filter': 'Active filter:',
+      'filter_city': 'City=',
+      'filter_rating': 'Rating≥',
+      'filter_experience': 'Experience≥',
+      'filter_skills': 'Skills=',
+      'filter_business_types': 'Business Types=',
+      'no_contractors_found': 'No contractors found',
+      'business_profile': 'Business Profile',
+      'subscription_required': 'Subscription Required',
+      'hidden': 'Hidden',
+      'not_specified': 'Not specified',
+      'currently_busy': 'Currently busy',
       'labour_profiles': 'Labour Profiles',
       'labour_profile_card_title': 'Labour Profile',
       'view_details': 'View details',
@@ -246,6 +268,28 @@ class AppLocalizations {
       'no_labour_profiles_found': 'कोई मजदूर प्रोफ़ाइल नहीं मिली',
       'try_another_search_keyword': 'कोई अन्य खोज कीवर्ड आज़माएँ।',
       'filter_label': 'फ़िल्टर',
+      'retry': 'पुनः प्रयास करें',
+      'could_not_load_contractors': 'ठेकेदार लोड नहीं किए जा सके',
+      'could_not_load_labour_list': 'मज़दूर सूची लोड नहीं की जा सकी',
+      'subscription_inactive_contractor_masked':
+          'सब्सक्रिप्शन निष्क्रिय है। संपर्क विवरण छुपा दिए गए हैं। पूर्ण विवरण देखने और नौकरी क्रियाओं का उपयोग करने के लिए सब्सक्रिप्शन सक्रिय करें।',
+      'subscription_inactive_labour_masked':
+          'सब्सक्रिप्शन निष्क्रिय है। मजदूर संपर्क विवरण छुपा दिए गए हैं। पूर्ण विवरण और आवेदन/निर्माण क्रियाएं अनलॉक करने के लिए सब्सक्रिप्शन सक्रिय करें।',
+      'contractor_profiles': 'ठेकेदार प्रोफ़ाइल',
+      'search_contractor': 'ठेकेदार खोजें',
+      'search_contractor_hint': 'नाम, शहर, या मोबाइल',
+      'active_filter': 'सक्रिय फ़िल्टर:',
+      'filter_city': 'शहर=',
+      'filter_rating': 'रेटिंग≥',
+      'filter_experience': 'अनुभव≥',
+      'filter_skills': 'कौशल=',
+      'filter_business_types': 'व्यवसाय प्रकार=',
+      'no_contractors_found': 'कोई ठेकेदार नहीं मिले',
+      'business_profile': 'व्यवसाय प्रोफ़ाइल',
+      'subscription_required': 'सब्सक्रिप्शन आवश्यक',
+      'hidden': 'छुपा हुआ',
+      'not_specified': 'निर्दिष्ट नहीं',
+      'currently_busy': 'वर्तमान में व्यस्त',
       'labour_profiles': 'मज़दूर प्रोफ़ाइल',
       'labour_profile_card_title': 'मज़दूर प्रोफ़ाइल',
       'view_details': 'विवरण देखें',
@@ -420,6 +464,28 @@ class AppLocalizations {
       'no_labour_profiles_found': 'कोणतीही मजूर प्रोफाइल आढळली नाही',
       'try_another_search_keyword': 'इतर शोध कीवर्ड वापरून पहा.',
       'filter_label': 'फिल्टर',
+      'retry': 'पुन्हा प्रयत्न करा',
+      'could_not_load_contractors': 'ठेकेदार लोड करता आले नाहीत',
+      'could_not_load_labour_list': 'कामगार यादी लोड करता आली नाही',
+      'subscription_inactive_contractor_masked':
+          'सदस्यता निष्क्रीय आहे. संपर्क तपशील लपवण्यात आले आहेत. पूर्ण तपशील पाहण्यासाठी आणि नोकरी क्रिया वापरण्यासाठी सदस्यता सक्रिय करा.',
+      'subscription_inactive_labour_masked':
+          'सदस्यता निष्क्रीय आहे. कामगार संपर्क तपशील लपवण्यात आले आहेत. पूर्ण तपशील आणि अर्ज/निर्माण क्रिया अनलॉक करण्यासाठी सदस्यता सक्रिय करा.',
+      'contractor_profiles': 'ठेकेदार प्रोफाइल',
+      'search_contractor': 'ठेकेदार शोधा',
+      'search_contractor_hint': 'नाव, शहर किंवा मोबाइल',
+      'active_filter': 'सक्रिय फिल्टर:',
+      'filter_city': 'शहर=',
+      'filter_rating': 'रेटिंग≥',
+      'filter_experience': 'अनुभव≥',
+      'filter_skills': 'कौशल्ये=',
+      'filter_business_types': 'व्यवसाय प्रकार=',
+      'no_contractors_found': 'कोणतेही ठेकेदार सापडले नाहीत',
+      'business_profile': 'व्यवसाय प्रोफाइल',
+      'subscription_required': 'सदस्यता आवश्यक',
+      'hidden': 'लपवलेले',
+      'not_specified': 'निर्दिष्ट नाही',
+      'currently_busy': 'सध्या व्यस्त',
       'labour_profiles': 'कामगार प्रोफाइल',
       'labour_profile_card_title': 'कामगार प्रोफाइल',
       'view_details': 'तपशील पहा',
@@ -642,10 +708,32 @@ class AppLocalizations {
   String get noLabourProfilesFound => _t('no_labour_profiles_found');
   String get tryAnotherSearchKeyword => _t('try_another_search_keyword');
   String get filterLabel => _t('filter_label');
+  String get filterCity => _t('filter_city');
+  String get filterRating => _t('filter_rating');
+  String get filterExperience => _t('filter_experience');
+  String get filterSkills => _t('filter_skills');
+  String get filterBusinessTypes => _t('filter_business_types');
   String get labourProfiles => _t('labour_profiles');
   String get labourProfileCardTitle => _t('labour_profile_card_title');
   String get viewDetails => _t('view_details');
   String get availabilityLabel => _t('availability_label');
+  String get retry => _t('retry');
+  String get couldNotLoadContractors => _t('could_not_load_contractors');
+  String get couldNotLoadLabourList => _t('could_not_load_labour_list');
+  String get subscriptionInactiveContractorMasked =>
+      _t('subscription_inactive_contractor_masked');
+  String get subscriptionInactiveLabourMasked =>
+      _t('subscription_inactive_labour_masked');
+  String get contractorProfiles => _t('contractor_profiles');
+  String get searchContractor => _t('search_contractor');
+  String get searchContractorHint => _t('search_contractor_hint');
+  String get activeFilterLabel => _t('active_filter');
+  String get noContractorsFound => _t('no_contractors_found');
+  String get businessProfile => _t('business_profile');
+  String get subscriptionRequired => _t('subscription_required');
+  String get hidden => _t('hidden');
+  String get notSpecified => _t('not_specified');
+  String get currentlyBusy => _t('currently_busy');
   String get minimumRatingLabel => _t('minimum_rating');
   String get experienceYearsLabel => _t('experience_years');
   String get skillsLabel => _t('skills');

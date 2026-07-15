@@ -18,6 +18,7 @@ import 'features/auth/mobile_verify_screen.dart';
 import 'features/splash/splash_screen.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:logger/logger.dart';
+import 'core/services/app_logger.dart';
 
 // ── Local Notifications plugin (singleton) ───────────────────────────────────
 final FlutterLocalNotificationsPlugin _localNotifications =
@@ -40,6 +41,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Logger.level = Level.debug;
   final logger = Logger();
+  await AppLogger.instance.info('app_started', message: 'App launched');
+  await AppLogger.instance.sendTestLog();
   if (!kIsWeb) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -48,6 +51,12 @@ void main() async {
     FlutterError.onError = (FlutterErrorDetails details) async {
       FlutterError.presentError(details);
       await FirebaseCrashlytics.instance.recordFlutterError(details);
+      await AppLogger.instance.error(
+        'flutter_error',
+        message: 'Flutter error',
+        error: details.exception,
+        stackTrace: details.stack,
+      );
       logger.e(
         'Flutter error',
         error: details.exception,
@@ -56,6 +65,12 @@ void main() async {
     };
     PlatformDispatcher.instance.onError = (error, stack) {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      AppLogger.instance.error(
+        'platform_error',
+        message: 'Platform error',
+        error: error,
+        stackTrace: stack,
+      );
       logger.e('Platform error', error: error, stackTrace: stack);
       return true;
     };

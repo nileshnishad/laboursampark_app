@@ -4,6 +4,7 @@ import '../../../common/models/business_type_model.dart';
 import '../../../common/widgets/app_state_message.dart';
 import '../../../services/api_service.dart';
 import '../../../services/business_type_service.dart';
+import '../../../l10n/app_localizations.dart';
 import '../models/marketplace_filter.dart';
 import '../models/marketplace_user.dart';
 import '../widgets/contractor_visiting_card.dart';
@@ -90,8 +91,9 @@ class _ContractorListViewState extends State<ContractorListView> {
         _loading = false;
       });
     } else {
+      final loc = AppLocalizations.of(context);
       setState(() {
-        _error = (response['message'] ?? 'Unable to load contractors')
+        _error = (response['message'] ?? loc.couldNotLoadContractors)
             .toString();
         _loading = false;
       });
@@ -100,6 +102,7 @@ class _ContractorListViewState extends State<ContractorListView> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final query = _searchController.text.trim().toLowerCase();
     final filtered = _allContractors.where((contractor) {
       final haystack =
@@ -118,28 +121,29 @@ class _ContractorListViewState extends State<ContractorListView> {
         children: [
           AppStateMessage(
             icon: Icons.wifi_off,
-            title: 'Could not load contractors',
+            title: loc.couldNotLoadContractors,
             subtitle: _error!,
           ),
-          TextButton(onPressed: _loadContractors, child: const Text('Retry')),
+          TextButton(onPressed: _loadContractors, child: Text(loc.retry)),
         ],
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: () => _loadContractors(useSavedCity: false),
-      child: ListView(
-        padding: const EdgeInsets.all(14),
+    final headerSection = Padding(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (!widget.canViewSensitiveData)
             Card(
               color: Theme.of(
                 context,
               ).colorScheme.primary.withValues(alpha: 0.10),
-              child: const Padding(
-                padding: EdgeInsets.all(12),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
                 child: Text(
-                  'Subscription inactive. Contact details are masked. Activate subscription to view full details and use job actions.',
+                  loc.subscriptionInactiveContractorMasked,
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
             ),
@@ -148,14 +152,22 @@ class _ContractorListViewState extends State<ContractorListView> {
             children: [
               Expanded(
                 child: Text(
-                  'Verified Contractors',
+                  loc.contractorProfiles,
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.filter_list),
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                icon: const Icon(Icons.filter_list, size: 18),
+                label: Text(AppLocalizations.of(context).filterLabel),
                 onPressed: () async {
                   final result = await showModalBottomSheet<MarketplaceFilter>(
                     context: context,
@@ -175,21 +187,15 @@ class _ContractorListViewState extends State<ContractorListView> {
                   }
                 },
               ),
-              Text(
-                '${filtered.length}',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
             ],
           ),
           const SizedBox(height: 10),
           TextField(
             controller: _searchController,
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.search),
-              labelText: 'Search contractor',
-              hintText: 'Name, city, or mobile',
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search),
+              labelText: loc.searchContractor,
+              hintText: loc.searchContractorHint,
             ),
           ),
           const SizedBox(height: 12),
@@ -197,28 +203,51 @@ class _ContractorListViewState extends State<ContractorListView> {
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
-                'Active filter: ${_filter.city.isNotEmpty ? 'City=${_filter.city}; ' : ''}${_filter.minRating > 0 ? 'Rating≥${_filter.minRating}; ' : ''}${_filter.minExperience > 0 ? 'Experience≥${_filter.minExperience}; ' : ''}${_filter.businessTypeIds.isNotEmpty ? 'Business Types=${_filter.businessTypeIds.length}; ' : ''}'
+                '${loc.activeFilterLabel} ${_filter.city.isNotEmpty ? '${loc.filterCity}${_filter.city}; ' : ''}${_filter.minRating > 0 ? '${loc.filterRating}${_filter.minRating}; ' : ''}${_filter.minExperience > 0 ? '${loc.filterExperience}${_filter.minExperience}; ' : ''}${_filter.businessTypeIds.isNotEmpty ? '${loc.filterBusinessTypes}${_filter.businessTypeIds.length}; ' : ''}'
                     .trim(),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ),
-          if (filtered.isEmpty)
-            const AppStateMessage(
-              icon: Icons.search_off,
-              title: 'No contractors found',
-              subtitle: 'Try another search keyword.',
-            )
-          else
-            ...filtered.map(
-              (contractor) => ContractorVisitingCard(
-                user: contractor,
-                canViewSensitiveData: widget.canViewSensitiveData,
-              ),
-            ),
         ],
       ),
+    );
+
+    final contentSection = filtered.isEmpty
+        ? ListView(
+            padding: const EdgeInsets.only(left: 14, right: 14, bottom: 14),
+            children: [
+              AppStateMessage(
+                icon: Icons.search_off,
+                title: loc.noContractorsFound,
+                subtitle: loc.tryAnotherSearchKeyword,
+              ),
+            ],
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.only(left: 14, right: 14, bottom: 14),
+            itemCount: filtered.length,
+            itemBuilder: (_, index) {
+              final contractor = filtered[index];
+              return ContractorVisitingCard(
+                user: contractor,
+                canViewSensitiveData: widget.canViewSensitiveData,
+                availableBusinessTypes: _availableBusinessTypes,
+              );
+            },
+          );
+
+    return Column(
+      children: [
+        headerSection,
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () => _loadContractors(useSavedCity: false),
+            child: contentSection,
+          ),
+        ),
+      ],
     );
   }
 }

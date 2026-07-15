@@ -6,6 +6,7 @@ import 'package:in_app_update/in_app_update.dart';
 import '../../core/auth_service.dart';
 import '../../core/user_controller.dart';
 import '../../services/api_service.dart';
+import '../../core/services/app_logger.dart';
 import '../auth/login_screen.dart';
 import '../auth/mobile_verify_screen.dart';
 import '../dashboard/user_dashboard_screen.dart';
@@ -22,6 +23,10 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Future.delayed(const Duration(seconds: 2), () async {
+      await AppLogger.instance.info(
+        'app_open',
+        message: 'App open flow started',
+      );
       if (!mounted) return;
       // Check for Play Store update (Android only, release builds only)
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
