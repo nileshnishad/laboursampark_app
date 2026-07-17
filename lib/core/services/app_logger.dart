@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../env.dart';
+import '../user_controller.dart';
 
 class AppLogger {
   AppLogger._();
@@ -23,9 +25,31 @@ class AppLogger {
   );
 
   Map<String, dynamic>? _cachedContext;
+  Map<String, dynamic>? _userContext;
+
+  // Call this after login
+
+  void setUserContext({
+    required String email,
+    String? phone,
+    String? userId, // optional if you have it
+  }) {
+    _userContext = {
+      'userEmail': email,
+      ...?(phone != null ? {'userPhone': phone} : null),
+      ...?(userId != null ? {'userId': userId} : null),
+    };
+  }
+
+  // Call this on logout
+  void clearUserContext() {
+    _userContext = null;
+  }
 
   Future<Map<String, dynamic>> _contextData() async {
-    if (_cachedContext != null) return _cachedContext!;
+    if (_cachedContext != null) {
+      return {..._cachedContext!, ...?_userContext};
+    }
 
     final packageInfo = await PackageInfo.fromPlatform();
     final locale = PlatformDispatcher.instance.locale.toString();
@@ -78,7 +102,37 @@ class AppLogger {
       'buildNumber': packageInfo.buildNumber,
       ...device,
     };
-    return _cachedContext!;
+    return {..._cachedContext!, ...?_userContext};
+  }
+
+  Map<String, dynamic> _dynamicUserContext() {
+    if (!Get.isRegistered<UserController>()) {
+      return {};
+    }
+
+    final user = Get.find<UserController>().user.value;
+    if (user == null) {
+      return {};
+    }
+
+    final email = (user['email'] ?? user['userEmail'] ?? '').toString().trim();
+    final mobile =
+        (user['mobile'] ?? user['phone'] ?? user['mobileNumber'] ?? '')
+            .toString()
+            .trim();
+    final userId = (user['_id'] ?? user['id'] ?? '').toString().trim();
+
+    final userContext = <String, dynamic>{};
+    if (email.isNotEmpty) {
+      userContext['userEmail'] = email;
+    }
+    if (mobile.isNotEmpty) {
+      userContext['userMobile'] = mobile;
+    }
+    if (userId.isNotEmpty) {
+      userContext['userId'] = userId;
+    }
+    return userContext;
   }
 
   Future<void> info(
@@ -86,7 +140,11 @@ class AppLogger {
     String? message,
     Map<String, dynamic>? data,
   }) async {
-    final enrichedData = {...await _contextData(), ...?data};
+    final enrichedData = {
+      ...await _contextData(),
+      ..._dynamicUserContext(),
+      ...?data,
+    };
     final text = _buildText('INFO', event, message, enrichedData);
     _logger.i(text);
     await _sendToTelegram(text);
@@ -98,7 +156,11 @@ class AppLogger {
     Map<String, dynamic>? data,
     Object? error,
   }) async {
-    final enrichedData = {...await _contextData(), ...?data};
+    final enrichedData = {
+      ...await _contextData(),
+      ..._dynamicUserContext(),
+      ...?data,
+    };
     final text = _buildText(
       'WARNING',
       event,
@@ -117,7 +179,11 @@ class AppLogger {
     Object? error,
     StackTrace? stackTrace,
   }) async {
-    final enrichedData = {...await _contextData(), ...?data};
+    final enrichedData = {
+      ...await _contextData(),
+      ..._dynamicUserContext(),
+      ...?data,
+    };
     final text = _buildText(
       'ERROR',
       event,

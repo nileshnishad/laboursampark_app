@@ -17,10 +17,13 @@ class BusinessTypeService {
   static DateTime? _lastFetchTime;
   static const _cacheValidityDuration = Duration(hours: 24);
 
-  static Future<Map<String, dynamic>> getAllBusinessTypes({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedBusinessTypes != null && _lastFetchTime != null) {
+  static Future<Map<String, dynamic>> getAllBusinessTypes({
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh &&
+        _cachedBusinessTypes != null &&
+        _lastFetchTime != null) {
       if (DateTime.now().difference(_lastFetchTime!) < _cacheValidityDuration) {
-        debugPrint('>>> Returning cached business types (${_cachedBusinessTypes!.length} items)');
         return {
           'success': true,
           'businessTypes': _cachedBusinessTypes,
@@ -33,7 +36,6 @@ class BusinessTypeService {
     final hasInternet = await NetworkService.hasInternet();
     if (!hasInternet) {
       if (_cachedBusinessTypes != null) {
-        debugPrint('>>> No internet, returning cached business types');
         return {
           'success': true,
           'businessTypes': _cachedBusinessTypes,
@@ -45,29 +47,30 @@ class BusinessTypeService {
     }
 
     try {
-      debugPrint('>>> Fetching business types from API...');
       final response = await _dio.get(
         'https://laboursampark-backend.vercel.app/api/public/getallbusinessname',
         options: Options(
           headers: {
             'accept': '*/*',
-            'accept-language': 'en-GB,en;q=0.9,hi-IN;q=0.8,hi;q=0.7,en-US;q=0.6',
+            'accept-language':
+                'en-GB,en;q=0.9,hi-IN;q=0.8,hi;q=0.7,en-US;q=0.6',
           },
         ),
       );
 
       final data = response.data as Map<String, dynamic>;
-      
+
       if (data['success'] == true && data['businesses'] != null) {
         final businessList = (data['businesses'] as List)
-            .map((json) => BusinessTypeModel.fromJson(json as Map<String, dynamic>))
+            .map(
+              (json) =>
+                  BusinessTypeModel.fromJson(json as Map<String, dynamic>),
+            )
             .toList();
 
         _cachedBusinessTypes = businessList;
         _lastFetchTime = DateTime.now();
 
-        debugPrint('>>> Business types fetched successfully: ${businessList.length} items');
-        
         return {
           'success': true,
           'businessTypes': businessList,
@@ -81,7 +84,6 @@ class BusinessTypeService {
         'message': data['message'] ?? 'Failed to fetch business types',
       };
     } on DioException catch (e) {
-      debugPrint('>>> BusinessType API Error: ${e.message}');
       if (_cachedBusinessTypes != null) {
         debugPrint('>>> API error, returning cached business types');
         return {
@@ -96,7 +98,6 @@ class BusinessTypeService {
         'message': AppError.fromDioException(e).userMessage,
       };
     } catch (e) {
-      debugPrint('>>> BusinessType fetch error: $e');
       if (_cachedBusinessTypes != null) {
         return {
           'success': true,
@@ -105,10 +106,7 @@ class BusinessTypeService {
           'fromCache': true,
         };
       }
-      return {
-        'success': false,
-        'message': ErrorMessages.unknown,
-      };
+      return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
 

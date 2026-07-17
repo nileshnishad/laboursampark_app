@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -22,97 +23,94 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 2), () async {
-      await AppLogger.instance.info(
-        'app_open',
-        message: 'App open flow started',
-      );
-      if (!mounted) return;
-      // Check for Play Store update (Android only, release builds only)
-      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-        try {
-          final updateInfo = await InAppUpdate.checkForUpdate();
-          if (updateInfo.updateAvailability ==
-              UpdateAvailability.updateAvailable) {
-            if (updateInfo.immediateUpdateAllowed) {
-              await InAppUpdate.performImmediateUpdate();
-            } else if (updateInfo.flexibleUpdateAllowed) {
-              await InAppUpdate.startFlexibleUpdate();
-              // Wait for the flexible update download to complete before
-              // installing — calling completeFlexibleUpdate() too early fails.
-              bool downloaded = false;
-              for (int i = 0; i < 30 && !downloaded; i++) {
-                await Future.delayed(const Duration(seconds: 2));
-                final status = await InAppUpdate.checkForUpdate();
-                if (status.installStatus == InstallStatus.downloaded) {
-                  downloaded = true;
-                }
-              }
-              if (downloaded) {
-                await InAppUpdate.completeFlexibleUpdate();
-              }
+    _initApp();
+  }
+
+  Future<void> _checkForUpdates() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    try {
+      final updateInfo = await InAppUpdate.checkForUpdate();
+      if (updateInfo.updateAvailability == UpdateAvailability.updateAvailable) {
+        if (updateInfo.immediateUpdateAllowed) {
+          await InAppUpdate.performImmediateUpdate();
+        } else if (updateInfo.flexibleUpdateAllowed) {
+          await InAppUpdate.startFlexibleUpdate();
+          bool downloaded = false;
+          for (int i = 0; i < 30 && !downloaded; i++) {
+            await Future.delayed(const Duration(seconds: 2));
+            final status = await InAppUpdate.checkForUpdate();
+            if (status.installStatus == InstallStatus.downloaded) {
+              downloaded = true;
             }
           }
-        } catch (_) {
-          // Ignore update check errors (e.g. not on Play Store / debug build)
+          if (downloaded) {
+            await InAppUpdate.completeFlexibleUpdate();
+          }
         }
       }
+    } catch (_) {
+      // Ignore update check errors (e.g. not on Play Store / debug build)
+    }
+  }
+
+  Future<void> _initApp() async {
+    await AppLogger.instance.info('app_open', message: 'App open flow started');
+    unawaited(_checkForUpdates());
+
+    if (!mounted) return;
+    bool loggedIn = await AuthService.isLoggedIn();
+    if (!mounted) return;
+    if (loggedIn) {
+      final userController = Get.find<UserController>();
+      final restored = await userController.restoreSession();
       if (!mounted) return;
-      bool loggedIn = await AuthService.isLoggedIn();
-      if (!mounted) return;
-      if (loggedIn) {
-        final userController = Get.find<UserController>();
-        final restored = await userController.restoreSession();
-        if (!mounted) return;
-        if (restored) {
-          // OTP guard — must be verified before accessing dashboard
-          final otpVerified = await AuthService.isOtpVerified();
-          if (!otpVerified) {
-            final userData = await AuthService.getUserData();
-            final phone =
-                (userData?['phone'] ??
-                        userData?['mobile'] ??
-                        userData?['mobileNumber'] ??
-                        '')
-                    .toString();
-            final userId = (userData?['_id'] ?? userData?['id'] ?? '')
-                .toString();
-            if (!mounted) return;
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => MobileVerifyScreen(
-                  phone: phone.startsWith('+') ? phone : '+91$phone',
-                  displayPhone: phone,
-                  userId: userId,
-                ),
+      if (restored) {
+        // OTP guard — must be verified before accessing dashboard
+        final otpVerified = await AuthService.isOtpVerified();
+        if (!otpVerified) {
+          final userData = await AuthService.getUserData();
+          final phone =
+              (userData?['phone'] ??
+                      userData?['mobile'] ??
+                      userData?['mobileNumber'] ??
+                      '')
+                  .toString();
+          final userId = (userData?['_id'] ?? userData?['id'] ?? '').toString();
+          if (!mounted) return;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => MobileVerifyScreen(
+                phone: phone.startsWith('+') ? phone : '+91$phone',
+                displayPhone: phone,
+                userId: userId,
               ),
-            );
-            return;
-          }
-          // Refresh FCM token on every app open (token can change)
-          final fcmToken = await FirebaseMessaging.instance.getToken();
-          final authToken = userController.token.value;
-          if (fcmToken != null && authToken != null) {
-            ApiService.registerFcmToken(token: authToken, fcmToken: fcmToken);
-          }
-          if (!mounted) return;
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const UserDashboardScreen()),
+            ),
           );
-        } else {
-          // Token/user data corrupted — force re-login
-          await AuthService.clearSession();
-          if (!mounted) return;
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
-          );
+          return;
         }
+        // Refresh FCM token on every app open (token can change)
+        final fcmToken = await FirebaseMessaging.instance.getToken();
+        final authToken = userController.token.value;
+        if (fcmToken != null && authToken != null) {
+          ApiService.registerFcmToken(token: authToken, fcmToken: fcmToken);
+        }
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const UserDashboardScreen()),
+        );
       } else {
+        // Token/user data corrupted — force re-login
+        await AuthService.clearSession();
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
         );
       }
-    });
+    } else {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
+    }
   }
 
   @override

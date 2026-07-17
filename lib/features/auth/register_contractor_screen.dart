@@ -375,6 +375,7 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
 
     final mobile = _mobileController.text.trim();
     final normalizedMobile = mobile.startsWith('+') ? mobile : '+91$mobile';
+    final email = _emailController.text.trim().toLowerCase();
 
     final body = <String, dynamic>{
       'userType': 'contractor',
@@ -382,7 +383,7 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
       'fullName': _nameController.text.trim(),
       'businessName': _businessNameController.text.trim(),
       'mobile': normalizedMobile,
-      'email': _emailController.text.trim().toLowerCase(),
+      if (email.isNotEmpty) 'email': email,
       'password': _passwordController.text.trim(),
       'experienceRange': _experienceRange,
       'teamSize': _teamSize,
@@ -812,7 +813,7 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
                     TextFormField(
                       controller: _emailController,
                       decoration: _dec(
-                        '${AppLocalizations.of(context).email} *',
+                        AppLocalizations.of(context).email,
                         hint: AppLocalizations.of(context).emailHint,
                         prefix: const Icon(Icons.email_outlined, size: 20),
                       ),
@@ -825,9 +826,9 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
                         ),
                       ],
                       validator: (v) {
-                        if (v == null || v.trim().isEmpty)
-                          return 'Email is required';
-                        if (!v.contains('@')) return 'Enter valid email';
+                        if (v == null || v.trim().isEmpty) return null;
+                        if (!v.contains('@'))
+                          return AppLocalizations.of(context).enterValidEmail;
                         return null;
                       },
                     ),

@@ -76,7 +76,6 @@ class _MyJobsViewState extends State<MyJobsView> {
     });
     final result = await ApiService.fetchMyJobs(widget.token);
 
-    debugPrint('[MyJobsView] fetchMyJobs result: $result');
     if (!mounted) return;
     if (result['success'] == true) {
       final data = result['data'] as Map<String, dynamic>?;

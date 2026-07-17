@@ -551,13 +551,14 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
 
     final mobile = _mobileController.text.trim();
     final normalizedMobile = mobile.startsWith('+') ? mobile : '+91$mobile';
+    final email = _emailController.text.trim().toLowerCase();
 
     final body = <String, dynamic>{
       'userType': 'labour',
       'fullName': _nameController.text.trim(),
       if (_selectedDob != null) 'dob': _selectedDob!.toIso8601String(),
       'mobile': normalizedMobile,
-      'email': _emailController.text.trim().toLowerCase(),
+      if (email.isNotEmpty) 'email': email,
       'password': _passwordController.text.trim(),
       'experience': _experience,
       'skills': _selectedSkillIds,
@@ -883,7 +884,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                     TextFormField(
                       controller: _emailController,
                       decoration: _dec(
-                        '${AppLocalizations.of(context).email} *',
+                        AppLocalizations.of(context).email,
                         hint: AppLocalizations.of(context).emailExampleHint,
                         prefix: const Icon(Icons.email_outlined, size: 20),
                       ),
@@ -896,8 +897,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                         ),
                       ],
                       validator: (v) {
-                        if (v == null || v.trim().isEmpty)
-                          return AppLocalizations.of(context).emailRequired;
+                        if (v == null || v.trim().isEmpty) return null;
                         if (!v.contains('@'))
                           return AppLocalizations.of(context).enterValidEmail;
                         return null;

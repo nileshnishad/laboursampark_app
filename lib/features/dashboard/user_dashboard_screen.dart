@@ -555,67 +555,157 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     );
   }
 
-  Widget _buildCurrentTabBody({
-    required BuildContext context,
-    required List<BottomNavigationBarItem> navItems,
-    required String fullName,
+  List<Widget> _buildTabViews({
     required String userType,
+    required String token,
+    required String fullName,
     required Map<String, dynamic>? profileData,
   }) {
-    // Use stable non-localized keys to decide which tab to show.
-    final tabKeys = _getNavKeys(userType);
-    final selectedKey = (tabKeys.length > _selectedIndex)
-        ? tabKeys[_selectedIndex]
-        : (tabKeys.isNotEmpty ? tabKeys.first : 'jobs');
-    final userController = Get.find<UserController>();
-    final token = userController.token.value ?? '';
-
-    switch (selectedKey) {
-      case 'jobs':
-        return AllJobsView(
-          token: token,
-          userType: userType,
-          subscriptionActive: _subscriptionActive,
-        );
-      case 'labours':
-        return LabourListView(canViewSensitiveData: _subscriptionActive);
-      case 'contractors':
-        return ContractorListView(canViewSensitiveData: _subscriptionActive);
-      case 'my_jobs':
-        return MyJobsView(token: token, userType: userType);
-      case 'history':
-        return HistoryView(token: token, userType: userType);
-      case 'profile':
-        return ProfileView(
-          fullName: fullName,
-          userType: userType,
-          profileData: profileData,
-          subscriptionActive: _subscriptionActive,
-          profileLoading: _profileLoading,
-          profileError: _profileError,
-          subscriptionPlan: _subscriptionPlan,
-          onRetry: _loadProfileStatus,
-          onShowSubscription: (plan) => _showSubscriptionDetails(context, plan),
-          onSettings: () => _showSettingsSheet(context),
-          onLogout: _logout,
-          onUpdateProfile: () =>
-              _openEditProfile(context, profileData, userType),
-        );
+    switch (userType.toLowerCase()) {
+      case 'labour':
+        return [
+          AllJobsView(
+            key: const ValueKey('all_jobs_view'),
+            token: token,
+            userType: userType,
+            subscriptionActive: _subscriptionActive,
+          ),
+          ContractorListView(
+            key: const ValueKey('contractor_list_view'),
+            canViewSensitiveData: _subscriptionActive,
+          ),
+          HistoryView(
+            key: const ValueKey('history_view'),
+            token: token,
+            userType: userType,
+          ),
+          ProfileView(
+            key: const ValueKey('profile_view'),
+            fullName: fullName,
+            userType: userType,
+            profileData: profileData,
+            subscriptionActive: _subscriptionActive,
+            profileLoading: _profileLoading,
+            profileError: _profileError,
+            subscriptionPlan: _subscriptionPlan,
+            onRetry: _loadProfileStatus,
+            onShowSubscription: (plan) =>
+                _showSubscriptionDetails(context, plan),
+            onSettings: () => _showSettingsSheet(context),
+            onLogout: _logout,
+            onUpdateProfile: () =>
+                _openEditProfile(context, profileData, userType),
+          ),
+        ];
+      case 'sub_contractor':
+        return [
+          MyJobsView(
+            key: const ValueKey('my_jobs_view'),
+            token: token,
+            userType: userType,
+          ),
+          AllJobsView(
+            key: const ValueKey('all_jobs_view'),
+            token: token,
+            userType: userType,
+            subscriptionActive: _subscriptionActive,
+          ),
+          LabourListView(
+            key: const ValueKey('labour_list_view'),
+            canViewSensitiveData: _subscriptionActive,
+          ),
+          HistoryView(
+            key: const ValueKey('history_view'),
+            token: token,
+            userType: userType,
+          ),
+          ProfileView(
+            key: const ValueKey('profile_view'),
+            fullName: fullName,
+            userType: userType,
+            profileData: profileData,
+            subscriptionActive: _subscriptionActive,
+            profileLoading: _profileLoading,
+            profileError: _profileError,
+            subscriptionPlan: _subscriptionPlan,
+            onRetry: _loadProfileStatus,
+            onShowSubscription: (plan) =>
+                _showSubscriptionDetails(context, plan),
+            onSettings: () => _showSettingsSheet(context),
+            onLogout: _logout,
+            onUpdateProfile: () =>
+                _openEditProfile(context, profileData, userType),
+          ),
+        ];
+      case 'contractor':
+        return [
+          MyJobsView(
+            key: const ValueKey('my_jobs_view'),
+            token: token,
+            userType: userType,
+          ),
+          LabourListView(
+            key: const ValueKey('labour_list_view'),
+            canViewSensitiveData: _subscriptionActive,
+          ),
+          ContractorListView(
+            key: const ValueKey('contractor_list_view'),
+            canViewSensitiveData: _subscriptionActive,
+          ),
+          HistoryView(
+            key: const ValueKey('history_view'),
+            token: token,
+            userType: userType,
+          ),
+          ProfileView(
+            key: const ValueKey('profile_view'),
+            fullName: fullName,
+            userType: userType,
+            profileData: profileData,
+            subscriptionActive: _subscriptionActive,
+            profileLoading: _profileLoading,
+            profileError: _profileError,
+            subscriptionPlan: _subscriptionPlan,
+            onRetry: _loadProfileStatus,
+            onShowSubscription: (plan) =>
+                _showSubscriptionDetails(context, plan),
+            onSettings: () => _showSettingsSheet(context),
+            onLogout: _logout,
+            onUpdateProfile: () =>
+                _openEditProfile(context, profileData, userType),
+          ),
+        ];
       default:
-        return DashboardHomeView(
-          fullName: fullName,
-          userType: userType,
-          subscriptionActive: _subscriptionActive,
-          subscriptionPlan: _subscriptionPlan,
-          onTabSwitch: (label) {
-            final navItems = _getNavItems(context, userType);
-            final idx = navItems.indexWhere(
-              (item) => (item.label ?? '').toLowerCase() == label,
-            );
-            if (idx != -1) _onItemTapped(idx);
-          },
-          onShowSubscription: (plan) => _showSubscriptionDetails(context, plan),
-        );
+        return [
+          AllJobsView(
+            key: const ValueKey('all_jobs_view'),
+            token: token,
+            userType: userType,
+            subscriptionActive: _subscriptionActive,
+          ),
+          HistoryView(
+            key: const ValueKey('history_view'),
+            token: token,
+            userType: userType,
+          ),
+          ProfileView(
+            key: const ValueKey('profile_view'),
+            fullName: fullName,
+            userType: userType,
+            profileData: profileData,
+            subscriptionActive: _subscriptionActive,
+            profileLoading: _profileLoading,
+            profileError: _profileError,
+            subscriptionPlan: _subscriptionPlan,
+            onRetry: _loadProfileStatus,
+            onShowSubscription: (plan) =>
+                _showSubscriptionDetails(context, plan),
+            onSettings: () => _showSettingsSheet(context),
+            onLogout: _logout,
+            onUpdateProfile: () =>
+                _openEditProfile(context, profileData, userType),
+          ),
+        ];
     }
   }
 
@@ -952,6 +1042,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
       final user = userController.user.value;
       final fullName = (user?['fullName'] ?? '').toString();
       final userType = (user?['userType'] ?? '').toString();
+      final token = userController.token.value ?? '';
       final navItems = _getNavItems(context, userType);
 
       if (_selectedIndex >= navItems.length) {
@@ -1299,12 +1390,14 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                   ),
                 ),
               Expanded(
-                child: _buildCurrentTabBody(
-                  context: context,
-                  navItems: navItems,
-                  fullName: fullName,
-                  userType: userType,
-                  profileData: user,
+                child: IndexedStack(
+                  index: _selectedIndex,
+                  children: _buildTabViews(
+                    userType: userType,
+                    token: token,
+                    fullName: fullName,
+                    profileData: user,
+                  ),
                 ),
               ),
             ],
