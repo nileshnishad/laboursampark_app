@@ -407,6 +407,8 @@ const Map<String, Map<String, List<String>>> completeIndiaData = {
       'BKC',
       'Colaba',
       'Borivali',
+      'kandivali',
+      'malad',
       'Ghatkopar',
       'Powai',
     ],

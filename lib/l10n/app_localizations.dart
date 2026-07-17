@@ -191,6 +191,58 @@ class AppLocalizations {
       'select_skills': 'Select Skills *',
       'choose_skills': 'Choose multiple skills that match your expertise',
       'no_skills_available': 'No skills available',
+      'loading_skills': 'Loading skills...',
+      'add_site_photos_hint':
+          'Add site photos to help applicants understand the work location (max 5).',
+      'add': 'Add',
+      'create_new_job': 'Create New Job',
+      'post_a_job': 'Post a Job',
+      'edit_job': 'Edit Job',
+      'save_changes': 'Save Changes',
+      'job_details_section': 'Job Details',
+      'work_location_section': 'Work Location',
+      'site_images_section': 'Site Images',
+      'target_label': 'Target',
+      'workers_needed': 'Workers Needed',
+      'work_title': 'Work Title',
+      'required_skills': 'Required Skills',
+      'description_label': 'Description',
+      'description_hint':
+          'Explain work scope, timeline, special requirements...',
+      'description_required': 'Description is required',
+      'published_jobs': 'Published Jobs',
+      'post_new': 'Post New',
+      'requirement': 'Requirement',
+      'all': 'All',
+      'live': 'Live',
+      'all_jobs_hint': '● All your posted jobs are listed here.',
+      'live_jobs_hint':
+          '✓ Live jobs are visible to applicants & accepting applications.',
+      'hidden_jobs_hint':
+          '⊘ Hidden jobs are only visible to you — applicants cannot see or apply.',
+      'no_jobs_posted_yet': 'No Jobs Posted Yet',
+      'no_live_jobs': 'No Live Jobs',
+      'no_hidden_jobs': 'No Hidden Jobs',
+      'tap_create_job_to_post_first_requirement':
+          'Tap CREATE JOB to post your first requirement.',
+      'no_jobs_match_filter': 'No jobs match this filter.',
+      'untitled_job': 'Untitled Job',
+      'for_label': 'For:',
+      'need_label': 'Need:',
+      'worker': 'Worker',
+      'workers': 'Workers',
+      'posted_label': 'Posted:',
+      'skills_required': 'Skills Required',
+      'about_this_job': 'About this job',
+      'job_is_now_live': 'Job is now LIVE ✓',
+      'job_hidden_from_applicants': 'Job hidden from applicants',
+      'failed_to_toggle_activation': 'Failed to toggle activation',
+      'deactivate_hide_job': 'Deactivate (Hide Job)',
+      'activate_make_live': 'Activate (Make Live)',
+      'applications': 'Applications',
+      'required_field': 'Required',
+      'min_one': 'Min 1',
+      'six_digits': '6 digits',
       'language_input_hint': 'Tap to select languages',
       'full_name_required': 'Full name is required',
       'email_required': 'Email is required',
@@ -205,6 +257,38 @@ class AppLocalizations {
       'password_invalid': 'Password does not meet requirements',
       'uploading': 'Uploading...',
       'uploaded': 'Uploaded ✓',
+      'applications_title': 'Applications',
+      'applicants_count': 'APPLICANTS',
+      'job_open': 'OPEN',
+      'job_closed': 'CLOSED',
+      'workers_needed_label': 'workers needed',
+      'budget_label': 'Budget',
+      'skills_label': 'Skills',
+      'summary_total': 'Total',
+      'summary_pending': 'Pending',
+      'summary_accepted': 'Accepted',
+      'summary_rejected': 'Rejected',
+      'unknown_applicant': 'Unknown',
+      'available_label': 'Available',
+      'reviews_count': 'reviews',
+      'jobs_done': 'jobs done',
+      'applied_on': 'Applied',
+      'connect_accept': 'CONNECT & ACCEPT',
+      'mark_completed': 'MARK AS COMPLETED',
+      'rating_label_small': 'Rating',
+      'feedback_label': 'Feedback',
+      'feedback_hint': 'How was the work quality?',
+      'confirm_complete': 'CONFIRM COMPLETE',
+      'mark_completed_title': 'Mark as Completed',
+      'rate_work_label': 'Rate {name}\'s work',
+      'no_applications_yet': 'No Applications Yet',
+      'no_applications_hint':
+          'Applications will appear here once\nsomeone applies to this job.',
+      'connected_successfully': 'Connected successfully!',
+      'failed_to_connect': 'Failed to connect',
+      'marked_completed_successfully': 'Marked as completed!',
+      'failed_to_complete': 'Failed to complete',
+      'good_work_default': 'Good work',
     },
     'hi': {
       'register_as_contractor': 'ठेकेदार के रूप में पंजीकरण',
@@ -387,6 +471,56 @@ class AppLocalizations {
       'select_skills': 'कौशल चुनें *',
       'choose_skills': 'अपनी विशेषज्ञता से मिलान करने वाले कई कौशल चुनें',
       'no_skills_available': 'कोई कौशल उपलब्ध नहीं',
+      'loading_skills': 'कौशल लोड हो रहे हैं...',
+      'add_site_photos_hint':
+          'कार्य स्थल को समझने में मदद करने के लिए साइट फ़ोटो जोड़ें (अधिकतम 5)।',
+      'add': 'जोड़ें',
+      'create_new_job': 'नई नौकरी बनाएं',
+      'post_a_job': 'एक नौकरी पोस्ट करें',
+      'edit_job': 'नौकरी संपादित करें',
+      'save_changes': 'बदलाव सहेजें',
+      'job_details_section': 'कार्य विवरण',
+      'work_location_section': 'कार्य स्थान',
+      'site_images_section': 'साइट इमेज',
+      'target_label': 'लक्षित',
+      'workers_needed': 'कामगारों की आवश्यकता',
+      'required_skills': 'आवश्यक कौशल',
+      'description_hint':
+          'कार्य क्षेत्र, समय सीमा, विशेष आवश्यकताओं को स्पष्ट करें...',
+      'description_required': 'विवरण आवश्यक है',
+      'published_jobs': 'प्रकाशित नौकरियाँ',
+      'post_new': 'नई पोस्ट',
+      'requirement': 'आवश्यकता',
+      'all': 'सभी',
+      'live': 'लाइव',
+      'all_jobs_hint': '● आपकी पोस्ट की गई सभी नौकरियाँ यहां सूचीबद्ध हैं।',
+      'live_jobs_hint':
+          '✓ लाइव नौकरियाँ आवेदकों के लिए दिखाई देती हैं और आवेदन स्वीकार कर रही हैं।',
+      'hidden_jobs_hint':
+          '⊘ छुपी हुई नौकरियाँ केवल आपके लिए दिखाई देती हैं — आवेदक इन्हें नहीं देख सकते।',
+      'no_jobs_posted_yet': 'अभी तक कोई नौकरी पोस्ट नहीं हुई',
+      'no_live_jobs': 'कोई लाइव नौकरी नहीं',
+      'no_hidden_jobs': 'कोई छुपी हुई नौकरी नहीं',
+      'tap_create_job_to_post_first_requirement':
+          'पहली आवश्यकता पोस्ट करने के लिए CREATE JOB पर टैप करें।',
+      'no_jobs_match_filter': 'कोई नौकरी इस फ़िल्टर से मेल नहीं खाती।',
+      'untitled_job': 'शीर्षक रहित नौकरी',
+      'for_label': 'के लिए:',
+      'need_label': 'आवश्यकता:',
+      'worker': 'कामगार',
+      'workers': 'कामगार',
+      'posted_label': 'पोस्ट किया गया:',
+      'skills_required': 'आवश्यक कौशल',
+      'about_this_job': 'इस नौकरी के बारे में',
+      'job_is_now_live': 'नौकरी अब लाइव है ✓',
+      'job_hidden_from_applicants': 'नौकरी आवेदकों से छुपी गई',
+      'failed_to_toggle_activation': 'सक्रियता टॉगल करने में विफल',
+      'deactivate_hide_job': 'निष्क्रिय करें (नौकरी छुपाएँ)',
+      'activate_make_live': 'सक्रिय करें (लाइव बनाएं)',
+      'applications': 'आवेदन',
+      'required_field': 'आवश्यक',
+      'min_one': 'न्यूनतम 1',
+      'six_digits': '6 अंक',
       'language_input_hint': 'भाषाएँ चुनने के लिए टैप करें',
       'full_name_required': 'पूरा नाम आवश्यक है',
       'email_required': 'ईमेल आवश्यक है',
@@ -401,6 +535,40 @@ class AppLocalizations {
       'password_invalid': 'पासवर्ड आवश्यकताओं को पूरा नहीं करता',
       'uploading': 'अपलोड हो रहा है...',
       'uploaded': 'अपलोड किया गया ✓',
+      'applications_title': 'आवेदन',
+      'applicants_count': 'आवेदक',
+      'job_open': 'खुला',
+      'job_closed': 'बंद',
+      'workers_needed_label': 'कामगारों की आवश्यकता',
+      'budget_label': 'बजट',
+      'skills_label': 'कौशल',
+      'summary_total': 'कुल',
+      'summary_pending': 'लंबित',
+      'summary_accepted': 'स्वीकृत',
+      'summary_rejected': 'अस्वीकारित',
+      'unknown_applicant': 'अज्ञात',
+      'available_label': 'उपलब्ध',
+      'reviews_count': 'रिव्यू',
+      'jobs_done': 'काम पूर्ण',
+      'applied_on': 'आवेदन किया गया',
+      'connect_accept': 'जुड़ें और स्वीकार करें',
+      'mark_completed': 'पूर्ण के रूप में चिह्नित करें',
+      'rating_label_small': 'रेटिंग',
+      'feedback_label': 'प्रतिक्रिया',
+      'feedback_hint': 'काम की गुणवत्ता कैसी थी?',
+      'confirm_complete': 'पूर्ण की पुष्टि करें',
+      'mark_completed_title': 'पूर्ण के रूप में चिह्नित करें',
+      'rate_work_label': '{name} के काम की रेटिंग करें',
+      'no_applications_yet': 'अब तक कोई आवेदन नहीं',
+      'no_applications_hint':
+          'इस नौकरी पर कोई आवेदन करने पर\nयहाँ आवेदन दिखाई देंगे।',
+      'connected_successfully': 'सफलतापूर्वक जुड़ गए!',
+      'failed_to_connect': 'जुड़ने में विफल',
+      'marked_completed_successfully': 'पूर्ण के रूप में चिह्नित किया गया!',
+      'failed_to_complete': 'पूर्ण नहीं किया जा सका',
+      'good_work_default': 'अच्छा काम',
+      'description_label': 'विवरण',
+      'work_title': 'काम का शीर्षक',
     },
     'mr': {
       'register_as_contractor': 'ठेकेदार म्हणून नोंदणी',
@@ -574,6 +742,50 @@ class AppLocalizations {
       'business_license': 'व्यवसाय परवाना / GST / PAN',
       'tap_to_upload_license':
           'परवाना, GST किंवा PAN इमेज अपलोड करण्यासाठी टॅप करा',
+      'about_this_job': 'या नोकरीविषयी',
+      'activate_make_live': 'सक्रिय करा (लाइव्ह करा)',
+      'add': 'जोडा',
+      'all': 'सर्व',
+      'all_jobs_hint':
+          '● तुमच्या पोस्ट केलेल्या सर्व नोकऱ्या येथे सूचीबद्ध आहेत.',
+      'applications': 'अर्ज',
+      'area_dropdown': 'एरिया',
+      'create_new_job': 'नवीन नोकरी पोस्ट करा',
+      'deactivate_hide_job': 'डिएक्टिव्हेट करा (नोकरी लपवा)',
+      'description_label': 'वर्णन',
+      'description_required': 'वर्णन आवश्यक आहे',
+      'edit_job': 'नोकरी संपादित करा',
+      'failed_to_toggle_activation': 'सक्रियता बदलण्यात अयशस्वी',
+      'for_label': 'साठी:',
+      'job_details_section': 'नोकरी तपशील',
+      'job_hidden_from_applicants': 'नोकरी अर्जदारांकडून लपवण्यात आली',
+      'job_is_now_live': 'नोकरी आता लाईव्ह आहे ✓',
+      'live': 'लाईव्ह',
+      'loading_skills': 'कौशल्ये लोड करत आहोत...',
+      'min_one': 'किमान एक',
+      'need_label': 'गरज:',
+      'no_hidden_jobs': 'कोणतीही लपवलेली नोकरी नाही',
+      'no_jobs_match_filter': 'कोणतीही नोकरी या फिल्टरला जुळत नाही.',
+      'no_jobs_posted_yet': 'अद्याप कोणतीही नोकरी पोस्ट केलेली नाही',
+      'no_live_jobs': 'कोणतीही लाईव्ह नोकरी नाही',
+      'post_a_job': 'नोकरी पोस्ट करा',
+      'post_new': 'नवीन पोस्ट',
+      'posted_label': 'पोस्ट केले:',
+      'published_jobs': 'प्रकाशित नोकऱ्या',
+      'required_field': 'आवश्यक',
+      'required_skills': 'आवश्यक कौशल्ये',
+      'requirement': 'गरज',
+      'save_changes': 'बदल जतन करा',
+      'site_images_section': 'साइट इमेज',
+      'six_digits': '6 अंक',
+      'skills_required': 'कौशल्ये आवश्यक',
+      'target_label': 'लक्ष्य',
+      'untitled_job': 'शीर्षक नसलेली नोकरी',
+      'work_location_section': 'कामाचे ठिकाण',
+      'work_title': 'कामाचे शीर्षक',
+      'worker': 'कामगार',
+      'workers': 'कामगार',
+      'workers_needed': 'कामगारांची गरज',
       'languages': 'भाषा',
       'choose_supported_language':
           'अॅप लेबल हिंदी / मराठी / इंग्रजी मध्ये बदलण्यासाठी भाषा निवडा.',
@@ -601,6 +813,48 @@ class AppLocalizations {
       'password_invalid': 'पासवर्ड आवश्यकतांना पूर्ण करत नाही',
       'uploading': 'अपलोड करत आहे...',
       'uploaded': 'अपलोड झाले ✓',
+      'add_site_photos_hint':
+          'कामाच्या ठिकाणाबद्दल समजून घेण्यासाठी साइट छायाचित्र जोडा (कमाल 5).',
+      'description_hint':
+          'कामाचा व्याप्ती, कालावधी, विशेष आवश्यकता स्पष्ट करा...',
+      'hidden_jobs_hint':
+          '⊘ लपवलेल्या नोकऱ्या केवळ तुम्हासाठी दिसतात — अर्जदार त्यांना पाहू किंवा अर्ज करू शकत नाहीत.',
+      'live_jobs_hint':
+          '✓ लाईव्ह नोकऱ्या अर्जदारांना दिसतात आणि अर्ज स्वीकारत आहेत.',
+      'tap_create_job_to_post_first_requirement':
+          'पहिली गरज पोस्ट करण्यासाठी CREATE JOB वर टॅप करा.',
+      'applications_title': 'अर्ज',
+      'applicants_count': 'अर्जदार',
+      'job_open': 'उघडले',
+      'job_closed': 'बंद',
+      'workers_needed_label': 'कामगार आवश्यक',
+      'budget_label': 'बजेट',
+      'skills_label': 'कौशल्ये',
+      'summary_total': 'एकूण',
+      'summary_pending': 'प्रलंबित',
+      'summary_accepted': 'स्वीकृत',
+      'summary_rejected': 'नाकारले',
+      'unknown_applicant': 'अज्ञात',
+      'available_label': 'उपलब्ध',
+      'reviews_count': 'शिफारसी',
+      'jobs_done': 'काम पूर्ण',
+      'applied_on': 'अर्ज केला',
+      'connect_accept': 'जोडा आणि स्वीकारा',
+      'mark_completed': 'पूर्ण म्हणून चिन्हांकित करा',
+      'rating_label_small': 'रेटिंग',
+      'feedback_label': 'प्रतिक्रिया',
+      'feedback_hint': 'कामाची गुणवत्ता कशी होती?',
+      'confirm_complete': 'पूर्ण निश्चित करा',
+      'mark_completed_title': 'पूर्ण म्हणून चिन्हांकित करा',
+      'rate_work_label': '{name} चे काम रेट करा',
+      'no_applications_yet': 'अद्याप कोणतेही अर्ज नाहीत',
+      'no_applications_hint':
+          'कोणीतरी या कामासाठी अर्ज केल्यावर\nयेथे अर्ज दिसू लागतील.',
+      'connected_successfully': 'यशस्वीरित्या जोडले!',
+      'failed_to_connect': 'जोडता आले नाही',
+      'marked_completed_successfully': 'पूर्ण म्हणून चिन्हांकित केले!',
+      'failed_to_complete': 'पूर्ण करता आले नाही',
+      'good_work_default': 'चांगले काम',
     },
   };
 
@@ -736,7 +990,7 @@ class AppLocalizations {
   String get currentlyBusy => _t('currently_busy');
   String get minimumRatingLabel => _t('minimum_rating');
   String get experienceYearsLabel => _t('experience_years');
-  String get skillsLabel => _t('skills');
+  String get skillsTextLabel => _t('skills');
   String get businessTypesLabel => _t('business_types_label');
   String get applyFilterButtonLabel => _t('apply_filter');
   String get clearLabel => _t('clear');
@@ -796,6 +1050,87 @@ class AppLocalizations {
   String get chooseSkills => _t('choose_skills');
   String get noSkillsAvailable => _t('no_skills_available');
   String get languageInputHint => _t('language_input_hint');
+  String get loadingSkills => _t('loading_skills');
+  String get addSitePhotosHint => _t('add_site_photos_hint');
+  String get addLabel => _t('add');
+  String get createNewJob => _t('create_new_job');
+  String get postAJob => _t('post_a_job');
+  String get editJob => _t('edit_job');
+  String get saveChanges => _t('save_changes');
+  String get jobDetailsSection => _t('job_details_section');
+  String get workLocationSection => _t('work_location_section');
+  String get siteImagesSection => _t('site_images_section');
+  String get workTitle => _t('work_title');
+  String get targetLabel => _t('target_label');
+  String get workersNeededFieldLabel => _t('workers_needed');
+  String get requiredSkillsLabel => _t('required_skills');
+  String get descriptionLabel => _t('description_label');
+  String get descriptionHint => _t('description_hint');
+  String get descriptionRequired => _t('description_required');
+  String get publishedJobs => _t('published_jobs');
+  String get postNew => _t('post_new');
+  String get requirement => _t('requirement');
+  String get allLabel => _t('all');
+  String get liveLabel => _t('live');
+  String get hiddenLabel => _t('hidden');
+  String get allJobsHint => _t('all_jobs_hint');
+  String get liveJobsHint => _t('live_jobs_hint');
+  String get hiddenJobsHint => _t('hidden_jobs_hint');
+  String get noJobsPostedYet => _t('no_jobs_posted_yet');
+  String get noLiveJobs => _t('no_live_jobs');
+  String get noHiddenJobs => _t('no_hidden_jobs');
+  String get tapCreateJobToPostFirstRequirement =>
+      _t('tap_create_job_to_post_first_requirement');
+  String get noJobsMatchFilter => _t('no_jobs_match_filter');
+  String get untitledJob => _t('untitled_job');
+  String get forLabel => _t('for_label');
+  String get needLabel => _t('need_label');
+  String get workerLabel => _t('worker');
+  String get workersLabel => _t('workers');
+  String get postedLabel => _t('posted_label');
+  String get skillsRequiredLabel => _t('skills_required');
+  String get aboutThisJob => _t('about_this_job');
+  String get jobIsNowLive => _t('job_is_now_live');
+  String get jobHiddenFromApplicants => _t('job_hidden_from_applicants');
+  String get failedToToggleActivation => _t('failed_to_toggle_activation');
+  String get deactivateHideJob => _t('deactivate_hide_job');
+  String get activateMakeLive => _t('activate_make_live');
+  String get applicationsLabel => _t('applications');
+  String get applicationsTitle => _t('applications_title');
+  String get applicantsCount => _t('applicants_count');
+  String get jobOpen => _t('job_open');
+  String get jobClosed => _t('job_closed');
+  String get workersNeededLabel => _t('workers_needed_label');
+  String get budgetLabel => _t('budget_label');
+  String get skillsLabel => _t('skills_label');
+  String get summaryTotal => _t('summary_total');
+  String get summaryPending => _t('summary_pending');
+  String get summaryAccepted => _t('summary_accepted');
+  String get summaryRejected => _t('summary_rejected');
+  String get unknownApplicant => _t('unknown_applicant');
+  String get availableLabel => _t('available_label');
+  String get reviewsCount => _t('reviews_count');
+  String get jobsDone => _t('jobs_done');
+  String get appliedOn => _t('applied_on');
+  String get connectAccept => _t('connect_accept');
+  String get markCompleted => _t('mark_completed');
+  String get ratingLabelSmall => _t('rating_label_small');
+  String get feedbackLabel => _t('feedback_label');
+  String get feedbackHint => _t('feedback_hint');
+  String get confirmComplete => _t('confirm_complete');
+  String get markCompletedTitle => _t('mark_completed_title');
+  String get noApplicationsYet => _t('no_applications_yet');
+  String get noApplicationsHint => _t('no_applications_hint');
+  String get connectedSuccessfully => _t('connected_successfully');
+  String get failedToConnect => _t('failed_to_connect');
+  String get markedCompletedSuccessfully => _t('marked_completed_successfully');
+  String get failedToComplete => _t('failed_to_complete');
+  String get goodWorkDefault => _t('good_work_default');
+  String rateWorkLabel(String name) =>
+      _t('rate_work_label').replaceAll('{name}', name);
+  String get requiredField => _t('required_field');
+  String get minOne => _t('min_one');
+  String get sixDigits => _t('six_digits');
 }
 
 class _AppLocalizationsDelegate

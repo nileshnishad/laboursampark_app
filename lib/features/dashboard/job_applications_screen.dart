@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../common/models/skill_model.dart';
+import '../../l10n/app_localizations.dart';
+import '../../common/utils/skill_display_utils.dart';
 import '../../services/api_service.dart';
+import '../../services/skills_service.dart';
 
 class JobApplicationsScreen extends StatefulWidget {
   final String token;
@@ -24,11 +28,23 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
   Map<String, dynamic>? _jobInfo;
   Map<String, dynamic>? _summary;
   List<Map<String, dynamic>> _applications = [];
+  List<SkillModel> _allSkills = [];
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadSkills();
+  }
+
+  Future<void> _loadSkills() async {
+    final result = await SkillsService.getAllSkills();
+    if (!mounted) return;
+    if (result['success'] == true) {
+      setState(() {
+        _allSkills = (result['skills'] as List<SkillModel>? ?? []);
+      });
+    }
   }
 
   Future<void> _load() async {
@@ -75,32 +91,37 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
   }
 
   String _statusLabel(String status) {
+    final loc = AppLocalizations.of(context);
     switch (status) {
       case 'accepted':
-        return 'Accepted';
+        return loc.summaryAccepted;
       case 'completed':
-        return 'Completed';
+        return loc.summaryAccepted;
       case 'rejected':
-        return 'Rejected';
+        return loc.summaryRejected;
       case 'withdrawn':
-        return 'Withdrawn';
+        return loc.summaryRejected;
       default:
-        return 'Pending';
+        return loc.summaryPending;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Applications',
-              style: TextStyle(
-                  fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white),
+            Text(
+              loc.applicationsTitle,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
             ),
             Text(
               widget.jobTitle,
@@ -115,89 +136,99 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF2563EB)))
+              child: CircularProgressIndicator(color: Color(0xFF2563EB)),
+            )
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.error_outline_rounded,
-                            size: 48, color: Color(0xFFDC2626)),
-                        const SizedBox(height: 12),
-                        Text(_error!,
-                            textAlign: TextAlign.center,
-                            style:
-                                const TextStyle(color: Color(0xFF374151))),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: _load,
-                          icon: const Icon(Icons.refresh_rounded, size: 16),
-                          label: const Text('Retry'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2563EB),
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ],
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      size: 48,
+                      color: Color(0xFFDC2626),
                     ),
-                  ),
-                )
-              : RefreshIndicator(
-                  color: const Color(0xFF2563EB),
-                  onRefresh: _load,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
-                    children: [
-                      // Job info card
-                      if (_jobInfo != null) _JobInfoCard(job: _jobInfo!),
-                      const SizedBox(height: 12),
-
-                      // Summary chips
-                      if (_summary != null) _SummaryRow(summary: _summary!),
-                      const SizedBox(height: 14),
-
-                      // Section label
-                      Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 20,
-                            decoration: BoxDecoration(
-                                color: const Color(0xFF2563EB),
-                                borderRadius: BorderRadius.circular(4)),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'APPLICANTS (${_applications.length})',
-                            style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF111827),
-                                letterSpacing: 0.5),
-                          ),
-                        ],
+                    const SizedBox(height: 12),
+                    Text(
+                      _error!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Color(0xFF374151)),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: _load,
+                      icon: const Icon(Icons.refresh_rounded, size: 16),
+                      label: Text(loc.retry),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                        foregroundColor: Colors.white,
                       ),
-                      const SizedBox(height: 10),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : RefreshIndicator(
+              color: const Color(0xFF2563EB),
+              onRefresh: _load,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+                children: [
+                  // Job info card
+                  if (_jobInfo != null)
+                    _JobInfoCard(job: _jobInfo!, allSkills: _allSkills),
+                  const SizedBox(height: 12),
 
-                      if (_applications.isEmpty)
-                        const _EmptyState()
-                      else
-                        ..._applications.map(
-                          (app) => _ApplicationCard(
-                            application: app,
-                            token: widget.token,
-                            statusColor: _statusColor(
-                                (app['status'] ?? 'pending').toString()),
-                            statusLabel: _statusLabel(
-                                (app['status'] ?? 'pending').toString()),
-                            onRefresh: _load,
-                          ),
+                  // Summary chips
+                  if (_summary != null) _SummaryRow(summary: _summary!),
+                  const SizedBox(height: 14),
+
+                  // Section label
+                  Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2563EB),
+                          borderRadius: BorderRadius.circular(4),
                         ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        '${loc.applicantsCount} (${_applications.length})',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF111827),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 10),
+
+                  if (_applications.isEmpty)
+                    const _EmptyState()
+                  else
+                    ..._applications.map(
+                      (app) => _ApplicationCard(
+                        application: app,
+                        token: widget.token,
+                        statusColor: _statusColor(
+                          (app['status'] ?? 'pending').toString(),
+                        ),
+                        statusLabel: _statusLabel(
+                          (app['status'] ?? 'pending').toString(),
+                        ),
+                        onRefresh: _load,
+                      ),
+                    ),
+                ],
+              ),
+            ),
     );
   }
 }
@@ -206,11 +237,13 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
 
 class _JobInfoCard extends StatelessWidget {
   final Map<String, dynamic> job;
-  const _JobInfoCard({required this.job});
+  final List<SkillModel> allSkills;
+  const _JobInfoCard({required this.job, required this.allSkills});
 
   @override
   Widget build(BuildContext context) {
-    final title = (job['workTitle'] ?? 'Untitled Job').toString();
+    final loc = AppLocalizations.of(context);
+    final title = (job['workTitle'] ?? loc.untitledJob).toString();
     final status = (job['status'] ?? 'open').toString();
     final workersNeeded = (job['workersNeeded'] as num?)?.toInt() ?? 1;
     final budgetType = (job['budgetType'] ?? '').toString();
@@ -219,11 +252,18 @@ class _JobInfoCard extends StatelessWidget {
     final area = (location['area'] ?? '').toString();
     final city = (location['city'] ?? '').toString();
     final state = (location['state'] ?? '').toString();
-    final locationStr =
-        [area, city, state].where((s) => s.isNotEmpty).join(', ');
-    final skills = (job['requiredSkills'] as List? ?? [])
-        .map((e) => e.toString())
-        .toList();
+    final locationStr = [
+      area,
+      city,
+      state,
+    ].where((s) => s.isNotEmpty).join(', ');
+    final skills = resolveSkillDisplayNames(
+      skillIds: (job['requiredSkills'] as List? ?? [])
+          .map((e) => e.toString())
+          .toList(),
+      skills: allSkills,
+      localeCode: Localizations.localeOf(context).languageCode,
+    );
     final images = (job['images'] as List? ?? [])
         .map((e) => e.toString())
         .where((e) => e.isNotEmpty)
@@ -235,16 +275,15 @@ class _JobInfoCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isOpen
-              ? const Color(0xFF86EFAC)
-              : const Color(0xFFE5E7EB),
+          color: isOpen ? const Color(0xFF86EFAC) : const Color(0xFFE5E7EB),
           width: isOpen ? 1.5 : 1,
         ),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -253,8 +292,9 @@ class _JobInfoCard extends StatelessWidget {
           // Image thumbnail if available
           if (images.isNotEmpty)
             ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(13)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(13),
+              ),
               child: Stack(
                 children: [
                   Image.network(
@@ -262,14 +302,16 @@ class _JobInfoCard extends StatelessWidget {
                     height: 110,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
                   ),
                   Positioned(
                     top: 8,
                     right: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF1F2937),
                         borderRadius: BorderRadius.circular(20),
@@ -289,11 +331,12 @@ class _JobInfoCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 5),
                           Text(
-                            isOpen ? 'OPEN' : 'CLOSED',
+                            isOpen ? loc.jobOpen : loc.jobClosed,
                             style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
                           ),
                         ],
                       ),
@@ -316,16 +359,19 @@ class _JobInfoCard extends StatelessWidget {
                       child: Text(
                         title,
                         style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF111827)),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF111827),
+                        ),
                       ),
                     ),
                     if (images.isEmpty) ...[
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: isOpen
                               ? const Color(0xFFDCFCE7)
@@ -335,11 +381,12 @@ class _JobInfoCard extends StatelessWidget {
                         child: Text(
                           isOpen ? 'OPEN' : 'CLOSED',
                           style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: isOpen
-                                  ? const Color(0xFF059669)
-                                  : const Color(0xFF6B7280)),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isOpen
+                                ? const Color(0xFF059669)
+                                : const Color(0xFF6B7280),
+                          ),
                         ),
                       ),
                     ],
@@ -354,16 +401,20 @@ class _JobInfoCard extends StatelessWidget {
                   children: [
                     if (locationStr.isNotEmpty)
                       _InfoChip(
-                          icon: Icons.location_on_outlined,
-                          label: locationStr),
+                        icon: Icons.location_on_outlined,
+                        label: locationStr,
+                      ),
                     _InfoChip(
-                        icon: Icons.people_outline_rounded,
-                        label: '$workersNeeded worker${workersNeeded > 1 ? 's' : ''} needed'),
+                      icon: Icons.people_outline_rounded,
+                      label:
+                          '$workersNeeded ${workersNeeded > 1 ? loc.workersLabel : loc.workerLabel} ${loc.workersNeededLabel}',
+                    ),
                     if (estimatedBudget != null)
                       _InfoChip(
-                          icon: Icons.currency_rupee_rounded,
-                          label:
-                              '₹$estimatedBudget ${budgetType.isNotEmpty ? '($budgetType)' : ''}'),
+                        icon: Icons.currency_rupee_rounded,
+                        label:
+                            '₹$estimatedBudget ${budgetType.isNotEmpty ? '($budgetType)' : ''}',
+                      ),
                   ],
                 ),
 
@@ -374,23 +425,29 @@ class _JobInfoCard extends StatelessWidget {
                     spacing: 6,
                     runSpacing: 4,
                     children: skills
-                        .map((s) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEFF6FF),
-                                borderRadius: BorderRadius.circular(5),
-                                border: Border.all(
-                                    color: const Color(0xFFBFDBFE)),
+                        .map(
+                          (s) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(
+                                color: const Color(0xFFBFDBFE),
                               ),
-                              child: Text(
-                                s,
-                                style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF1D4ED8)),
+                            ),
+                            child: Text(
+                              s,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1D4ED8),
                               ),
-                            ))
+                            ),
+                          ),
+                        )
                         .toList(),
                   ),
                 ],
@@ -415,9 +472,10 @@ class _InfoChip extends StatelessWidget {
       children: [
         Icon(icon, size: 13, color: const Color(0xFF6B7280)),
         const SizedBox(width: 3),
-        Text(label,
-            style:
-                const TextStyle(fontSize: 12, color: Color(0xFF374151))),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF374151)),
+        ),
       ],
     );
   }
@@ -431,6 +489,7 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     Widget chip(IconData icon, String label, dynamic count, Color color) {
       return Expanded(
         child: Container(
@@ -438,8 +497,7 @@ class _SummaryRow extends StatelessWidget {
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-                color: color.withValues(alpha: 0.3), width: 1.5),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
           ),
           child: Row(
             children: [
@@ -461,17 +519,19 @@ class _SummaryRow extends StatelessWidget {
                     Text(
                       '$count',
                       style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: color,
-                          height: 1.1),
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: color,
+                        height: 1.1,
+                      ),
                     ),
                     Text(
                       label,
                       style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF6B7280)),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF6B7280),
+                      ),
                     ),
                   ],
                 ),
@@ -484,21 +544,41 @@ class _SummaryRow extends StatelessWidget {
 
     return Column(
       children: [
-        Row(children: [
-          chip(Icons.people_outline_rounded, 'Total',
-              summary['total'] ?? 0, const Color(0xFF2563EB)),
-          const SizedBox(width: 8),
-          chip(Icons.hourglass_top_rounded, 'Pending',
-              summary['pending'] ?? 0, const Color(0xFFF59E0B)),
-        ]),
+        Row(
+          children: [
+            chip(
+              Icons.people_outline_rounded,
+              loc.summaryTotal,
+              summary['total'] ?? 0,
+              const Color(0xFF2563EB),
+            ),
+            const SizedBox(width: 8),
+            chip(
+              Icons.hourglass_top_rounded,
+              loc.summaryPending,
+              summary['pending'] ?? 0,
+              const Color(0xFFF59E0B),
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
-        Row(children: [
-          chip(Icons.check_circle_rounded, 'Accepted',
-              summary['accepted'] ?? 0, const Color(0xFF059669)),
-          const SizedBox(width: 8),
-          chip(Icons.cancel_rounded, 'Rejected',
-              summary['rejected'] ?? 0, const Color(0xFFDC2626)),
-        ]),
+        Row(
+          children: [
+            chip(
+              Icons.check_circle_rounded,
+              loc.summaryAccepted,
+              summary['accepted'] ?? 0,
+              const Color(0xFF059669),
+            ),
+            const SizedBox(width: 8),
+            chip(
+              Icons.cancel_rounded,
+              loc.summaryRejected,
+              summary['rejected'] ?? 0,
+              const Color(0xFFDC2626),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -529,6 +609,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
   bool _actionLoading = false;
 
   Future<void> _connect(String enquiryId) async {
+    final loc = AppLocalizations.of(context);
     setState(() => _actionLoading = true);
     final res = await ApiService.connectEnquiry(
       token: widget.token,
@@ -539,7 +620,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
     if (res['success'] == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(res['message'] ?? 'Connected successfully!'),
+          content: Text(res['message'] ?? loc.connectedSuccessfully),
           backgroundColor: const Color(0xFF059669),
         ),
       );
@@ -547,7 +628,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(res['message'] ?? 'Failed to connect'),
+          content: Text(res['message'] ?? loc.failedToConnect),
           backgroundColor: const Color(0xFFDC2626),
         ),
       );
@@ -555,6 +636,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
   }
 
   void _showCompleteDialog(String enquiryId, String applicantName) {
+    final loc = AppLocalizations.of(context);
     double rating = 3.5;
     final feedbackController = TextEditingController();
 
@@ -579,27 +661,33 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Mark as Completed',
+                  Text(
+                    loc.markCompletedTitle,
                     style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF111827)),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF111827),
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Rate $applicantName\'s work',
+                    loc.rateWorkLabel(applicantName),
                     style: const TextStyle(
-                        fontSize: 13, color: Color(0xFF6B7280)),
+                      fontSize: 13,
+                      color: Color(0xFF6B7280),
+                    ),
                   ),
                   const SizedBox(height: 20),
 
                   // Star rating
-                  const Text('Rating',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF374151))),
+                  Text(
+                    loc.ratingLabelSmall,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF374151),
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -610,13 +698,14 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                           max: 5,
                           divisions: 8,
                           activeColor: const Color(0xFFF59E0B),
-                          onChanged: (v) =>
-                              setSheetState(() => rating = v),
+                          onChanged: (v) => setSheetState(() => rating = v),
                         ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFEF3C7),
                           borderRadius: BorderRadius.circular(8),
@@ -624,15 +713,19 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.star_rounded,
-                                size: 16, color: Color(0xFFF59E0B)),
+                            const Icon(
+                              Icons.star_rounded,
+                              size: 16,
+                              color: Color(0xFFF59E0B),
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               rating.toStringAsFixed(1),
                               style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF92400E)),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF92400E),
+                              ),
                             ),
                           ],
                         ),
@@ -642,21 +735,23 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                   const SizedBox(height: 14),
 
                   // Feedback
-                  const Text('Feedback',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF374151))),
+                  Text(
+                    loc.feedbackLabel,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF374151),
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: feedbackController,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      hintText: 'How was the work quality?',
+                      hintText: loc.feedbackHint,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide:
-                            const BorderSide(color: Color(0xFFE5E7EB)),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                       ),
                       contentPadding: const EdgeInsets.all(12),
                     ),
@@ -674,7 +769,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                           enquiryId: enquiryId,
                           rating: rating,
                           feedback: feedbackController.text.trim().isEmpty
-                              ? 'Good work'
+                              ? loc.goodWorkDefault
                               : feedbackController.text.trim(),
                         );
                         if (!mounted) return;
@@ -683,7 +778,9 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                  res['message'] ?? 'Marked as completed!'),
+                                res['message'] ??
+                                    loc.markedCompletedSuccessfully,
+                              ),
                               backgroundColor: const Color(0xFF059669),
                             ),
                           );
@@ -692,7 +789,8 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                  res['message'] ?? 'Failed to complete'),
+                                res['message'] ?? loc.failedToComplete,
+                              ),
                               backgroundColor: const Color(0xFFDC2626),
                             ),
                           );
@@ -701,15 +799,19 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF059669),
                         foregroundColor: Colors.white,
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         elevation: 0,
                       ),
-                      child: const Text('CONFIRM COMPLETE',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w800)),
+                      child: Text(
+                        loc.confirmComplete,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -723,47 +825,52 @@ class _ApplicationCardState extends State<_ApplicationCard> {
 
   static IconData _statusIcon(String s) {
     switch (s) {
-      case 'accepted':  return Icons.check_circle_rounded;
-      case 'completed': return Icons.verified_rounded;
-      case 'rejected':  return Icons.cancel_rounded;
-      case 'withdrawn': return Icons.undo_rounded;
-      default:          return Icons.hourglass_top_rounded;
+      case 'accepted':
+        return Icons.check_circle_rounded;
+      case 'completed':
+        return Icons.verified_rounded;
+      case 'rejected':
+        return Icons.cancel_rounded;
+      case 'withdrawn':
+        return Icons.undo_rounded;
+      default:
+        return Icons.hourglass_top_rounded;
     }
   }
 
   static Color _userTypeColor(String t) {
     switch (t.toLowerCase()) {
-      case 'contractor':     return const Color(0xFF059669);
-      case 'sub_contractor': return const Color(0xFF7C3AED);
-      default:               return const Color(0xFF2563EB);
+      case 'contractor':
+        return const Color(0xFF059669);
+      case 'sub_contractor':
+        return const Color(0xFF7C3AED);
+      default:
+        return const Color(0xFF2563EB);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final application = widget.application;
     final statusColor = widget.statusColor;
     final statusLabel = widget.statusLabel;
     final enquiryId = (application['enquiryId'] ?? '').toString();
     final status = (application['status'] ?? 'pending').toString();
-    final applicant =
-        application['applicant'] as Map<String, dynamic>? ?? {};
-    final name = (applicant['name'] ?? 'Unknown').toString();
+    final applicant = application['applicant'] as Map<String, dynamic>? ?? {};
+    final name = (applicant['name'] ?? loc.unknownApplicant).toString();
     final email = (applicant['email'] ?? '').toString();
     final mobile = (applicant['mobile'] ?? '').toString();
     final userType = (applicant['userType'] ?? '').toString();
     final profilePhoto = (applicant['profilePhoto'] ?? '').toString();
     final rating = (applicant['rating'] as num?)?.toDouble() ?? 0.0;
     final totalReviews = (applicant['totalReviews'] as num?)?.toInt() ?? 0;
-    final completedJobs =
-        (applicant['completedJobs'] as num?)?.toInt() ?? 0;
+    final completedJobs = (applicant['completedJobs'] as num?)?.toInt() ?? 0;
     final availability = (applicant['availability'] as bool?) ?? false;
-    final location =
-        applicant['location'] as Map<String, dynamic>? ?? {};
+    final location = applicant['location'] as Map<String, dynamic>? ?? {};
     final city = (location['city'] ?? '').toString();
     final state = (location['state'] ?? '').toString();
-    final locationStr =
-        [city, state].where((s) => s.isNotEmpty).join(', ');
+    final locationStr = [city, state].where((s) => s.isNotEmpty).join(', ');
     final message = (application['message'] ?? '').toString();
     final appliedAt = application['appliedAt'] != null
         ? DateTime.tryParse(application['appliedAt'].toString())
@@ -777,11 +884,11 @@ class _ApplicationCardState extends State<_ApplicationCard> {
     String typeLabel(String t) {
       switch (t) {
         case 'sub_contractor':
-          return 'Sub-Contractor';
+          return loc.subcontractorRoleTitle;
         case 'labour':
-          return 'Labour';
+          return loc.labourRoleTitle;
         case 'contractor':
-          return 'Contractor';
+          return loc.contractorRoleTitle;
         default:
           return t;
       }
@@ -793,12 +900,16 @@ class _ApplicationCardState extends State<_ApplicationCard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: statusColor.withValues(alpha: 0.35), width: 1.5),
+        border: Border.all(
+          color: statusColor.withValues(alpha: 0.35),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-              color: statusColor.withValues(alpha: 0.1),
-              blurRadius: 14,
-              offset: const Offset(0, 4))
+            color: statusColor.withValues(alpha: 0.1),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -824,9 +935,10 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                       ? Text(
                           name.isNotEmpty ? name[0].toUpperCase() : '?',
                           style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF374151)),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF374151),
+                          ),
                         )
                       : null,
                 ),
@@ -839,16 +951,19 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                     Text(
                       name,
                       style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF111827)),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111827),
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF3F4F6),
                             borderRadius: BorderRadius.circular(5),
@@ -856,9 +971,10 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                           child: Text(
                             typeLabel(userType),
                             style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF374151)),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF374151),
+                            ),
                           ),
                         ),
                         if (availability) ...[
@@ -872,10 +988,13 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                             ),
                           ),
                           const SizedBox(width: 3),
-                          const Text('Available',
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: Color(0xFF059669))),
+                          Text(
+                            loc.availableLabel,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF059669),
+                            ),
+                          ),
                         ],
                       ],
                     ),
@@ -883,13 +1002,19 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                       const SizedBox(height: 3),
                       Row(
                         children: [
-                          const Icon(Icons.location_on_outlined,
-                              size: 12, color: Color(0xFF9CA3AF)),
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 12,
+                            color: Color(0xFF9CA3AF),
+                          ),
                           const SizedBox(width: 2),
-                          Text(locationStr,
-                              style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF6B7280))),
+                          Text(
+                            locationStr,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF6B7280),
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -898,12 +1023,16 @@ class _ApplicationCardState extends State<_ApplicationCard> {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 6),
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                      color: statusColor.withValues(alpha: 0.5), width: 1.5),
+                    color: statusColor.withValues(alpha: 0.5),
+                    width: 1.5,
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -913,9 +1042,10 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                     Text(
                       statusLabel,
                       style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: statusColor),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: statusColor,
+                      ),
                     ),
                   ],
                 ),
@@ -931,42 +1061,62 @@ class _ApplicationCardState extends State<_ApplicationCard> {
           Row(
             children: [
               _StatChip(
-                  icon: Icons.star_rounded,
-                  color: const Color(0xFFF59E0B),
-                  label:
-                      '${rating.toStringAsFixed(1)} ($totalReviews reviews)'),
+                icon: Icons.star_rounded,
+                color: const Color(0xFFF59E0B),
+                label:
+                    '${rating.toStringAsFixed(1)} ($totalReviews ${loc.reviewsCount})',
+              ),
               const SizedBox(width: 10),
               _StatChip(
-                  icon: Icons.check_circle_outline_rounded,
-                  color: const Color(0xFF059669),
-                  label: '$completedJobs jobs done'),
+                icon: Icons.check_circle_outline_rounded,
+                color: const Color(0xFF059669),
+                label: '$completedJobs ${loc.jobsDone}',
+              ),
             ],
           ),
 
           if (mobile.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Row(children: [
-              const Icon(Icons.phone_outlined,
-                  size: 13, color: Color(0xFF6B7280)),
-              const SizedBox(width: 4),
-              Text(mobile,
+            Row(
+              children: [
+                const Icon(
+                  Icons.phone_outlined,
+                  size: 13,
+                  color: Color(0xFF6B7280),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  mobile,
                   style: const TextStyle(
-                      fontSize: 12, color: Color(0xFF374151))),
-            ]),
+                    fontSize: 12,
+                    color: Color(0xFF374151),
+                  ),
+                ),
+              ],
+            ),
           ],
           if (email.isNotEmpty) ...[
             const SizedBox(height: 3),
-            Row(children: [
-              const Icon(Icons.email_outlined,
-                  size: 13, color: Color(0xFF6B7280)),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(email,
+            Row(
+              children: [
+                const Icon(
+                  Icons.email_outlined,
+                  size: 13,
+                  color: Color(0xFF6B7280),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    email,
                     style: const TextStyle(
-                        fontSize: 12, color: Color(0xFF374151)),
-                    overflow: TextOverflow.ellipsis),
-              ),
-            ]),
+                      fontSize: 12,
+                      color: Color(0xFF374151),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ],
 
           if (message.isNotEmpty) ...[
@@ -981,13 +1131,20 @@ class _ApplicationCardState extends State<_ApplicationCard> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.format_quote_rounded,
-                      size: 14, color: Color(0xFF9CA3AF)),
+                  const Icon(
+                    Icons.format_quote_rounded,
+                    size: 14,
+                    color: Color(0xFF9CA3AF),
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: Text(message,
-                        style: const TextStyle(
-                            fontSize: 12, color: Color(0xFF374151))),
+                    child: Text(
+                      message,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF374151),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -996,14 +1153,24 @@ class _ApplicationCardState extends State<_ApplicationCard> {
 
           if (appliedAt != null) ...[
             const SizedBox(height: 8),
-            Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-              const Icon(Icons.access_time_rounded,
-                  size: 12, color: Color(0xFF9CA3AF)),
-              const SizedBox(width: 3),
-              Text('Applied ${fmtDate(appliedAt)}',
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                const Icon(
+                  Icons.access_time_rounded,
+                  size: 12,
+                  color: Color(0xFF9CA3AF),
+                ),
+                const SizedBox(width: 3),
+                Text(
+                  '${loc.appliedOn} ${fmtDate(appliedAt)}',
                   style: const TextStyle(
-                      fontSize: 11, color: Color(0xFF9CA3AF))),
-            ]),
+                    fontSize: 11,
+                    color: Color(0xFF9CA3AF),
+                  ),
+                ),
+              ],
+            ),
           ],
 
           // ── Action buttons ────────────────────────────────────
@@ -1017,7 +1184,9 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                   height: 36,
                   width: 36,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2.5, color: Color(0xFF2563EB)),
+                    strokeWidth: 2.5,
+                    color: Color(0xFF2563EB),
+                  ),
                 ),
               )
             else if (status == 'pending')
@@ -1026,20 +1195,23 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                 child: ElevatedButton.icon(
                   onPressed: () => _connect(enquiryId),
                   icon: const Icon(Icons.handshake_outlined, size: 20),
-                  label: const Text('CONNECT & ACCEPT',
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5)),
+                  label: Text(
+                    loc.connectAccept,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2563EB),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 3,
-                    shadowColor:
-                        const Color(0xFF2563EB).withValues(alpha: 0.4),
+                    shadowColor: const Color(0xFF2563EB).withValues(alpha: 0.4),
                   ),
                 ),
               )
@@ -1048,22 +1220,27 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () => _showCompleteDialog(enquiryId, name),
-                  icon: const Icon(Icons.check_circle_outline_rounded,
-                      size: 20),
-                  label: const Text('MARK AS COMPLETED',
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5)),
+                  icon: const Icon(
+                    Icons.check_circle_outline_rounded,
+                    size: 20,
+                  ),
+                  label: Text(
+                    loc.markCompleted,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF059669),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 3,
-                    shadowColor:
-                        const Color(0xFF059669).withValues(alpha: 0.4),
+                    shadowColor: const Color(0xFF059669).withValues(alpha: 0.4),
                   ),
                 ),
               ),
@@ -1079,8 +1256,11 @@ class _StatChip extends StatelessWidget {
   final Color color;
   final String label;
 
-  const _StatChip(
-      {required this.icon, required this.color, required this.label});
+  const _StatChip({
+    required this.icon,
+    required this.color,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1096,11 +1276,14 @@ class _StatChip extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 4),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: color)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
         ],
       ),
     );
@@ -1114,24 +1297,33 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.only(top: 40),
-      child: const Center(
+      child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.people_outline_rounded,
-                size: 56, color: Color(0xFFD1D5DB)),
-            SizedBox(height: 14),
-            Text('No Applications Yet',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF374151))),
-            SizedBox(height: 6),
-            Text('Applications will appear here once\nsomeone applies to this job.',
-                style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
-                textAlign: TextAlign.center),
+            const Icon(
+              Icons.people_outline_rounded,
+              size: 56,
+              color: Color(0xFFD1D5DB),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              loc.noApplicationsYet,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF374151),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              loc.noApplicationsHint,
+              style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),

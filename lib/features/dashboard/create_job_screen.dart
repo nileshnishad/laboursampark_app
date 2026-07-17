@@ -9,6 +9,8 @@ import '../../services/api_service.dart';
 import '../../services/skills_service.dart';
 import '../../common/models/skill_model.dart';
 import '../../services/business_type_service.dart';
+import '../../common/data/state_city_data.dart';
+import '../../l10n/app_localizations.dart';
 import '../../common/models/business_type_model.dart';
 import '../../services/s3_upload_service.dart';
 import 'models/my_job.dart';
@@ -71,9 +73,12 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   final _addressController = TextEditingController();
   final _budgetController = TextEditingController();
 
+  String _selectedState = '';
+  String _selectedCity = '';
+  String _selectedArea = '';
+
   // State
   String _target = 'labour'; // 'labour' | 'sub_contractor' | 'both'
-  final List<String> _skills = [];
   final List<_NewImageItem> _newImages =
       []; // newly picked images (auto-uploaded)
   // Existing remote image URLs (edit mode)
@@ -91,6 +96,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       _titleController.text = job.workTitle;
       _workersController.text = job.workersNeeded.toString();
       _descriptionController.text = job.description;
+      _selectedState = job.state;
+      _selectedCity = job.city;
+      _selectedArea = job.area;
       _cityController.text = job.city;
       _areaController.text = job.area;
       _stateController.text = job.state;
@@ -99,7 +107,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       if (job.estimatedBudget != null) {
         _budgetController.text = job.estimatedBudget!.toStringAsFixed(0);
       }
-      _skills.addAll(job.requiredSkills);
+      _selectedSkillIds.addAll(job.requiredSkills);
+      _selectedBusinessTypeIds.addAll(job.businessTypes);
       _existingImageUrls = List<String>.from(job.images);
       // Determine target
       if (job.target.contains('labour') &&
@@ -147,6 +156,17 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     return widget.userType == 'contractor'
         ? const Color(0xFF059669)
         : const Color(0xFF7C3AED);
+  }
+
+  String _skillLabel(SkillModel skill) {
+    final locale = Localizations.localeOf(context).languageCode.toLowerCase();
+    if (locale == 'hi') {
+      return skill.hiName.isNotEmpty ? skill.hiName : skill.enName;
+    }
+    if (locale == 'mr') {
+      return skill.mrName.isNotEmpty ? skill.mrName : skill.enName;
+    }
+    return skill.enName;
   }
 
   // ── Image picking ─────────────────────────────────────────────────────────
@@ -391,7 +411,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      skill.enName,
+                                      _skillLabel(skill),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
@@ -491,12 +511,13 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     );
 
     if (!_formKey.currentState!.validate()) return;
+    final loc = AppLocalizations.of(context);
     if (_target == 'labour' && _selectedSkillIds.isEmpty) {
-      _showSnack('Add at least one required skill');
+      _showSnack(loc.selectAtLeastOneSkill);
       return;
     }
     if (_target == 'sub_contractor' && _selectedBusinessTypeIds.isEmpty) {
-      _showSnack('Select at least one business type');
+      _showSnack(loc.selectAtLeastOneBusinessType);
       return;
     }
 
@@ -624,6 +645,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final primary = _primaryColor;
     final isContractor = widget.userType == 'contractor';
 
@@ -637,8 +659,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
         surfaceTintColor: Colors.transparent,
         title: Text(
           _isEditMode
-              ? 'Edit Job'
-              : (isContractor ? 'Create New Job' : 'Post a Job'),
+              ? loc.editJob
+              : (isContractor ? loc.createNewJob : loc.postAJob),
           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
         ),
         actions: [
@@ -670,7 +692,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    child: Text(_isEditMode ? 'Save Changes' : 'Post Job'),
+                    child: Text(_isEditMode ? loc.saveChanges : loc.postAJob),
                   ),
           ),
         ],
@@ -688,10 +710,10 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
             // ── Job Details section ──────────────────────────
             _SectionCard(
               icon: Icons.work_outline_rounded,
-              title: 'JOB DETAILS',
+              title: loc.jobDetailsSection,
               color: primary,
               children: [
-                _label('Work Title', required: true),
+                _label(loc.workTitle, required: true),
                 _field(
                   controller: _titleController,
                   hint: 'e.g., Building Renovation Work',
@@ -708,24 +730,24 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _label('Target', required: true),
+                          _label(loc.targetLabel, required: true),
                           _DropdownField(
                             value: _target,
                             items: widget.userType == 'contractor'
-                                ? const [
+                                ? [
                                     DropdownMenuItem(
                                       value: 'labour',
-                                      child: Text('Labour'),
+                                      child: Text(loc.labourRoleTitle),
                                     ),
                                     DropdownMenuItem(
                                       value: 'sub_contractor',
-                                      child: Text('Sub-Contractor'),
+                                      child: Text(loc.subcontractorRoleTitle),
                                     ),
                                   ]
-                                : const [
+                                : [
                                     DropdownMenuItem(
                                       value: 'labour',
-                                      child: Text('Labour'),
+                                      child: Text(loc.labourRoleTitle),
                                     ),
                                   ],
                             onChanged: (v) {
@@ -759,7 +781,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _label('Workers Needed', required: true),
+                            _label(loc.workersNeededLabel, required: true),
                             _field(
                               controller: _workersController,
                               hint: 'e.g., 5',
@@ -769,9 +791,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                               ],
                               validator: (v) {
                                 if (v == null || v.trim().isEmpty)
-                                  return 'Required';
+                                  return loc.requiredField;
                                 final n = int.tryParse(v.trim());
-                                if (n == null || n < 1) return 'Min 1';
+                                if (n == null || n < 1) return loc.minOne;
                                 return null;
                               },
                             ),
@@ -783,7 +805,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 ),
                 const SizedBox(height: 14),
                 if (_target == 'labour') ...[
-                  _label('Required Skills', required: true),
+                  _label(loc.requiredSkillsLabel, required: true),
                   InkWell(
                     onTap: _skillsLoading ? null : _showSkillsBottomSheet,
                     borderRadius: BorderRadius.circular(10),
@@ -811,16 +833,16 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _skillsLoading
-                                ? const Text(
-                                    'Loading skills...',
+                                ? Text(
+                                    loc.loadingSkills,
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: Color(0xFF9CA3AF),
                                     ),
                                   )
                                 : _selectedSkillIds.isEmpty
-                                ? const Text(
-                                    'Select Skills *',
+                                ? Text(
+                                    loc.selectSkills,
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: Color(0xFF9CA3AF),
@@ -862,7 +884,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                         );
                         return Chip(
                           label: Text(
-                            skill.enName,
+                            _skillLabel(skill),
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               color: _primaryColor,
@@ -881,7 +903,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        'Select at least one skill',
+                        loc.selectAtLeastOneSkill,
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.red.shade400,
@@ -904,8 +926,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        'Business Types *',
+                      Text(
+                        loc.selectBusinessTypes,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -944,24 +966,24 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _businessTypesLoading
-                                ? const Text(
-                                    'Loading business types...',
+                                ? Text(
+                                    loc.loadingBusinessTypes,
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: Color(0xFF9CA3AF),
                                     ),
                                   )
                                 : _availableBusinessTypes.isEmpty
-                                ? const Text(
-                                    'No business types available',
+                                ? Text(
+                                    loc.noBusinessTypesAvailable,
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: Color(0xFF9CA3AF),
                                     ),
                                   )
                                 : _selectedBusinessTypeIds.isEmpty
-                                ? const Text(
-                                    'Select Business Types *',
+                                ? Text(
+                                    loc.selectBusinessTypes,
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: Color(0xFF9CA3AF),
@@ -1024,7 +1046,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        'Select at least one business type',
+                        loc.selectAtLeastOneBusinessType,
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.red.shade400,
@@ -1033,13 +1055,12 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     ),
                 ],
                 const SizedBox(height: 14),
-                _label('Description', required: true),
+                _label(loc.descriptionLabel, required: true),
                 TextFormField(
                   controller: _descriptionController,
                   maxLines: 4,
                   decoration: InputDecoration(
-                    hintText:
-                        'Explain work scope, timeline, special requirements...',
+                    hintText: loc.descriptionHint,
                     hintStyle: const TextStyle(
                       fontSize: 13,
                       color: Color(0xFF9CA3AF),
@@ -1064,7 +1085,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     ),
                   ),
                   validator: (v) => v == null || v.trim().isEmpty
-                      ? 'Description is required'
+                      ? loc.descriptionRequired
                       : null,
                 ),
                 const SizedBox(height: 14),
@@ -1076,43 +1097,135 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
             // ── Location section ──────────────────────────────
             _SectionCard(
               icon: Icons.location_on_outlined,
-              title: 'WORK LOCATION',
+              title: loc.workLocationSection,
               color: const Color(0xFF2563EB),
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _label('City', required: true),
-                          _field(
-                            controller: _cityController,
-                            hint: 'Mumbai',
-                            validator: (v) => v == null || v.trim().isEmpty
-                                ? 'Required'
-                                : null,
-                          ),
-                        ],
-                      ),
+                DropdownButtonFormField<String>(
+                  value: _selectedState.isEmpty ? null : _selectedState,
+                  decoration: InputDecoration(
+                    labelText: loc.stateLabelDropdown,
+                    hintText: loc.stateLabelDropdown,
+                    prefixIcon: const Icon(Icons.map),
+                    filled: true,
+                    fillColor: const Color(0xFFF9FAFB),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _label('Area', required: true),
-                          _field(
-                            controller: _areaController,
-                            hint: 'Bandra',
-                            validator: (v) => v == null || v.trim().isEmpty
-                                ? 'Required'
-                                : null,
-                          ),
-                        ],
-                      ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                     ),
-                  ],
+                  ),
+                  items: () {
+                    final states = completeIndiaData.keys.toList()..sort();
+                    return states
+                        .map(
+                          (state) => DropdownMenuItem(
+                            value: state,
+                            child: Text(state),
+                          ),
+                        )
+                        .toList();
+                  }(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedState = value ?? '';
+                      _selectedCity = '';
+                      _selectedArea = '';
+                      _stateController.text = _selectedState;
+                      _cityController.text = '';
+                      _areaController.text = '';
+                    });
+                  },
+                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _selectedCity.isEmpty ? null : _selectedCity,
+                  decoration: InputDecoration(
+                    labelText: loc.cityLabelDropdown,
+                    hintText: loc.cityLabelDropdown,
+                    prefixIcon: const Icon(Icons.location_city),
+                    filled: true,
+                    fillColor: const Color(0xFFF9FAFB),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                  ),
+                  items: () {
+                    if (_selectedState.isEmpty)
+                      return <DropdownMenuItem<String>>[];
+                    final cities =
+                        completeIndiaData[_selectedState]?.keys.toList() ?? [];
+                    cities.sort();
+                    return cities
+                        .map(
+                          (city) =>
+                              DropdownMenuItem(value: city, child: Text(city)),
+                        )
+                        .toList();
+                  }(),
+                  onChanged: _selectedState.isEmpty
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _selectedCity = value ?? '';
+                            _selectedArea = '';
+                            _cityController.text = _selectedCity;
+                            _areaController.text = '';
+                          });
+                        },
+                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _selectedArea.isEmpty ? null : _selectedArea,
+                  decoration: InputDecoration(
+                    labelText: loc.areaLabelDropdown,
+                    hintText: loc.areaLabelDropdown,
+                    prefixIcon: const Icon(Icons.location_pin),
+                    filled: true,
+                    fillColor: const Color(0xFFF9FAFB),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                  ),
+                  items: () {
+                    if (_selectedState.isEmpty || _selectedCity.isEmpty) {
+                      return <DropdownMenuItem<String>>[];
+                    }
+                    final areas =
+                        completeIndiaData[_selectedState]?[_selectedCity]
+                            ?.toList() ??
+                        [];
+                    areas.sort();
+                    return areas
+                        .map(
+                          (area) =>
+                              DropdownMenuItem(value: area, child: Text(area)),
+                        )
+                        .toList();
+                  }(),
+                  onChanged: _selectedState.isEmpty || _selectedCity.isEmpty
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _selectedArea = value ?? '';
+                            _areaController.text = _selectedArea;
+                          });
+                        },
+                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -1121,7 +1234,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _label('Pincode', required: true),
+                          _label(loc.pincodeLabel, required: true),
                           _field(
                             controller: _pincodeController,
                             hint: '400050',
@@ -1132,23 +1245,10 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                             ],
                             validator: (v) {
                               if (v == null || v.trim().isEmpty)
-                                return 'Required';
-                              if (v.trim().length != 6) return '6 digits';
+                                return loc.requiredField;
+                              if (v.trim().length != 6) return loc.sixDigits;
                               return null;
                             },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _label('State', required: false, optional: true),
-                          _field(
-                            controller: _stateController,
-                            hint: 'Maharashtra',
                           ),
                         ],
                       ),
@@ -1156,13 +1256,10 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                _label('Address'),
+                _label(loc.addressLabel, optional: true),
                 _field(
                   controller: _addressController,
                   hint: 'Plot 12, Bandra West...',
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Address is required'
-                      : null,
                 ),
               ],
             ),
@@ -1171,13 +1268,13 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
             // ── Site Images section ───────────────────────────
             _SectionCard(
               icon: Icons.photo_library_outlined,
-              title: 'SITE IMAGES',
+              title: loc.siteImagesSection,
               color: const Color(0xFFF59E0B),
               children: [
                 if (_newImages.isEmpty && _existingImageUrls.isEmpty)
-                  const Text(
-                    'Add site photos to help applicants understand the work location (max 5).',
-                    style: TextStyle(
+                  Text(
+                    loc.addSitePhotosHint,
+                    style: const TextStyle(
                       fontSize: 13,
                       color: Color(0xFF6B7280),
                       height: 1.4,
@@ -1382,16 +1479,16 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                           ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              Icon(
+                            children: [
+                              const Icon(
                                 Icons.add_photo_alternate_outlined,
                                 color: Color(0xFFF59E0B),
                                 size: 28,
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
-                                'Add',
-                                style: TextStyle(
+                                loc.addLabel,
+                                style: const TextStyle(
                                   fontSize: 11,
                                   color: Color(0xFFF59E0B),
                                   fontWeight: FontWeight.w700,
@@ -1443,7 +1540,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                         ),
                       )
                     : Text(
-                        _isEditMode ? 'Save Changes' : 'Post Job',
+                        _isEditMode ? loc.saveChanges : loc.postAJob,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
