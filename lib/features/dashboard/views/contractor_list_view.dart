@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../common/models/business_type_model.dart';
 import '../../../common/widgets/app_state_message.dart';
+import '../../../common/widgets/loading_skeleton.dart';
 import '../../../services/api_service.dart';
 import '../../../services/business_type_service.dart';
 import '../../../l10n/app_localizations.dart';
@@ -112,7 +113,10 @@ class _ContractorListViewState extends State<ContractorListView> {
     }).toList();
 
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingSkeleton(
+        type: LoadingSkeletonType.contractorCard,
+        itemCount: 3,
+      );
     }
 
     if (_error != null) {

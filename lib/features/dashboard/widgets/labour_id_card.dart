@@ -21,196 +21,176 @@ class LabourIdCard extends StatelessWidget {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context);
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      clipBehavior: Clip.hardEdge,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              theme.colorScheme.surface,
-              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            ],
-          ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.16),
+          width: 1.4,
         ),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Center(
-                  child: Transform.rotate(
-                    angle: -0.35,
-                    child: Opacity(
-                      opacity: 0.10,
-                      child: Image.asset(
-                        'assets/logo.jpg',
-                        width: 200,
-                        fit: BoxFit.contain,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          color: Colors.white,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Center(
+                    child: Transform.rotate(
+                      angle: -0.35,
+                      child: Opacity(
+                        opacity: 0.05,
+                        child: Image.asset(
+                          'assets/logo.jpg',
+                          width: 180,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 82,
-                      height: 82,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        color: theme.colorScheme.primary.withValues(
-                          alpha: 0.14,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 82,
+                        height: 82,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.14,
+                          ),
+                          image: user.profilePhotoUrl != null
+                              ? DecorationImage(
+                                  image: NetworkImage(user.profilePhotoUrl!),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
                         ),
-                        image: user.profilePhotoUrl != null
-                            ? DecorationImage(
-                                image: NetworkImage(user.profilePhotoUrl!),
-                                fit: BoxFit.cover,
+                        child: user.profilePhotoUrl == null
+                            ? Icon(
+                                Icons.person,
+                                size: 82,
+                                color: theme.colorScheme.primary,
                               )
                             : null,
                       ),
-                      child: user.profilePhotoUrl == null
-                          ? Icon(
-                              Icons.person,
-                              size: 82,
-                              color: theme.colorScheme.primary,
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: user.availability
-                                  ? Colors.green.withValues(alpha: 0.16)
-                                  : Colors.grey.withValues(alpha: 0.16),
-                              shape: BoxShape.circle,
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: user.availability
+                                    ? Colors.green.withValues(alpha: 0.16)
+                                    : Colors.grey.withValues(alpha: 0.16),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                user.availability
+                                    ? Icons.check_circle
+                                    : Icons.remove_circle_outline,
+                                color: user.availability
+                                    ? Colors.green.shade700
+                                    : theme.colorScheme.onSurfaceVariant,
+                                size: 22,
+                              ),
                             ),
-                            child: Icon(
-                              user.availability
-                                  ? Icons.check_circle
-                                  : Icons.remove_circle_outline,
-                              color: user.availability
-                                  ? Colors.green.shade700
-                                  : theme.colorScheme.onSurfaceVariant,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          InkWell(
-                            onTap: canViewSensitiveData
-                                ? () => _launchPhone(user.mobile)
-                                : null,
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    canViewSensitiveData
-                                        ? user.mobile
-                                        : maskPhone(user.mobile),
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.w700,
+                            const SizedBox(height: 12),
+                            InkWell(
+                              onTap: canViewSensitiveData
+                                  ? () => _launchPhone(user.mobile)
+                                  : null,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      canViewSensitiveData
+                                          ? user.mobile
+                                          : maskPhone(user.mobile),
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                      textAlign: TextAlign.right,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: false,
                                     ),
-                                    textAlign: TextAlign.right,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    softWrap: false,
                                   ),
-                                ),
-                                const SizedBox(width: 6),
-                                const Icon(Icons.phone, size: 16),
-                              ],
+                                  const SizedBox(width: 6),
+                                  const Icon(Icons.phone, size: 16),
+                                ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 3),
-                          InkWell(
-                            onTap: canViewSensitiveData
-                                ? () => _launchEmail(user.email)
-                                : null,
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    canViewSensitiveData
-                                        ? user.email
-                                        : maskEmail(user.email),
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.w700,
+                            const SizedBox(height: 3),
+                            InkWell(
+                              onTap: canViewSensitiveData
+                                  ? () => _launchEmail(user.email)
+                                  : null,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      canViewSensitiveData
+                                          ? user.email
+                                          : maskEmail(user.email),
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                      textAlign: TextAlign.right,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: false,
                                     ),
-                                    textAlign: TextAlign.right,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    softWrap: false,
                                   ),
-                                ),
-                                const SizedBox(width: 6),
-                                const Icon(Icons.email, size: 16),
-                              ],
+                                  const SizedBox(width: 6),
+                                  const Icon(Icons.email, size: 16),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      '${loc.fullName}:',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant.withValues(
-                          alpha: 0.72,
+                          ],
                         ),
-                        fontWeight: FontWeight.w600,
                       ),
-                    ),
-                    const SizedBox(width: 5),
-                    Expanded(
-                      child: Text(
-                        user.fullName,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface,
-                          fontWeight: FontWeight.w800,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 3),
-                if (skillLabel.isNotEmpty) ...[
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        '${loc.skillsLabel}:',
+                        '${loc.fullName}:',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.72,
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.82,
                           ),
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(width: 5),
                       Expanded(
                         child: Text(
-                          skillLabel,
+                          user.fullName,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurface,
                             fontWeight: FontWeight.w800,
@@ -221,69 +201,100 @@ class LabourIdCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 3),
+                  if (skillLabel.isNotEmpty) ...[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          '${loc.skillsLabel}:',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.84,
+                            ),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            skillLabel,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurface,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatBlock(
+                          label: loc.experienceYearsLabel,
+                          value: user.experienceLabel,
+                          icon: Icons.schedule,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: _StatBlock(
+                          label: loc.ratingLabel,
+                          value: user.rating.toStringAsFixed(1),
+                          icon: Icons.star,
+                          iconColor: Colors.amber.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatBlock(
+                          label: loc.cityLabelDropdown,
+                          value: user.city.isEmpty
+                              ? loc.notAvailable
+                              : user.city,
+                          icon: Icons.location_on_outlined,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: _StatBlock(
+                          label: loc.jobs,
+                          value: user.completedJobs.toString(),
+                          icon: Icons.work_outline,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  FilledButton(
+                    onPressed: () => _showDetailsSheet(context, loc),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      loc.viewDetails,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
                 ],
-                const SizedBox(height: 3),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _StatBlock(
-                        label: loc.experienceYearsLabel,
-                        value: user.experienceLabel,
-                        icon: Icons.schedule,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Expanded(
-                      child: _StatBlock(
-                        label: loc.ratingLabel,
-                        value: user.rating.toStringAsFixed(1),
-                        icon: Icons.star,
-                        iconColor: Colors.amber.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _StatBlock(
-                        label: loc.cityLabelDropdown,
-                        value: user.city.isEmpty ? loc.notAvailable : user.city,
-                        icon: Icons.location_on_outlined,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Expanded(
-                      child: _StatBlock(
-                        label: loc.jobs,
-                        value: user.completedJobs.toString(),
-                        icon: Icons.work_outline,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                FilledButton(
-                  onPressed: () => _showDetailsSheet(context, loc),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: Text(
-                    loc.viewDetails,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

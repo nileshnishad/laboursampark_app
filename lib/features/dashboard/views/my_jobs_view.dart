@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../common/widgets/loading_skeleton.dart';
 import '../../../services/api_service.dart';
 import '../../../services/skills_service.dart';
 import '../create_job_screen.dart';
@@ -117,7 +118,10 @@ class _MyJobsViewState extends State<MyJobsView> {
     final loc = AppLocalizations.of(context);
 
     if (_loading) {
-      return Center(child: CircularProgressIndicator(color: _primaryColor));
+      return const LoadingSkeleton(
+        type: LoadingSkeletonType.myJobCard,
+        itemCount: 3,
+      );
     }
 
     if (_error != null) {

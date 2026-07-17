@@ -23,13 +23,14 @@ class ContractorVisitingCard extends StatelessWidget {
     final loc = AppLocalizations.of(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: theme.colorScheme.surface,
-      elevation: 0,
+      color: Colors.white,
+      elevation: 4,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
         side: BorderSide(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
-          width: 1,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.16),
+          width: 1.4,
         ),
       ),
       child: InkWell(

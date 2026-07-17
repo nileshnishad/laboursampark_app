@@ -748,6 +748,29 @@ class ApiService {
     }
   }
 
+  /// GET /api/public/mobile-banner/active — fetch active public mobile banner.
+  static Future<Map<String, dynamic>> fetchActiveMobileBanner() async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.get(
+        '${Env.baseUrl}/api/public/mobile-banner/active',
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) return body;
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
   /// Save FCM token to backend after login or on app start.
   static Future<void> registerFcmToken({
     required String token,

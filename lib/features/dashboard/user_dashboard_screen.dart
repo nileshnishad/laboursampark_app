@@ -12,6 +12,7 @@ import '../../core/services/permission_service.dart';
 import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // Views
 import 'views/all_jobs_view.dart';
@@ -42,6 +43,9 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
   String? _profileError;
   Map<String, dynamic>? _subscriptionPlan;
   bool _subscriptionPlanLoading = false;
+  Map<String, dynamic>? _mobileBanner;
+  bool _mobileBannerClosed = false;
+  bool _mobileBannerPopupShown = false;
   StreamSubscription<Uri>? _linkSub;
   bool _paymentPending =
       false; // true while waiting for user to return from browser
@@ -51,6 +55,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadProfileStatus();
+    _loadActiveMobileBanner();
     _initDeepLinks();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -207,6 +212,150 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
         _subscriptionStatusLoaded = true;
       });
     }
+  }
+
+  Future<void> _loadActiveMobileBanner() async {
+    final response = await ApiService.fetchActiveMobileBanner();
+    if (!mounted) return;
+    if (response['success'] == true && response['hasBanner'] == true) {
+      final banner = response['banner'];
+      if (banner is Map<String, dynamic>) {
+        setState(() {
+          _mobileBanner = banner;
+          _mobileBannerClosed = false;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _maybeShowMobileBannerPopup();
+        });
+      }
+    }
+  }
+
+  Future<void> _openBannerLink(String link) async {
+    final uri = Uri.tryParse(link.trim());
+    if (uri == null) return;
+    final canLaunch = await canLaunchUrl(uri);
+    if (!canLaunch) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  void _maybeShowMobileBannerPopup() {
+    final banner = _mobileBanner;
+    if (!mounted) return;
+    if (banner == null || _mobileBannerClosed || _selectedIndex != 0) return;
+    if (_mobileBannerPopupShown) return;
+
+    final visible = banner['visible'] == true;
+    if (!visible) return;
+
+    final imageUrl = (banner['bannerImageUrl'] ?? '').toString().trim();
+    final title = (banner['title'] ?? '').toString().trim();
+    final contextText = (banner['context'] ?? '').toString().trim();
+    final link = (banner['link'] ?? '').toString().trim();
+
+    if (imageUrl.isEmpty && title.isEmpty && contextText.isEmpty) {
+      return;
+    }
+
+    _mobileBannerPopupShown = true;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          children: [
+            Material(
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).colorScheme.surface,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: link.isEmpty
+                    ? null
+                    : () async {
+                        await _openBannerLink(link);
+                      },
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFBFDBFE)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.14),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (imageUrl.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(15),
+                          ),
+                          child: Container(
+                            color: const Color(0xFFEFF6FF),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: 120,
+                                maxHeight:
+                                    MediaQuery.of(dialogContext).size.height *
+                                    0.62,
+                              ),
+                              child: Image.network(
+                                imageUrl,
+                                width: double.infinity,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, err, st) => Container(
+                                  height: 160,
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.image_not_supported_outlined,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Material(
+                color: Colors.black.withValues(alpha: 0.5),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () {
+                    setState(() {
+                      _mobileBannerClosed = true;
+                    });
+                    Navigator.of(dialogContext).pop();
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.all(6),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _loadSubscriptionPlan(String userType, String token) async {
@@ -712,6 +861,9 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeShowMobileBannerPopup();
     });
   }
 

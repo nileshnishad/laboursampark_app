@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../common/widgets/loading_skeleton.dart';
 import '../../../services/api_service.dart';
 
 // ── Models ────────────────────────────────────────────────────────────────────
@@ -419,8 +420,9 @@ class _AllJobsViewState extends State<AllJobsView> {
     final isAvailable = _mainTab == 'available';
 
     if (isAvailable && _loading && _jobs.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF2563EB)),
+      return const LoadingSkeleton(
+        type: LoadingSkeletonType.availableJobCard,
+        itemCount: 3,
       );
     }
 
@@ -968,8 +970,12 @@ class _AllJobsViewState extends State<AllJobsView> {
     if (isLoading) {
       return [
         Padding(
-          padding: const EdgeInsets.only(top: 40),
-          child: Center(child: CircularProgressIndicator(color: accentColor)),
+          padding: const EdgeInsets.only(top: 16),
+          child: LoadingSkeleton(
+            type: LoadingSkeletonType.appliedJobCard,
+            itemCount: 3,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+          ),
         ),
       ];
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../common/widgets/loading_skeleton.dart';
 import '../../common/models/skill_model.dart';
 import '../../l10n/app_localizations.dart';
 import '../../common/utils/skill_display_utils.dart';
@@ -135,8 +136,9 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
         elevation: 0,
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF2563EB)),
+          ? const LoadingSkeleton(
+              type: LoadingSkeletonType.applicationPage,
+              itemCount: 1,
             )
           : _error != null
           ? Center(

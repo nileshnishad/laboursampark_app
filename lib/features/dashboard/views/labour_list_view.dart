@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../common/models/skill_model.dart';
 import '../../../common/widgets/app_state_message.dart';
+import '../../../common/widgets/loading_skeleton.dart';
 import '../../../services/api_service.dart';
 import '../../../services/skills_service.dart';
 import '../../../core/auth_service.dart';
@@ -115,6 +116,7 @@ class _LabourListViewState extends State<LabourListView> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final query = _searchController.text.trim().toLowerCase();
     final filtered = _allLabours.where((labour) {
       final haystack =
@@ -124,7 +126,10 @@ class _LabourListViewState extends State<LabourListView> {
     }).toList();
 
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingSkeleton(
+        type: LoadingSkeletonType.card,
+        itemCount: 3,
+      );
     }
 
     if (_error != null) {
@@ -255,16 +260,19 @@ class _LabourListViewState extends State<LabourListView> {
             },
           );
 
-    return Column(
-      children: [
-        headerSection,
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: () => _loadLabours(useSavedCity: false),
-            child: contentSection,
+    return Container(
+      color: theme.colorScheme.background,
+      child: Column(
+        children: [
+          headerSection,
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => _loadLabours(useSavedCity: false),
+              child: contentSection,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
