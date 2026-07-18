@@ -67,16 +67,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
 
   // Password validation helpers
   bool _hasMinLength(String password) => password.length >= 8;
-  bool _hasUppercase(String password) => password.contains(RegExp(r'[A-Z]'));
-  bool _hasLowercase(String password) => password.contains(RegExp(r'[a-z]'));
-  bool _hasNumber(String password) => password.contains(RegExp(r'[0-9]'));
-
-  bool _isPasswordValid(String password) {
-    return _hasMinLength(password) &&
-        _hasUppercase(password) &&
-        _hasLowercase(password) &&
-        _hasNumber(password);
-  }
+  bool _isPasswordValid(String password) => _hasMinLength(password);
 
   @override
   void dispose() {
@@ -972,18 +963,6 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                           _buildPasswordRequirement(
                             AppLocalizations.of(context).atLeast8Chars,
                             _hasMinLength(_passwordController.text),
-                          ),
-                          _buildPasswordRequirement(
-                            AppLocalizations.of(context).oneUppercase,
-                            _hasUppercase(_passwordController.text),
-                          ),
-                          _buildPasswordRequirement(
-                            AppLocalizations.of(context).oneLowercase,
-                            _hasLowercase(_passwordController.text),
-                          ),
-                          _buildPasswordRequirement(
-                            AppLocalizations.of(context).oneNumber,
-                            _hasNumber(_passwordController.text),
                           ),
                         ],
                       ),

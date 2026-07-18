@@ -51,11 +51,37 @@ class _LoadingSkeletonState extends State<LoadingSkeleton>
   Widget build(BuildContext context) {
     return Shimmer(
       progress: _controller,
-      child: ListView.separated(
-        padding: widget.padding,
-        itemCount: widget.itemCount,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) => _buildSkeletonItem(context),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final hasBoundedHeight = constraints.hasBoundedHeight;
+
+          if (hasBoundedHeight) {
+            return ListView.separated(
+              padding: widget.padding,
+              itemCount: widget.itemCount,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) => _buildSkeletonItem(context),
+            );
+          }
+
+          final items = List<Widget>.generate(widget.itemCount, (index) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: index == widget.itemCount - 1 ? 0 : 12,
+              ),
+              child: _buildSkeletonItem(context),
+            );
+          });
+
+          return Padding(
+            padding: widget.padding,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: items,
+            ),
+          );
+        },
       ),
     );
   }

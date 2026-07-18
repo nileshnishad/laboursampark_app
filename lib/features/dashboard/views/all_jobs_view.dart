@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../common/models/skill_model.dart';
+import '../../../common/utils/skill_display_utils.dart';
 import '../../../common/widgets/loading_skeleton.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../services/api_service.dart';
+import '../../../services/skills_service.dart';
 
 // ── Models ────────────────────────────────────────────────────────────────────
 
@@ -229,6 +233,8 @@ class AllJobsView extends StatefulWidget {
 }
 
 class _AllJobsViewState extends State<AllJobsView> {
+  List<SkillModel> _allSkills = [];
+
   // Available jobs
   List<_JobListing> _jobs = [];
   bool _loading = true;
@@ -261,11 +267,32 @@ class _AllJobsViewState extends State<AllJobsView> {
   @override
   void initState() {
     super.initState();
+    _loadSkills();
     _loadAvailable();
     _loadPending();
+    _loadAccepted();
+    _loadCompleted();
   }
 
   // ── Loaders ──────────────────────────────────────────────────────────────────
+  Future<void> _loadSkills() async {
+    final cached = SkillsService.getCachedSkills();
+    if (cached != null && cached.isNotEmpty) {
+      if (mounted) {
+        setState(() => _allSkills = cached);
+      }
+      return;
+    }
+
+    final result = await SkillsService.getAllSkills();
+    if (!mounted) return;
+    if (result['success'] == true) {
+      setState(() {
+        _allSkills = (result['skills'] as List<SkillModel>? ?? []);
+      });
+    }
+  }
+
   Future<void> _loadAvailable() async {
     setState(() {
       _loading = true;
@@ -286,7 +313,9 @@ class _AllJobsViewState extends State<AllJobsView> {
       });
     } else {
       setState(() {
-        _error = (result['message'] ?? 'Failed to load jobs').toString();
+        _error =
+            (result['message'] ?? AppLocalizations.of(context).failedToLoadJobs)
+                .toString();
         _loading = false;
       });
     }
@@ -314,8 +343,10 @@ class _AllJobsViewState extends State<AllJobsView> {
       });
     } else {
       setState(() {
-        _pendingError = (result['message'] ?? 'Failed to load pending jobs')
-            .toString();
+        _pendingError =
+            (result['message'] ??
+                    AppLocalizations.of(context).failedToLoadPendingJobs)
+                .toString();
         _pendingLoading = false;
         _pendingLoaded = true;
       });
@@ -341,8 +372,10 @@ class _AllJobsViewState extends State<AllJobsView> {
       });
     } else {
       setState(() {
-        _acceptedError = (result['message'] ?? 'Failed to load accepted jobs')
-            .toString();
+        _acceptedError =
+            (result['message'] ??
+                    AppLocalizations.of(context).failedToLoadAcceptedJobs)
+                .toString();
         _acceptedLoading = false;
         _acceptedLoaded = true;
       });
@@ -368,8 +401,10 @@ class _AllJobsViewState extends State<AllJobsView> {
       });
     } else {
       setState(() {
-        _completedError = (result['message'] ?? 'Failed to load completed jobs')
-            .toString();
+        _completedError =
+            (result['message'] ??
+                    AppLocalizations.of(context).failedToLoadCompletedJobs)
+                .toString();
         _completedLoading = false;
         _completedLoaded = true;
       });
@@ -417,6 +452,7 @@ class _AllJobsViewState extends State<AllJobsView> {
   // ── Build ─────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final isAvailable = _mainTab == 'available';
 
     if (isAvailable && _loading && _jobs.isEmpty) {
@@ -452,7 +488,7 @@ class _AllJobsViewState extends State<AllJobsView> {
               ElevatedButton.icon(
                 onPressed: _onRefresh,
                 icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('Retry'),
+                label: Text(loc.retry),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2563EB),
                   foregroundColor: Colors.white,
@@ -494,8 +530,8 @@ class _AllJobsViewState extends State<AllJobsView> {
                   const SizedBox(width: 10),
                   Text(
                     isAvailable
-                        ? 'AVAILABLE JOBS (${_jobs.length})'
-                        : '${_appliedSubTab.toUpperCase()} (${_appliedSubTabCount()})',
+                        ? '${loc.availableJobsUppercase} (${_jobs.length})'
+                        : '${_appliedTabTitle(loc, _appliedSubTab)} (${_appliedSubTabCount()})',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
@@ -544,6 +580,7 @@ class _AllJobsViewState extends State<AllJobsView> {
 
   // ── Main tab bar: Available | Applied ──────────────────────────────────────
   Widget _buildMainTabBar() {
+    final loc = AppLocalizations.of(context);
     final isAvailable = _mainTab == 'available';
     return Container(
       decoration: BoxDecoration(
@@ -614,7 +651,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                           ),
                         ),
                         Text(
-                          'Available',
+                          loc.available,
                           style: TextStyle(
                             fontSize: 11,
                             color: Theme.of(
@@ -693,7 +730,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                           ),
                         ),
                         Text(
-                          'Applied',
+                          loc.applied,
                           style: TextStyle(
                             fontSize: 11,
                             color: Theme.of(
@@ -715,24 +752,25 @@ class _AllJobsViewState extends State<AllJobsView> {
 
   // ── Applied sub-tabs: Pending | Accepted | Completed ──────────────────────
   Widget _buildAppliedSubTabs() {
+    final loc = AppLocalizations.of(context);
     final tabs = [
       (
         'pending',
-        'Pending',
+        loc.pending,
         const Color(0xFFF59E0B),
         const Color(0xFFFEF3C7),
         Icons.hourglass_top_rounded,
       ),
       (
         'accepted',
-        'Accepted',
+        loc.accepted,
         const Color(0xFF059669),
         const Color(0xFFD1FAE5),
         Icons.check_circle_rounded,
       ),
       (
         'completed',
-        'Completed',
+        loc.completed,
         const Color(0xFF2563EB),
         const Color(0xFFEFF6FF),
         Icons.verified_rounded,
@@ -875,6 +913,8 @@ class _AllJobsViewState extends State<AllJobsView> {
 
   // ── Available jobs list ───────────────────────────────────────────────────
   List<Widget> _buildAvailableContent() {
+    final loc = AppLocalizations.of(context);
+    final localeCode = Localizations.localeOf(context).languageCode;
     if (_jobs.isEmpty) {
       return [
         Center(
@@ -898,7 +938,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'No Jobs Available',
+                  loc.noJobsAvailable,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -907,7 +947,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'New jobs will appear here. Pull down to refresh.',
+                  loc.newJobsWillAppearHint,
                   style: TextStyle(
                     fontSize: 13,
                     color: Theme.of(
@@ -924,14 +964,27 @@ class _AllJobsViewState extends State<AllJobsView> {
     }
     return _jobs
         .map(
-          (job) =>
-              _JobCard(job: job, subscriptionActive: widget.subscriptionActive),
+          (job) => _JobCard(
+            job: job,
+            subscriptionActive: widget.subscriptionActive,
+            availableSkills: _allSkills,
+            localeCode: localeCode,
+            token: widget.token,
+            onApplied: _refreshAfterApply,
+          ),
         )
         .toList();
   }
 
+  Future<void> _refreshAfterApply() async {
+    await _loadAvailable();
+    await _loadPending();
+  }
+
   // ── Applied sub-tab content ───────────────────────────────────────────────
   List<Widget> _buildAppliedSubTabContent() {
+    final loc = AppLocalizations.of(context);
+    final localeCode = Localizations.localeOf(context).languageCode;
     final bool isLoading;
     final String? error;
     final List<_AppliedJobEntry> list;
@@ -946,24 +999,24 @@ class _AllJobsViewState extends State<AllJobsView> {
         error = _acceptedError;
         list = _acceptedJobs;
         accentColor = const Color(0xFF059669);
-        emptyLabel = 'No Accepted Jobs';
-        emptySubLabel = 'Jobs accepted by employers will appear here.';
+        emptyLabel = loc.noAcceptedJobs;
+        emptySubLabel = loc.acceptedJobsAppearHere;
         emptyIcon = Icons.check_circle_outline_rounded;
       case 'completed':
         isLoading = _completedLoading;
         error = _completedError;
         list = _completedJobs;
         accentColor = const Color(0xFF2563EB);
-        emptyLabel = 'No Completed Jobs';
-        emptySubLabel = 'Jobs you have completed will appear here.';
+        emptyLabel = loc.noCompletedJobs;
+        emptySubLabel = loc.completedJobsAppearHere;
         emptyIcon = Icons.verified_outlined;
       default: // pending
         isLoading = _pendingLoading;
         error = _pendingError;
         list = _pendingJobs;
         accentColor = const Color(0xFFF59E0B);
-        emptyLabel = 'No Pending Applications';
-        emptySubLabel = 'Apply to jobs and they will appear here.';
+        emptyLabel = loc.noPendingApplications;
+        emptySubLabel = loc.applyJobsAppearHere;
         emptyIcon = Icons.hourglass_empty_rounded;
     }
 
@@ -1004,7 +1057,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                 ElevatedButton.icon(
                   onPressed: _onRefresh,
                   icon: const Icon(Icons.refresh_rounded, size: 15),
-                  label: const Text('Retry'),
+                  label: Text(loc.retry),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accentColor,
                     foregroundColor: Colors.white,
@@ -1063,10 +1116,29 @@ class _AllJobsViewState extends State<AllJobsView> {
 
     return list
         .map(
-          (entry) =>
-              _AppliedJobCard(entry: entry, statusOverride: _appliedSubTab),
+          (entry) => _AppliedJobCard(
+            entry: entry,
+            statusOverride: _appliedSubTab,
+            availableSkills: _allSkills,
+            localeCode: localeCode,
+            token: widget.token,
+            onFeedbackSubmitted: _onRefresh,
+          ),
         )
         .toList();
+  }
+
+  String _appliedTabTitle(AppLocalizations loc, String key) {
+    switch (key) {
+      case 'pending':
+        return loc.pendingUppercase;
+      case 'accepted':
+        return loc.acceptedUppercase;
+      case 'completed':
+        return loc.completedUppercase;
+      default:
+        return key.toUpperCase();
+    }
   }
 }
 
@@ -1075,10 +1147,251 @@ class _AllJobsViewState extends State<AllJobsView> {
 class _AppliedJobCard extends StatelessWidget {
   final _AppliedJobEntry entry;
   final String? statusOverride;
+  final List<SkillModel> availableSkills;
+  final String localeCode;
+  final String token;
+  final Future<void> Function()? onFeedbackSubmitted;
 
-  const _AppliedJobCard({required this.entry, this.statusOverride});
+  const _AppliedJobCard({
+    required this.entry,
+    this.statusOverride,
+    required this.availableSkills,
+    required this.localeCode,
+    required this.token,
+    this.onFeedbackSubmitted,
+  });
 
-  static ({Color bg, Color fg, IconData icon, String label}) _statusInfo(
+  Future<void> _showRateContractorSheet(BuildContext context) async {
+    final loc = AppLocalizations.of(context);
+    final feedbackController = TextEditingController(
+      text: entry.myFeedbackText ?? '',
+    );
+    double rating = (entry.myFeedbackRating ?? 4).toDouble().clamp(1, 5);
+    String? responseMessage;
+    bool submitted = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        bool saving = false;
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final mq = MediaQuery.of(ctx);
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 24,
+                  bottom: mq.viewInsets.bottom + mq.padding.bottom + 24,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: mq.size.height * 0.86),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          loc.rateContractorTitle,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF111827),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          loc.rateWorkLabel(
+                            entry.postedByName.isEmpty
+                                ? loc.contractorRoleTitle
+                                : entry.postedByName,
+                          ),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        Text(
+                          loc.ratingLabelSmall,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF374151),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Slider(
+                                value: rating,
+                                min: 1,
+                                max: 5,
+                                divisions: 8,
+                                activeColor: const Color(0xFFF59E0B),
+                                onChanged: saving
+                                    ? null
+                                    : (v) => setSheetState(() => rating = v),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.star_rounded,
+                                    size: 16,
+                                    color: Color(0xFFF59E0B),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    rating.toStringAsFixed(1),
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF92400E),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          loc.feedbackLabel,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF374151),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: feedbackController,
+                          maxLines: 3,
+                          enabled: !saving,
+                          decoration: InputDecoration(
+                            hintText: loc.feedbackHint,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFE5E7EB),
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.all(12),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: saving
+                                ? null
+                                : () async {
+                                    setSheetState(() => saving = true);
+                                    final res =
+                                        await ApiService.submitJobFeedback(
+                                          token: token,
+                                          jobId: entry.jobId,
+                                          rating: rating,
+                                          feedback:
+                                              feedbackController.text
+                                                  .trim()
+                                                  .isEmpty
+                                              ? loc.goodWorkDefault
+                                              : feedbackController.text.trim(),
+                                        );
+                                    if (res['success'] == true) {
+                                      submitted = true;
+                                      responseMessage = res['message']
+                                          ?.toString();
+                                      if (ctx.mounted) Navigator.pop(ctx);
+                                      return;
+                                    }
+
+                                    setSheetState(() => saving = false);
+                                    if (!ctx.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          (res['message'] ??
+                                                  loc.failedToSubmitFeedback)
+                                              .toString(),
+                                        ),
+                                        backgroundColor: const Color(
+                                          0xFFDC2626,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2563EB),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: saving
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    loc.rateContractor,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    feedbackController.dispose();
+    if (!submitted || !context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(responseMessage ?? loc.feedbackSubmittedSuccessfully),
+        backgroundColor: const Color(0xFF059669),
+      ),
+    );
+    await onFeedbackSubmitted?.call();
+  }
+
+  ({Color bg, Color fg, IconData icon, String label}) _statusInfo(
+    AppLocalizations loc,
     String status,
   ) {
     switch (status) {
@@ -1087,57 +1400,59 @@ class _AppliedJobCard extends StatelessWidget {
           bg: const Color(0xFFD1FAE5),
           fg: const Color(0xFF059669),
           icon: Icons.check_circle_rounded,
-          label: 'Accepted',
+          label: loc.accepted,
         );
       case 'rejected':
         return (
           bg: const Color(0xFFFEE2E2),
           fg: const Color(0xFFDC2626),
           icon: Icons.cancel_rounded,
-          label: 'Rejected',
+          label: loc.rejected,
         );
       case 'withdrawn':
         return (
           bg: const Color(0xFFF3F4F6),
           fg: const Color(0xFF9CA3AF),
           icon: Icons.undo_rounded,
-          label: 'Withdrawn',
+          label: loc.withdrawn,
         );
       case 'completed':
         return (
           bg: const Color(0xFFEFF6FF),
           fg: const Color(0xFF2563EB),
           icon: Icons.verified_rounded,
-          label: 'Completed',
+          label: loc.completed,
         );
       default:
         return (
           bg: const Color(0xFFFEF3C7),
           fg: const Color(0xFFD97706),
           icon: Icons.hourglass_top_rounded,
-          label: 'Pending',
+          label: loc.pending,
         );
     }
   }
 
-  String _fmtDate(DateTime? dt) {
+  String _fmtDate(AppLocalizations loc, DateTime? dt) {
     if (dt == null) return '';
     final diff = DateTime.now().difference(dt);
-    if (diff.inDays == 0) return 'Today';
-    if (diff.inDays == 1) return 'Yesterday';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inDays == 0) return loc.today;
+    if (diff.inDays == 1) return loc.yesterday;
+    if (diff.inDays < 7) return loc.daysAgo(diff.inDays);
     return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
   }
 
   Color _postedByColor(String ut) =>
       ut == 'contractor' ? const Color(0xFF059669) : const Color(0xFF7C3AED);
 
-  String _postedByLabel(String ut) {
+  String _postedByLabel(AppLocalizations loc, String ut) {
     switch (ut) {
       case 'contractor':
-        return 'Contractor';
+        return loc.contractorRoleTitle;
       case 'sub_contractor':
-        return 'Sub-Contractor';
+        return loc.subcontractorRoleTitle;
+      case 'labour':
+        return loc.labourRoleTitle;
       default:
         return ut;
     }
@@ -1168,8 +1483,9 @@ class _AppliedJobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
-    final info = _statusInfo(statusOverride ?? entry.applicationStatus);
+    final info = _statusInfo(loc, statusOverride ?? entry.applicationStatus);
     final postedByColor = _postedByColor(entry.postedByUserType);
     final location = [
       entry.area,
@@ -1186,435 +1502,574 @@ class _AppliedJobCard extends StatelessWidget {
         : '?';
     final primaryColor = const Color(0xFF2563EB);
     final hasImages = entry.images.isNotEmpty;
+    final localizedSkills = resolveSkillDisplayNames(
+      skillIds: entry.requiredSkills,
+      skills: availableSkills,
+      localeCode: localeCode,
+    );
+    final resolvedStatus = statusOverride ?? entry.applicationStatus;
+    final contractorFeedbackText = (entry.reviewFeedback ?? '').trim();
+    final myFeedbackText = (entry.myFeedbackText ?? '').trim();
+    final hasContractorFeedback =
+        entry.reviewRating != null || contractorFeedbackText.isNotEmpty;
+    final hasMyFeedback =
+        entry.feedbackSubmitted ||
+        entry.myFeedbackRating != null ||
+        myFeedbackText.isNotEmpty;
 
-    return GestureDetector(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Job details for "${entry.workTitle}" - coming soon'),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: info.fg.withValues(alpha: 0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: info.fg.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: info.fg.withValues(alpha: 0.3), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: info.fg.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header row ──────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Job icon
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: primaryColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.work_outline_rounded,
-                      color: primaryColor,
-                      size: 22,
-                    ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header row ──────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Job icon
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 12),
+                  child: Icon(
+                    Icons.work_outline_rounded,
+                    color: primaryColor,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.workTitle.isEmpty
+                            ? loc.untitledJob
+                            : entry.workTitle,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: cs.onSurface,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (location.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 12,
+                              color: cs.onSurface.withValues(alpha: 0.4),
+                            ),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                location,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: cs.onSurface.withValues(alpha: 0.55),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Status badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: info.bg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: info.fg.withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(info.icon, size: 13, color: info.fg),
+                      const SizedBox(width: 5),
+                      Text(
+                        info.label,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: info.fg,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Posted by info ──────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: postedByColor.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: postedByColor.withValues(alpha: 0.25),
+                ),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: postedByColor,
+                    backgroundImage:
+                        (entry.postedByPhoto != null &&
+                            entry.postedByPhoto!.isNotEmpty)
+                        ? NetworkImage(entry.postedByPhoto!)
+                        : null,
+                    child:
+                        (entry.postedByPhoto == null ||
+                            entry.postedByPhoto!.isEmpty)
+                        ? Text(
+                            initials,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: Theme.of(context).colorScheme.surface,
+                            ),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          entry.workTitle.isEmpty
-                              ? 'Untitled Job'
-                              : entry.workTitle,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: cs.onSurface,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (location.isNotEmpty) ...[
-                          const SizedBox(height: 3),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.location_on_outlined,
-                                size: 12,
-                                color: cs.onSurface.withValues(alpha: 0.4),
-                              ),
-                              const SizedBox(width: 3),
-                              Expanded(
-                                child: Text(
-                                  location,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: cs.onSurface.withValues(alpha: 0.55),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Status badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: info.bg,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: info.fg.withValues(alpha: 0.4)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(info.icon, size: 13, color: info.fg),
-                        const SizedBox(width: 5),
-                        Text(
-                          info.label,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: info.fg,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // ── Posted by info ──────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: postedByColor.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: postedByColor.withValues(alpha: 0.25),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: postedByColor,
-                      backgroundImage:
-                          (entry.postedByPhoto != null &&
-                              entry.postedByPhoto!.isNotEmpty)
-                          ? NetworkImage(entry.postedByPhoto!)
-                          : null,
-                      child:
-                          (entry.postedByPhoto == null ||
-                              entry.postedByPhoto!.isEmpty)
-                          ? Text(
-                              initials,
+                        Row(
+                          children: [
+                            Text(
+                              '${loc.postedBy}: ',
                               style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                color: Theme.of(context).colorScheme.surface,
+                                fontSize: 11,
+                                color: cs.onSurface.withValues(alpha: 0.5),
+                                fontWeight: FontWeight.w600,
                               ),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                'Posted by: ',
+                            ),
+                            Expanded(
+                              child: Text(
+                                entry.postedByName.isEmpty
+                                    ? loc.unknown
+                                    : entry.postedByName,
                                 style: TextStyle(
-                                  fontSize: 11,
-                                  color: cs.onSurface.withValues(alpha: 0.5),
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: cs.onSurface,
                                 ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              Expanded(
-                                child: Text(
-                                  entry.postedByName.isEmpty
-                                      ? 'Unknown'
-                                      : entry.postedByName,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: cs.onSurface,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: postedByColor,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  _postedByLabel(entry.postedByUserType),
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surface,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              if (entry.postedByRating > 0) ...[
-                                const SizedBox(width: 8),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: List.generate(
-                                    5,
-                                    (i) => Icon(
-                                      i < entry.postedByRating
-                                          ? Icons.star_rounded
-                                          : Icons.star_outline_rounded,
-                                      size: 12,
-                                      color: i < entry.postedByRating
-                                          ? const Color(0xFFF59E0B)
-                                          : const Color(0xFFD1D5DB),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // ── Info chips ──────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  _chip(
-                    icon: Icons.groups_rounded,
-                    label:
-                        'Need: ${entry.workersNeeded} Worker${entry.workersNeeded == 1 ? '' : 's'}',
-                    textColor: const Color(0xFF15803D),
-                  ),
-                  if (entry.estimatedBudget != null)
-                    _chip(
-                      icon: Icons.currency_rupee_rounded,
-                      label: '₹${entry.estimatedBudget!.toStringAsFixed(0)}',
-                      textColor: const Color(0xFFD97706),
-                    ),
-                  if (entry.appliedAt != null)
-                    _chip(
-                      icon: Icons.calendar_today_outlined,
-                      label: 'Applied: ${_fmtDate(entry.appliedAt)}',
-                      textColor: const Color(0xFF6D28D9),
-                    ),
-                ],
-              ),
-            ),
-
-            // ── Skills ──────────────────────────────────────────────────────
-            if (entry.requiredSkills.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.build_circle_outlined,
-                          size: 13,
-                          color: primaryColor.withValues(alpha: 0.7),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 5),
-                        Text(
-                          'Skills Required',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: primaryColor.withValues(alpha: 0.8),
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: entry.requiredSkills
-                          .take(5)
-                          .map(
-                            (s) => Container(
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
+                                horizontal: 6,
+                                vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: primaryColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: primaryColor.withValues(alpha: 0.3),
-                                ),
+                                color: postedByColor,
+                                borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                s,
+                                _postedByLabel(loc, entry.postedByUserType),
                                 style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 10,
+                                  color: Theme.of(context).colorScheme.surface,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            if (entry.postedByRating > 0) ...[
+                              const SizedBox(width: 8),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: List.generate(
+                                  5,
+                                  (i) => Icon(
+                                    i < entry.postedByRating
+                                        ? Icons.star_rounded
+                                        : Icons.star_outline_rounded,
+                                    size: 12,
+                                    color: i < entry.postedByRating
+                                        ? const Color(0xFFF59E0B)
+                                        : const Color(0xFFD1D5DB),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Info chips ──────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                _chip(
+                  icon: Icons.groups_rounded,
+                  label: loc.needWorkers(
+                    entry.workersNeeded,
+                    entry.workersNeeded == 1,
+                  ),
+                  textColor: const Color(0xFF15803D),
+                ),
+                if (entry.estimatedBudget != null)
+                  _chip(
+                    icon: Icons.currency_rupee_rounded,
+                    label: '₹${entry.estimatedBudget!.toStringAsFixed(0)}',
+                    textColor: const Color(0xFFD97706),
+                  ),
+                if (entry.appliedAt != null)
+                  _chip(
+                    icon: Icons.calendar_today_outlined,
+                    label: '${loc.applied}: ${_fmtDate(loc, entry.appliedAt)}',
+                    textColor: const Color(0xFF6D28D9),
+                  ),
+              ],
+            ),
+          ),
+
+          // ── Skills ──────────────────────────────────────────────────────
+          if (entry.requiredSkills.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.build_circle_outlined,
+                        size: 13,
+                        color: primaryColor.withValues(alpha: 0.7),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        loc.skillsRequiredLabel,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: primaryColor.withValues(alpha: 0.8),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: localizedSkills
+                        .take(5)
+                        .map(
+                          (s) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: primaryColor.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Text(
+                              s,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: primaryColor,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // ── Description ─────────────────────────────────────────────────
+          if (entry.description.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.notes_rounded,
+                        size: 13,
+                        color: cs.onSurface.withValues(alpha: 0.4),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        loc.aboutThisJob,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface.withValues(alpha: 0.4),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    entry.description,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: cs.onSurface.withValues(alpha: 0.8),
+                      height: 1.5,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // ── Images strip ────────────────────────────────────────────────
+          if (hasImages) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 80,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                itemCount: entry.images.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, i) => ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    entry.images[i],
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 80,
+                      height: 80,
+                      color: cs.onSurface.withValues(alpha: 0.08),
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: cs.onSurface.withValues(alpha: 0.3),
+                        size: 24,
+                      ),
+                    ),
+                    loadingBuilder: (_, child, progress) => progress == null
+                        ? child
+                        : Container(
+                            width: 80,
+                            height: 80,
+                            color: cs.onSurface.withValues(alpha: 0.08),
+                            child: Center(
+                              child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
                                   color: primaryColor,
                                 ),
                               ),
                             ),
-                          )
-                          .toList(),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            // ── Description ─────────────────────────────────────────────────
-            if (entry.description.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.notes_rounded,
-                          size: 13,
-                          color: cs.onSurface.withValues(alpha: 0.4),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          'About this job',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: cs.onSurface.withValues(alpha: 0.4),
-                            letterSpacing: 0.2,
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      entry.description,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: cs.onSurface.withValues(alpha: 0.8),
-                        height: 1.5,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            // ── Images strip ────────────────────────────────────────────────
-            if (hasImages) ...[
-              const SizedBox(height: 10),
-              SizedBox(
-                height: 80,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  itemCount: entry.images.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (_, i) => ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.network(
-                      entry.images[i],
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        width: 80,
-                        height: 80,
-                        color: cs.onSurface.withValues(alpha: 0.08),
-                        child: Icon(
-                          Icons.broken_image_outlined,
-                          color: cs.onSurface.withValues(alpha: 0.3),
-                          size: 24,
-                        ),
-                      ),
-                      loadingBuilder: (_, child, progress) => progress == null
-                          ? child
-                          : Container(
-                              width: 80,
-                              height: 80,
-                              color: cs.onSurface.withValues(alpha: 0.08),
-                              child: Center(
-                                child: SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: primaryColor,
-                                  ),
-                                ),
-                              ),
-                            ),
-                    ),
                   ),
                 ),
               ),
-            ],
-
-            const SizedBox(height: 12),
+            ),
           ],
-        ),
+
+          if (resolvedStatus == 'completed' && hasContractorFeedback) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      loc.receivedFeedbackLabel,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF065F46),
+                      ),
+                    ),
+                    if (entry.reviewRating != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(
+                          5,
+                          (i) => Icon(
+                            i < entry.reviewRating!.round()
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            size: 14,
+                            color: i < entry.reviewRating!.round()
+                                ? const Color(0xFFF59E0B)
+                                : const Color(0xFFD1D5DB),
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (contractorFeedbackText.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        contractorFeedbackText,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF065F46),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          if (resolvedStatus == 'completed') ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: hasMyFeedback
+                  ? Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            loc.myFeedbackLabel,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1D4ED8),
+                            ),
+                          ),
+                          if (entry.myFeedbackRating != null) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: List.generate(
+                                5,
+                                (i) => Icon(
+                                  i < entry.myFeedbackRating!.round()
+                                      ? Icons.star_rounded
+                                      : Icons.star_outline_rounded,
+                                  size: 14,
+                                  color: i < entry.myFeedbackRating!.round()
+                                      ? const Color(0xFFF59E0B)
+                                      : const Color(0xFFD1D5DB),
+                                ),
+                              ),
+                            ),
+                          ],
+                          if (myFeedbackText.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              myFeedbackText,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF1E3A8A),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    )
+                  : SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _showRateContractorSheet(context),
+                        icon: const Icon(Icons.star_rate_rounded, size: 18),
+                        label: Text(
+                          loc.rateContractor,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF2563EB),
+                          side: const BorderSide(color: Color(0xFF93C5FD)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+
+          const SizedBox(height: 12),
+        ],
       ),
     );
   }
@@ -1655,24 +2110,147 @@ class _AppliedJobCard extends StatelessWidget {
 class _JobCard extends StatelessWidget {
   final _JobListing job;
   final bool subscriptionActive;
+  final List<SkillModel> availableSkills;
+  final String localeCode;
+  final String token;
+  final Future<void> Function()? onApplied;
 
-  const _JobCard({required this.job, this.subscriptionActive = false});
+  const _JobCard({
+    required this.job,
+    this.subscriptionActive = false,
+    required this.availableSkills,
+    required this.localeCode,
+    required this.token,
+    this.onApplied,
+  });
 
-  String _fmtDate(DateTime? dt) {
+  Future<void> _showApplyDialog(BuildContext context) async {
+    final loc = AppLocalizations.of(context);
+    final messageController = TextEditingController();
+    bool submitting = false;
+
+    final applied = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return PopScope(
+              canPop: !submitting,
+              child: AlertDialog(
+                title: Text(loc.applyNowUppercase),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Write a message to send with your application.',
+                      style: Theme.of(dialogContext).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: messageController,
+                      maxLines: 4,
+                      textInputAction: TextInputAction.newline,
+                      decoration: const InputDecoration(
+                        hintText: 'Type your message here...',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: submitting
+                        ? null
+                        : () => Navigator.of(dialogContext).pop(false),
+                    child: Text(loc.cancel),
+                  ),
+                  ElevatedButton(
+                    onPressed: submitting
+                        ? null
+                        : () async {
+                            final message = messageController.text.trim();
+                            if (message.isEmpty) {
+                              if (!dialogContext.mounted) return;
+                              ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Please enter a message.'),
+                                ),
+                              );
+                              return;
+                            }
+
+                            setDialogState(() => submitting = true);
+                            final res = await ApiService.applyForJob(
+                              token: token,
+                              jobId: job.jobId,
+                              message: message,
+                            );
+
+                            if (!dialogContext.mounted) return;
+
+                            if (res['success'] == true) {
+                              Navigator.of(dialogContext).pop(true);
+                              final successMessage =
+                                  (res['message'] ?? 'Applied successfully')
+                                      .toString();
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(successMessage)),
+                              );
+                            } else {
+                              final errorMessage =
+                                  (res['message'] ??
+                                          'Could not apply for this job')
+                                      .toString();
+                              ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                SnackBar(content: Text(errorMessage)),
+                              );
+                              if (dialogContext.mounted) {
+                                setDialogState(() => submitting = false);
+                              }
+                            }
+                          },
+                    child: submitting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(loc.applyNowUppercase),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    messageController.dispose();
+
+    if (context.mounted && applied == true && onApplied != null) {
+      await onApplied!();
+    }
+  }
+
+  String _fmtDate(AppLocalizations loc, DateTime? dt) {
     if (dt == null) return '';
     final diff = DateTime.now().difference(dt);
-    if (diff.inDays == 0) return 'Today';
-    if (diff.inDays == 1) return 'Yesterday';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inDays == 0) return loc.today;
+    if (diff.inDays == 1) return loc.yesterday;
+    if (diff.inDays < 7) return loc.daysAgo(diff.inDays);
     return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
   }
 
-  String _postedByLabel(String ut) {
+  String _postedByLabel(AppLocalizations loc, String ut) {
     switch (ut) {
       case 'contractor':
-        return 'Contractor';
+        return loc.contractorRoleTitle;
       case 'sub_contractor':
-        return 'Sub-Contractor';
+        return loc.subcontractorRoleTitle;
+      case 'labour':
+        return loc.labourRoleTitle;
       default:
         return ut;
     }
@@ -1683,6 +2261,7 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final location = [
       job.area,
@@ -1700,12 +2279,21 @@ class _JobCard extends StatelessWidget {
         : '?';
     final primaryColor = const Color(0xFF2563EB);
     final hasImages = job.images.isNotEmpty;
+    final localizedSkills = resolveSkillDisplayNames(
+      skillIds: job.requiredSkills,
+      skills: availableSkills,
+      localeCode: localeCode,
+    );
 
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => _AvailableJobDetailScreen(job: job),
+            builder: (_) => _AvailableJobDetailScreen(
+              job: job,
+              availableSkills: availableSkills,
+              localeCode: localeCode,
+            ),
           ),
         );
       },
@@ -1756,7 +2344,7 @@ class _JobCard extends StatelessWidget {
                       children: [
                         Text(
                           job.workTitle.isEmpty
-                              ? 'Untitled Job'
+                              ? loc.untitledJob
                               : job.workTitle,
                           style: TextStyle(
                             fontSize: 15,
@@ -1808,7 +2396,7 @@ class _JobCard extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        _fmtDate(job.postedAt),
+                        _fmtDate(loc, job.postedAt),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -1865,7 +2453,7 @@ class _JobCard extends StatelessWidget {
                           Row(
                             children: [
                               Text(
-                                'Posted by: ',
+                                '${loc.postedBy}: ',
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: cs.onSurface.withValues(alpha: 0.5),
@@ -1875,7 +2463,7 @@ class _JobCard extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   job.postedByName.isEmpty
-                                      ? 'Unknown'
+                                      ? loc.unknown
                                       : job.postedByName,
                                   style: TextStyle(
                                     fontSize: 12,
@@ -1900,7 +2488,7 @@ class _JobCard extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  _postedByLabel(job.postedByUserType),
+                                  _postedByLabel(loc, job.postedByUserType),
                                   style: TextStyle(
                                     fontSize: 10,
                                     color: Theme.of(
@@ -1949,8 +2537,10 @@ class _JobCard extends StatelessWidget {
                 children: [
                   _chip(
                     icon: Icons.groups_rounded,
-                    label:
-                        'Need: ${job.workersNeeded} Worker${job.workersNeeded == 1 ? '' : 's'}',
+                    label: loc.needWorkers(
+                      job.workersNeeded,
+                      job.workersNeeded == 1,
+                    ),
                     textColor: const Color(0xFF15803D),
                   ),
                   if (job.estimatedBudget != null)
@@ -1961,7 +2551,7 @@ class _JobCard extends StatelessWidget {
                     ),
                   _chip(
                     icon: Icons.inbox_outlined,
-                    label: '${job.totalApplications} Applied',
+                    label: loc.applicationsApplied(job.totalApplications),
                     textColor: const Color(0xFF6D28D9),
                   ),
                 ],
@@ -1985,7 +2575,7 @@ class _JobCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 5),
                         Text(
-                          'Skills Required',
+                          loc.skillsRequiredLabel,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -1999,7 +2589,7 @@ class _JobCard extends StatelessWidget {
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
-                      children: job.requiredSkills
+                      children: localizedSkills
                           .take(5)
                           .map(
                             (s) => Container(
@@ -2050,7 +2640,7 @@ class _JobCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 5),
                         Text(
-                          'About this job',
+                          loc.aboutThisJob,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -2136,17 +2726,9 @@ class _JobCard extends StatelessWidget {
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Apply for "${job.workTitle}" — coming soon',
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: () => _showApplyDialog(context),
                     icon: const Icon(Icons.send_rounded, size: 16),
-                    label: const Text('APPLY NOW'),
+                    label: Text(loc.applyNowUppercase),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2563EB),
                       foregroundColor: Colors.white,
@@ -2182,10 +2764,8 @@ class _JobCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Active subscription required to apply for jobs. Go to Profile → Subscription to activate.',
-                            ),
+                          SnackBar(
+                            content: Text(loc.activeSubscriptionRequiredApply),
                             duration: Duration(seconds: 4),
                           ),
                         );
@@ -2197,16 +2777,16 @@ class _JobCard extends StatelessWidget {
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(
+                          children: [
+                            const Icon(
                               Icons.lock_outline_rounded,
                               size: 15,
                               color: Color(0xFFEA580C),
                             ),
-                            SizedBox(width: 6),
+                            const SizedBox(width: 6),
                             Text(
-                              'SUBSCRIPTION REQUIRED TO APPLY',
-                              style: TextStyle(
+                              loc.subscriptionRequiredApplyUppercase,
+                              style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
                                 color: Color(0xFFEA580C),
@@ -2267,22 +2847,28 @@ class _JobCard extends StatelessWidget {
 
 class _AvailableJobDetailScreen extends StatelessWidget {
   final _JobListing job;
+  final List<SkillModel> availableSkills;
+  final String localeCode;
 
-  const _AvailableJobDetailScreen({required this.job});
+  const _AvailableJobDetailScreen({
+    required this.job,
+    required this.availableSkills,
+    required this.localeCode,
+  });
 
   String _fmtDate(DateTime? dt) {
     if (dt == null) return '';
     return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
   }
 
-  String _postedByLabel(String userType) {
+  String _postedByLabel(AppLocalizations loc, String userType) {
     switch (userType) {
       case 'contractor':
-        return 'Contractor';
+        return loc.contractorRoleTitle;
       case 'sub_contractor':
-        return 'Sub-Contractor';
+        return loc.subcontractorRoleTitle;
       case 'labour':
-        return 'Labour';
+        return loc.labourRoleTitle;
       default:
         return userType;
     }
@@ -2303,6 +2889,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final primaryColor = const Color(0xFF2563EB);
     final location = [
@@ -2319,6 +2906,11 @@ class _AvailableJobDetailScreen extends StatelessWidget {
               .map((w) => w[0].toUpperCase())
               .join()
         : '?';
+    final localizedSkills = resolveSkillDisplayNames(
+      skillIds: job.requiredSkills,
+      skills: availableSkills,
+      localeCode: localeCode,
+    );
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -2332,7 +2924,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          job.workTitle.isEmpty ? 'Job Details' : job.workTitle,
+          job.workTitle.isEmpty ? loc.jobDetails : job.workTitle,
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w800,
@@ -2403,7 +2995,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Posted By',
+                        loc.postedBy,
                         style: TextStyle(
                           fontSize: 11,
                           color: cs.onSurface.withValues(alpha: 0.5),
@@ -2412,7 +3004,9 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        job.postedByName.isEmpty ? 'Unknown' : job.postedByName,
+                        job.postedByName.isEmpty
+                            ? loc.unknown
+                            : job.postedByName,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -2430,7 +3024,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          _postedByLabel(job.postedByUserType),
+                          _postedByLabel(loc, job.postedByUserType),
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -2498,7 +3092,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Location',
+                          loc.locationSection,
                           style: TextStyle(
                             fontSize: 11,
                             color: cs.onSurface.withValues(alpha: 0.45),
@@ -2533,28 +3127,28 @@ class _AvailableJobDetailScreen extends StatelessWidget {
               children: [
                 _infoTile(
                   icon: Icons.group_outlined,
-                  label: 'Workers Needed',
+                  label: loc.workersNeededLabel,
                   value: '${job.workersNeeded}',
                   color: const Color(0xFF15803D),
                 ),
                 if (job.estimatedBudget != null)
                   _infoTile(
                     icon: Icons.currency_rupee_rounded,
-                    label: 'Budget',
+                    label: loc.budgetLabel,
                     value: '₹${job.estimatedBudget!.toStringAsFixed(0)}',
                     color: const Color(0xFF92400E),
                   ),
                 if (job.postedAt != null)
                   _infoTile(
                     icon: Icons.calendar_today_outlined,
-                    label: 'Posted On',
+                    label: loc.postedOn,
                     value: _fmtDate(job.postedAt),
                     color: const Color(0xFF6D28D9),
                   ),
                 if (job.totalApplications > 0)
                   _infoTile(
                     icon: Icons.people_rounded,
-                    label: 'Applications',
+                    label: loc.applicationsLabel,
                     value: '${job.totalApplications}',
                     color: primaryColor,
                   ),
@@ -2571,7 +3165,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Photos',
+                    loc.photos,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
@@ -2594,7 +3188,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Description',
+                    loc.descriptionLabel,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
@@ -2624,7 +3218,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Required Skills',
+                    loc.requiredSkillsLabel,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
@@ -2635,7 +3229,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
-                    children: job.requiredSkills
+                    children: localizedSkills
                         .map(
                           (s) => Container(
                             padding: const EdgeInsets.symmetric(

@@ -121,6 +121,14 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    if (_passwordController.text.trim().length < 8) {
+      setState(() {
+        _autoValidate = true;
+      });
+      ToastUtils.showError(AppLocalizations.of(context).passwordInvalid);
+      return;
+    }
+
     FocusScope.of(context).unfocus();
     setState(() {
       _isSubmitting = true;
@@ -365,6 +373,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 errorText:
                     _autoValidate && _passwordController.text.trim().isEmpty
                     ? AppLocalizations.of(context).passwordRequired
+                    : (_autoValidate &&
+                          _passwordController.text.trim().length < 8)
+                    ? AppLocalizations.of(context).passwordInvalid
                     : null,
               ),
               const SizedBox(height: 12),

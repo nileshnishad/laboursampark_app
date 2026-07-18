@@ -12,12 +12,10 @@ import '../../core/services/permission_service.dart';
 import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
 import 'package:get/get.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 // Views
 import 'views/all_jobs_view.dart';
 import 'views/contractor_list_view.dart';
-import 'views/dashboard_home_view.dart';
 import 'views/edit_profile_screen.dart';
 import 'views/history_view.dart';
 import 'views/id_card_screen.dart';
@@ -231,14 +229,6 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     }
   }
 
-  Future<void> _openBannerLink(String link) async {
-    final uri = Uri.tryParse(link.trim());
-    if (uri == null) return;
-    final canLaunch = await canLaunchUrl(uri);
-    if (!canLaunch) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
   void _maybeShowMobileBannerPopup() {
     final banner = _mobileBanner;
     if (!mounted) return;
@@ -251,7 +241,6 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     final imageUrl = (banner['bannerImageUrl'] ?? '').toString().trim();
     final title = (banner['title'] ?? '').toString().trim();
     final contextText = (banner['context'] ?? '').toString().trim();
-    final link = (banner['link'] ?? '').toString().trim();
 
     if (imageUrl.isEmpty && title.isEmpty && contextText.isEmpty) {
       return;
@@ -271,11 +260,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
               color: Theme.of(context).colorScheme.surface,
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
-                onTap: link.isEmpty
-                    ? null
-                    : () async {
-                        await _openBannerLink(link);
-                      },
+                onTap: null,
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
@@ -459,21 +444,6 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             label: loc.profile,
           ),
         ];
-    }
-  }
-
-  // Stable internal keys for tabs (do NOT localize these). These keys
-  // correspond positionally to the items returned by `_getNavItems`.
-  List<String> _getNavKeys(String userType) {
-    switch (userType.toLowerCase()) {
-      case 'labour':
-        return ['jobs', 'contractors', 'history', 'profile'];
-      case 'sub_contractor':
-        return ['my_jobs', 'jobs', 'labours', 'history', 'profile'];
-      case 'contractor':
-        return ['my_jobs', 'labours', 'contractors', 'history', 'profile'];
-      default:
-        return ['jobs', 'history', 'profile'];
     }
   }
 

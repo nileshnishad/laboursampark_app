@@ -21,17 +21,25 @@ class ContractorVisitingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = isDark
+        ? theme.colorScheme.surfaceContainerHigh
+        : Colors.white;
+    final cardBorderColor = isDark
+        ? theme.colorScheme.outline.withValues(alpha: 0.55)
+        : theme.colorScheme.onSurface.withValues(alpha: 0.16);
+    final cardShadowColor = isDark
+        ? Colors.black.withValues(alpha: 0.24)
+        : Colors.black.withValues(alpha: 0.08);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: Colors.white,
+      color: cardColor,
       elevation: 4,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
+      shadowColor: cardShadowColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: BorderSide(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.16),
-          width: 1.4,
-        ),
+        side: BorderSide(color: cardBorderColor, width: 1.4),
       ),
       child: InkWell(
         onTap: () => _showProfileSheet(context),

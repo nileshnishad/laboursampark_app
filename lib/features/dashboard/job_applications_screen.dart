@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../../common/widgets/loading_skeleton.dart';
@@ -27,9 +29,98 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
   bool _loading = true;
   String? _error;
   Map<String, dynamic>? _jobInfo;
-  Map<String, dynamic>? _summary;
   List<Map<String, dynamic>> _applications = [];
   List<SkillModel> _allSkills = [];
+  String _statusFilter = 'all';
+
+  void _debugPrintChunked(String tag, String text) {
+    const chunkSize = 900;
+    for (var i = 0; i < text.length; i += chunkSize) {
+      final end = (i + chunkSize < text.length) ? i + chunkSize : text.length;
+      debugPrint('$tag ${text.substring(i, end)}');
+    }
+  }
+
+  void _logApplicantsPayload(Map<String, dynamic> res) {
+    final data = res['data'] as Map<String, dynamic>? ?? {};
+    final apps = (data['applications'] as List? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
+
+    final pending = apps
+        .where((e) => (e['status'] ?? 'pending').toString() == 'pending')
+        .length;
+    final accepted = apps
+        .where((e) => (e['status'] ?? '').toString() == 'accepted')
+        .length;
+    final completed = apps
+        .where((e) => (e['status'] ?? '').toString() == 'completed')
+        .toList();
+
+    debugPrint(
+      '[Applicants API][Status Count] total=${apps.length} pending=$pending accepted=$accepted completed=${completed.length}',
+    );
+
+    num? readContractorRating(Map<String, dynamic> app) {
+      final review = app['review'] as Map<String, dynamic>? ?? {};
+      final contractorReviewToApplicant =
+          app['contractorReviewToApplicant'] as Map<String, dynamic>? ?? {};
+      return (app['rating'] as num?) ??
+          (app['reviewRating'] as num?) ??
+          (app['contractorRating'] as num?) ??
+          (contractorReviewToApplicant['rating'] as num?) ??
+          (review['rating'] as num?);
+    }
+
+    num? readLabourRating(Map<String, dynamic> app) {
+      final applicantReviewToContractor =
+          app['applicantReviewToContractor'] as Map<String, dynamic>? ?? {};
+      final myFeedback =
+          app['myFeedback'] as Map<String, dynamic>? ??
+          app['applicantFeedback'] as Map<String, dynamic>? ??
+          app['feedbackFromApplicant'] as Map<String, dynamic>? ??
+          app['labourFeedback'] as Map<String, dynamic>? ??
+          <String, dynamic>{};
+      if (applicantReviewToContractor.isNotEmpty) {
+        return applicantReviewToContractor['rating'] as num?;
+      }
+      return (myFeedback['rating'] as num?) ??
+          (app['myFeedbackRating'] as num?) ??
+          (app['applicantRatingToContractor'] as num?);
+    }
+
+    if (completed.isNotEmpty) {
+      for (final app in completed) {
+        final enquiryId = (app['enquiryId'] ?? '').toString();
+        final contractorRating = readContractorRating(app);
+        final labourRating = readLabourRating(app);
+        debugPrint(
+          '[Applicants API][Rating Check] enquiryId=$enquiryId contractorRating=${contractorRating ?? 'null'} labourRating=${labourRating ?? 'null'}',
+        );
+      }
+    }
+
+    if (completed.isNotEmpty) {
+      final prettyCompleted = const JsonEncoder.withIndent(
+        '  ',
+      ).convert(completed);
+      _debugPrintChunked(
+        '[Applicants API][Completed Applications]',
+        prettyCompleted,
+      );
+      return;
+    }
+
+    if (apps.isNotEmpty) {
+      final prettyFirst = const JsonEncoder.withIndent(
+        '  ',
+      ).convert(apps.first);
+      _debugPrintChunked(
+        '[Applicants API][First Application Full]',
+        prettyFirst,
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -53,19 +144,40 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
       _loading = true;
       _error = null;
     });
+
+    debugPrint(
+      '[Applicants API][Request] jobId=${widget.jobId} tokenLen=${widget.token.length}',
+    );
+
     final res = await ApiService.fetchJobApplications(
       token: widget.token,
       jobId: widget.jobId,
     );
+
+    final success = res['success'] == true;
+    final data = res['data'] as Map<String, dynamic>? ?? {};
+    final apps = (data['applications'] as List? ?? []);
+    debugPrint(
+      '[Applicants API][Response] success=$success message=${res['message']} totalApplications=${apps.length}',
+    );
+    if (apps.isNotEmpty) {
+      final first = apps.first;
+      if (first is Map<String, dynamic>) {
+        debugPrint(
+          '[Applicants API][First Application] keys=${first.keys.toList()}',
+        );
+        debugPrint(
+          '[Applicants API][First Application] status=${first['status']} enquiryId=${first['enquiryId']}',
+        );
+      }
+    }
+    _logApplicantsPayload(res);
+
     if (!mounted) return;
-    if (res['success'] == true) {
-      final data = res['data'] as Map<String, dynamic>? ?? {};
+    if (success) {
       setState(() {
         _jobInfo = data['job'] as Map<String, dynamic>?;
-        _summary = data['summary'] as Map<String, dynamic>?;
-        _applications = (data['applications'] as List? ?? [])
-            .map((e) => e as Map<String, dynamic>)
-            .toList();
+        _applications = apps.map((e) => e as Map<String, dynamic>).toList();
         _loading = false;
       });
     } else {
@@ -78,6 +190,8 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
 
   Color _statusColor(String status) {
     switch (status) {
+      case 'all':
+        return const Color(0xFF4B5563);
       case 'accepted':
         return const Color(0xFF059669);
       case 'completed':
@@ -97,19 +211,53 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
       case 'accepted':
         return loc.summaryAccepted;
       case 'completed':
-        return loc.summaryAccepted;
+        return loc.completed;
       case 'rejected':
         return loc.summaryRejected;
       case 'withdrawn':
-        return loc.summaryRejected;
+        return loc.withdrawn;
       default:
         return loc.summaryPending;
+    }
+  }
+
+  int _statusCount(String status) {
+    if (status == 'all') return _applications.length;
+    return _applications
+        .where((app) => (app['status'] ?? 'pending').toString() == status)
+        .length;
+  }
+
+  List<Map<String, dynamic>> _filteredApplications() {
+    if (_statusFilter == 'all') return _applications;
+    return _applications
+        .where(
+          (app) => (app['status'] ?? 'pending').toString() == _statusFilter,
+        )
+        .toList();
+  }
+
+  String _filterLabel(AppLocalizations loc, String status) {
+    switch (status) {
+      case 'pending':
+        return loc.summaryPending;
+      case 'accepted':
+        return loc.summaryAccepted;
+      case 'completed':
+        return loc.completed;
+      case 'rejected':
+        return loc.summaryRejected;
+      case 'withdrawn':
+        return loc.withdrawn;
+      default:
+        return loc.allLabel;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final filteredApplications = _filteredApplications();
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
@@ -181,10 +329,54 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                   // Job info card
                   if (_jobInfo != null)
                     _JobInfoCard(job: _jobInfo!, allSkills: _allSkills),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
 
-                  // Summary chips
-                  if (_summary != null) _SummaryRow(summary: _summary!),
+                  // Status filters
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children:
+                          [
+                            'all',
+                            'pending',
+                            'accepted',
+                            'completed',
+                            'rejected',
+                            'withdrawn',
+                          ].map((status) {
+                            final isActive = _statusFilter == status;
+                            final color = _statusColor(status);
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FilterChip(
+                                selected: isActive,
+                                showCheckmark: false,
+                                label: Text(
+                                  '${_filterLabel(loc, status)} (${_statusCount(status)})',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: isActive
+                                        ? color
+                                        : const Color(0xFF4B5563),
+                                  ),
+                                ),
+                                onSelected: (_) {
+                                  setState(() => _statusFilter = status);
+                                },
+                                selectedColor: color.withValues(alpha: 0.14),
+                                backgroundColor: Colors.white,
+                                side: BorderSide(
+                                  color: isActive
+                                      ? color.withValues(alpha: 0.6)
+                                      : const Color(0xFFE5E7EB),
+                                  width: isActive ? 1.3 : 1,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                    ),
+                  ),
                   const SizedBox(height: 14),
 
                   // Section label
@@ -200,7 +392,9 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        '${loc.applicantsCount} (${_applications.length})',
+                        _statusFilter == 'all'
+                            ? '${loc.applicantsCount} (${filteredApplications.length})'
+                            : '${_filterLabel(loc, _statusFilter)} ${loc.applicantsCount} (${filteredApplications.length})',
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
@@ -214,11 +408,29 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
 
                   if (_applications.isEmpty)
                     const _EmptyState()
+                  else if (filteredApplications.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 26),
+                        child: Text(
+                          'No ${_filterLabel(loc, _statusFilter).toLowerCase()} applications',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF6B7280),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    )
                   else
-                    ..._applications.map(
+                    ...filteredApplications.map(
                       (app) => _ApplicationCard(
                         application: app,
                         token: widget.token,
+                        allSkills: _allSkills,
+                        localeCode: Localizations.localeOf(
+                          context,
+                        ).languageCode,
                         statusColor: _statusColor(
                           (app['status'] ?? 'pending').toString(),
                         ),
@@ -291,63 +503,6 @@ class _JobInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image thumbnail if available
-          if (images.isNotEmpty)
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(13),
-              ),
-              child: Stack(
-                children: [
-                  Image.network(
-                    images.first,
-                    height: 110,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1F2937),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: isOpen
-                                  ? const Color(0xFF4ADE80)
-                                  : const Color(0xFF9CA3AF),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            isOpen ? loc.jobOpen : loc.jobClosed,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
             child: Column(
@@ -483,113 +638,12 @@ class _InfoChip extends StatelessWidget {
   }
 }
 
-// ── Summary Row ───────────────────────────────────────────────────────────────
-
-class _SummaryRow extends StatelessWidget {
-  final Map<String, dynamic> summary;
-  const _SummaryRow({required this.summary});
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    Widget chip(IconData icon, String label, dynamic count, Color color) {
-      return Expanded(
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '$count',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: color,
-                        height: 1.1,
-                      ),
-                    ),
-                    Text(
-                      label,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF6B7280),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        Row(
-          children: [
-            chip(
-              Icons.people_outline_rounded,
-              loc.summaryTotal,
-              summary['total'] ?? 0,
-              const Color(0xFF2563EB),
-            ),
-            const SizedBox(width: 8),
-            chip(
-              Icons.hourglass_top_rounded,
-              loc.summaryPending,
-              summary['pending'] ?? 0,
-              const Color(0xFFF59E0B),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            chip(
-              Icons.check_circle_rounded,
-              loc.summaryAccepted,
-              summary['accepted'] ?? 0,
-              const Color(0xFF059669),
-            ),
-            const SizedBox(width: 8),
-            chip(
-              Icons.cancel_rounded,
-              loc.summaryRejected,
-              summary['rejected'] ?? 0,
-              const Color(0xFFDC2626),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
 // ── Application Card ──────────────────────────────────────────────────────────
 
 class _ApplicationCard extends StatefulWidget {
   final Map<String, dynamic> application;
+  final List<SkillModel> allSkills;
+  final String localeCode;
   final Color statusColor;
   final String statusLabel;
   final String token;
@@ -597,6 +651,8 @@ class _ApplicationCard extends StatefulWidget {
 
   const _ApplicationCard({
     required this.application,
+    required this.allSkills,
+    required this.localeCode,
     required this.statusColor,
     required this.statusLabel,
     required this.token,
@@ -609,6 +665,13 @@ class _ApplicationCard extends StatefulWidget {
 
 class _ApplicationCardState extends State<_ApplicationCard> {
   bool _actionLoading = false;
+  final ScrollController _cardScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _cardScrollController.dispose();
+    super.dispose();
+  }
 
   Future<void> _connect(String enquiryId) async {
     final loc = AppLocalizations.of(context);
@@ -865,7 +928,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
     final mobile = (applicant['mobile'] ?? '').toString();
     final userType = (applicant['userType'] ?? '').toString();
     final profilePhoto = (applicant['profilePhoto'] ?? '').toString();
-    final rating = (applicant['rating'] as num?)?.toDouble() ?? 0.0;
+    final applicantRating = (applicant['rating'] as num?)?.toDouble() ?? 0.0;
     final totalReviews = (applicant['totalReviews'] as num?)?.toInt() ?? 0;
     final completedJobs = (applicant['completedJobs'] as num?)?.toInt() ?? 0;
     final availability = (applicant['availability'] as bool?) ?? false;
@@ -873,10 +936,70 @@ class _ApplicationCardState extends State<_ApplicationCard> {
     final city = (location['city'] ?? '').toString();
     final state = (location['state'] ?? '').toString();
     final locationStr = [city, state].where((s) => s.isNotEmpty).join(', ');
+    final rawSkills =
+        (application['skills'] as List?) ??
+        (application['applicantSkills'] as List?) ??
+        (applicant['skills'] as List?) ??
+        const [];
+    final applicantSkillIds = rawSkills
+        .map((e) => e.toString())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    final localizedApplicantSkills = resolveSkillDisplayNames(
+      skillIds: applicantSkillIds,
+      skills: widget.allSkills,
+      localeCode: widget.localeCode,
+    );
     final message = (application['message'] ?? '').toString();
     final appliedAt = application['appliedAt'] != null
         ? DateTime.tryParse(application['appliedAt'].toString())
         : null;
+    final review = application['review'] as Map<String, dynamic>? ?? {};
+    final contractorReviewToApplicant =
+        application['contractorReviewToApplicant'] as Map<String, dynamic>? ??
+        <String, dynamic>{};
+    final applicantReviewToContractor =
+        application['applicantReviewToContractor'] as Map<String, dynamic>? ??
+        <String, dynamic>{};
+    final myFeedback = application['myFeedback'] is Map<String, dynamic>
+        ? application['myFeedback'] as Map<String, dynamic>
+        : application['applicantFeedback'] is Map<String, dynamic>
+        ? application['applicantFeedback'] as Map<String, dynamic>
+        : application['feedbackFromApplicant'] is Map<String, dynamic>
+        ? application['feedbackFromApplicant'] as Map<String, dynamic>
+        : application['labourFeedback'] is Map<String, dynamic>
+        ? application['labourFeedback'] as Map<String, dynamic>
+        : <String, dynamic>{};
+    final contractorRating =
+        (application['rating'] as num?)?.toDouble() ??
+        (application['reviewRating'] as num?)?.toDouble() ??
+        (application['contractorRating'] as num?)?.toDouble() ??
+        (contractorReviewToApplicant['rating'] as num?)?.toDouble() ??
+        (review['rating'] as num?)?.toDouble();
+    final contractorFeedback =
+        (application['feedback'] ??
+                application['reviewFeedback'] ??
+                application['contractorFeedback'] ??
+                contractorReviewToApplicant['feedback'] ??
+                review['feedback'] ??
+                '')
+            .toString()
+            .trim();
+    final labourRating =
+        (applicantReviewToContractor['rating'] as num?)?.toDouble() ??
+        (myFeedback['rating'] as num?)?.toDouble() ??
+        (application['myFeedbackRating'] as num?)?.toDouble() ??
+        (application['applicantRatingToContractor'] as num?)?.toDouble();
+    final labourFeedback =
+        (applicantReviewToContractor['feedback'] ??
+                myFeedback['feedback'] ??
+                application['myFeedbackText'] ??
+                application['applicantFeedbackText'] ??
+                application['feedbackByApplicant'] ??
+                application['labourFeedbackText'] ??
+                '')
+            .toString()
+            .trim();
 
     String fmtDate(DateTime? dt) {
       if (dt == null) return '';
@@ -914,340 +1037,509 @@ class _ApplicationCardState extends State<_ApplicationCard> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Top row: photo + name + status
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(2.5),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _userTypeColor(userType),
-                ),
-                child: CircleAvatar(
-                  radius: 24,
-                  backgroundColor: const Color(0xFFF0F0F0),
-                  backgroundImage: profilePhoto.isNotEmpty
-                      ? NetworkImage(profilePhoto)
-                      : null,
-                  child: profilePhoto.isEmpty
-                      ? Text(
-                          name.isNotEmpty ? name[0].toUpperCase() : '?',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF374151),
-                          ),
-                        )
-                      : null,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.6,
+        ),
+        child: Scrollbar(
+          controller: _cardScrollController,
+          thumbVisibility: true,
+          child: SingleChildScrollView(
+            controller: _cardScrollController,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top row: photo + name + status
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF111827),
+                    Container(
+                      padding: const EdgeInsets.all(2.5),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _userTypeColor(userType),
+                      ),
+                      child: CircleAvatar(
+                        radius: 24,
+                        backgroundColor: const Color(0xFFF0F0F0),
+                        backgroundImage: profilePhoto.isNotEmpty
+                            ? NetworkImage(profilePhoto)
+                            : null,
+                        child: profilePhoto.isEmpty
+                            ? Text(
+                                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF374151),
+                                ),
+                              )
+                            : null,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF3F4F6),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: Text(
-                            typeLabel(userType),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
                             style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF111827),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF3F4F6),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: Text(
+                                  typeLabel(userType),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF374151),
+                                  ),
+                                ),
+                              ),
+                              if (availability) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  width: 7,
+                                  height: 7,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF4ADE80),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  loc.availableLabel,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF059669),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          if (locationStr.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.location_on_outlined,
+                                  size: 12,
+                                  color: Color(0xFF9CA3AF),
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  locationStr,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF6B7280),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: statusColor.withValues(alpha: 0.5),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _statusIcon(status),
+                            size: 13,
+                            color: statusColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            statusLabel,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: statusColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+                const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                const SizedBox(height: 10),
+
+                // Stats
+                Row(
+                  children: [
+                    _StatChip(
+                      icon: Icons.star_rounded,
+                      color: const Color(0xFFF59E0B),
+                      label:
+                          '${applicantRating.toStringAsFixed(1)} ($totalReviews ${loc.reviewsCount})',
+                    ),
+                    const SizedBox(width: 10),
+                    _StatChip(
+                      icon: Icons.check_circle_outline_rounded,
+                      color: const Color(0xFF059669),
+                      label: '$completedJobs ${loc.jobsDone}',
+                    ),
+                  ],
+                ),
+
+                if (localizedApplicantSkills.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: localizedApplicantSkills
+                        .map(
+                          (s) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: const Color(0xFFBFDBFE),
+                              ),
+                            ),
+                            child: Text(
+                              s,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1D4ED8),
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+
+                if (mobile.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.phone_outlined,
+                        size: 13,
+                        color: Color(0xFF6B7280),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        mobile,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF374151),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (email.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.email_outlined,
+                        size: 13,
+                        color: Color(0xFF6B7280),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          email,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF374151),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                if (message.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF9FAFB),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.format_quote_rounded,
+                          size: 14,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            message,
+                            style: const TextStyle(
+                              fontSize: 12,
                               color: Color(0xFF374151),
                             ),
                           ),
                         ),
-                        if (availability) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF4ADE80),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            loc.availableLabel,
-                            style: TextStyle(
-                              fontSize: 11,
+                      ],
+                    ),
+                  ),
+                ],
+
+                if (contractorRating != null ||
+                    contractorFeedback.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFECFDF5),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFA7F3D0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.grade_rounded,
+                              size: 14,
                               color: Color(0xFF059669),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              loc.myFeedbackLabel,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF065F46),
+                              ),
+                            ),
+                            if (contractorRating != null) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                contractorRating.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF065F46),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        if (contractorFeedback.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            contractorFeedback,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF065F46),
                             ),
                           ),
                         ],
                       ],
                     ),
-                    if (locationStr.isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on_outlined,
-                            size: 12,
-                            color: Color(0xFF9CA3AF),
-                          ),
-                          const SizedBox(width: 2),
+                  ),
+                ],
+
+                if (status == 'completed' &&
+                    (labourRating != null || labourFeedback.isNotEmpty)) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFBFDBFE)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.rate_review_rounded,
+                              size: 14,
+                              color: Color(0xFF1D4ED8),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              loc.feedbackFromLabourLabel,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1E3A8A),
+                              ),
+                            ),
+                            if (labourRating != null) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                labourRating.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF1E3A8A),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        if (labourFeedback.isNotEmpty) ...[
+                          const SizedBox(height: 6),
                           Text(
-                            locationStr,
+                            labourFeedback,
                             style: const TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF6B7280),
+                              color: Color(0xFF1E3A8A),
                             ),
                           ),
                         ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: statusColor.withValues(alpha: 0.5),
-                    width: 1.5,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(_statusIcon(status), size: 13, color: statusColor),
-                    const SizedBox(width: 4),
-                    Text(
-                      statusLabel,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: statusColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 10),
-          const Divider(height: 1, color: Color(0xFFF3F4F6)),
-          const SizedBox(height: 10),
-
-          // Stats
-          Row(
-            children: [
-              _StatChip(
-                icon: Icons.star_rounded,
-                color: const Color(0xFFF59E0B),
-                label:
-                    '${rating.toStringAsFixed(1)} ($totalReviews ${loc.reviewsCount})',
-              ),
-              const SizedBox(width: 10),
-              _StatChip(
-                icon: Icons.check_circle_outline_rounded,
-                color: const Color(0xFF059669),
-                label: '$completedJobs ${loc.jobsDone}',
-              ),
-            ],
-          ),
-
-          if (mobile.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(
-                  Icons.phone_outlined,
-                  size: 13,
-                  color: Color(0xFF6B7280),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  mobile,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF374151),
-                  ),
-                ),
-              ],
-            ),
-          ],
-          if (email.isNotEmpty) ...[
-            const SizedBox(height: 3),
-            Row(
-              children: [
-                const Icon(
-                  Icons.email_outlined,
-                  size: 13,
-                  color: Color(0xFF6B7280),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    email,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF374151),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ],
-
-          if (message.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.format_quote_rounded,
-                    size: 14,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      message,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF374151),
-                      ),
+                      ],
                     ),
                   ),
                 ],
-              ),
-            ),
-          ],
 
-          if (appliedAt != null) ...[
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                const Icon(
-                  Icons.access_time_rounded,
-                  size: 12,
-                  color: Color(0xFF9CA3AF),
-                ),
-                const SizedBox(width: 3),
-                Text(
-                  '${loc.appliedOn} ${fmtDate(appliedAt)}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF9CA3AF),
+                if (appliedAt != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      const Icon(
+                        Icons.access_time_rounded,
+                        size: 12,
+                        color: Color(0xFF9CA3AF),
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        '${loc.appliedOn} ${fmtDate(appliedAt)}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                ],
+
+                // ── Action buttons ────────────────────────────────────
+                if (status == 'pending' || status == 'accepted') ...[
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                  const SizedBox(height: 12),
+                  if (_actionLoading)
+                    const Center(
+                      child: SizedBox(
+                        height: 36,
+                        width: 36,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Color(0xFF2563EB),
+                        ),
+                      ),
+                    )
+                  else if (status == 'pending')
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _connect(enquiryId),
+                        icon: const Icon(Icons.handshake_outlined, size: 20),
+                        label: Text(
+                          loc.connectAccept,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 3,
+                          shadowColor: const Color(
+                            0xFF2563EB,
+                          ).withValues(alpha: 0.4),
+                        ),
+                      ),
+                    )
+                  else if (status == 'accepted')
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showCompleteDialog(enquiryId, name),
+                        icon: const Icon(
+                          Icons.check_circle_outline_rounded,
+                          size: 20,
+                        ),
+                        label: Text(
+                          loc.markCompleted,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF059669),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 3,
+                          shadowColor: const Color(
+                            0xFF059669,
+                          ).withValues(alpha: 0.4),
+                        ),
+                      ),
+                    ),
+                ],
               ],
             ),
-          ],
-
-          // ── Action buttons ────────────────────────────────────
-          if (status == 'pending' || status == 'accepted') ...[
-            const SizedBox(height: 12),
-            const Divider(height: 1, color: Color(0xFFF3F4F6)),
-            const SizedBox(height: 12),
-            if (_actionLoading)
-              const Center(
-                child: SizedBox(
-                  height: 36,
-                  width: 36,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: Color(0xFF2563EB),
-                  ),
-                ),
-              )
-            else if (status == 'pending')
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _connect(enquiryId),
-                  icon: const Icon(Icons.handshake_outlined, size: 20),
-                  label: Text(
-                    loc.connectAccept,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 3,
-                    shadowColor: const Color(0xFF2563EB).withValues(alpha: 0.4),
-                  ),
-                ),
-              )
-            else if (status == 'accepted')
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _showCompleteDialog(enquiryId, name),
-                  icon: const Icon(
-                    Icons.check_circle_outline_rounded,
-                    size: 20,
-                  ),
-                  label: Text(
-                    loc.markCompleted,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF059669),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 3,
-                    shadowColor: const Color(0xFF059669).withValues(alpha: 0.4),
-                  ),
-                ),
-              ),
-          ],
-        ],
+          ),
+        ),
       ),
     );
   }

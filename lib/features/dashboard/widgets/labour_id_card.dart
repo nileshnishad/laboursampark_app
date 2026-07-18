@@ -20,19 +20,26 @@ class LabourIdCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = isDark
+        ? theme.colorScheme.surfaceContainerHigh
+        : Colors.white;
+    final cardBorderColor = isDark
+        ? theme.colorScheme.outline.withValues(alpha: 0.55)
+        : theme.colorScheme.onSurface.withValues(alpha: 0.16);
+    final cardShadowColor = isDark
+        ? Colors.black.withValues(alpha: 0.24)
+        : Colors.black.withValues(alpha: 0.08);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.16),
-          width: 1.4,
-        ),
+        border: Border.all(color: cardBorderColor, width: 1.4),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: cardShadowColor,
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -42,7 +49,7 @@ class LabourIdCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: const EdgeInsets.all(16),
-          color: Colors.white,
+          color: cardColor,
           child: Stack(
             children: [
               Positioned.fill(

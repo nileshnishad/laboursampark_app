@@ -748,6 +748,39 @@ class ApiService {
     }
   }
 
+  /// POST /api/jobs/:jobId/apply — apply for a job with a personal message.
+  static Future<Map<String, dynamic>> applyForJob({
+    required String token,
+    required String jobId,
+    required String message,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/jobs/$jobId/apply',
+        data: jsonEncode({'message': message}),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
   /// GET /api/public/mobile-banner/active — fetch active public mobile banner.
   static Future<Map<String, dynamic>> fetchActiveMobileBanner() async {
     final hasInternet = await NetworkService.hasInternet();
@@ -867,6 +900,39 @@ class ApiService {
     try {
       final response = await _dio.post(
         '${Env.baseUrl}/api/job-enquiries/$enquiryId/complete',
+        data: jsonEncode({'rating': rating, 'feedback': feedback}),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  /// POST /api/jobs/:jobId/submitfeedback — labour submits feedback for job creator.
+  static Future<Map<String, dynamic>> submitJobFeedback({
+    required String token,
+    required String jobId,
+    required double rating,
+    required String feedback,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/jobs/$jobId/submitfeedback',
         data: jsonEncode({'rating': rating, 'feedback': feedback}),
         options: Options(
           headers: {

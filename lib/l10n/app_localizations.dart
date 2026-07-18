@@ -159,8 +159,7 @@ class AppLocalizations {
       'email_hint': 'name@company.com',
       'email_example_hint': 'name@example.com',
       'mobile_number_hint': 'XXXXX XXXXX',
-      'password_hint':
-          'Minimum 8 characters with uppercase, lowercase & number',
+      'password_hint': 'Minimum 8 characters',
       'business_reg_number_hint':
           'e.g. 27AAEPM1234C1Z5, AAAPL1234C, or any business registration number',
       'city_hint': 'e.g. Mumbai',
@@ -254,7 +253,7 @@ class AppLocalizations {
       'pincode_required': 'Pincode is required',
       'address_required': 'Address is required',
       'password_required': 'Password is required',
-      'password_invalid': 'Password does not meet requirements',
+      'password_invalid': 'Password must be at least 8 characters',
       'uploading': 'Uploading...',
       'uploaded': 'Uploaded ✓',
       'applications_title': 'Applications',
@@ -281,6 +280,18 @@ class AppLocalizations {
       'confirm_complete': 'CONFIRM COMPLETE',
       'mark_completed_title': 'Mark as Completed',
       'rate_work_label': 'Rate {name}\'s work',
+      'rate_contractor': 'RATE CONTRACTOR',
+      'rate_contractor_title': 'Rate Contractor',
+      'overall_rating_label': 'Overall rating',
+      'work_quality_label': 'Work quality',
+      'communication_label': 'Communication',
+      'timeliness_label': 'Timeliness',
+      'professionalism_label': 'Professionalism',
+      'feedback_submitted_successfully': 'Feedback submitted successfully!',
+      'failed_to_submit_feedback': 'Failed to submit feedback',
+      'received_feedback_label': 'Feedback from contractor',
+      'my_feedback_label': 'Your feedback',
+      'feedback_from_labour_label': 'Feedback from labour',
       'no_applications_yet': 'No Applications Yet',
       'no_applications_hint':
           'Applications will appear here once\nsomeone applies to this job.',
@@ -289,6 +300,46 @@ class AppLocalizations {
       'marked_completed_successfully': 'Marked as completed!',
       'failed_to_complete': 'Failed to complete',
       'good_work_default': 'Good work',
+      'failed_to_load_jobs': 'Failed to load jobs',
+      'failed_to_load_pending_jobs': 'Failed to load pending jobs',
+      'failed_to_load_accepted_jobs': 'Failed to load accepted jobs',
+      'failed_to_load_completed_jobs': 'Failed to load completed jobs',
+      'available_jobs_uppercase': 'AVAILABLE JOBS',
+      'pending_uppercase': 'PENDING',
+      'accepted_uppercase': 'ACCEPTED',
+      'completed_uppercase': 'COMPLETED',
+      'applied': 'Applied',
+      'pending': 'Pending',
+      'accepted': 'Accepted',
+      'completed': 'Completed',
+      'rejected': 'Rejected',
+      'withdrawn': 'Withdrawn',
+      'no_jobs_available': 'No Jobs Available',
+      'new_jobs_will_appear_hint':
+          'New jobs will appear here. Pull down to refresh.',
+      'no_accepted_jobs': 'No Accepted Jobs',
+      'accepted_jobs_appear_here':
+          'Jobs accepted by employers will appear here.',
+      'no_completed_jobs': 'No Completed Jobs',
+      'completed_jobs_appear_here': 'Jobs you have completed will appear here.',
+      'no_pending_applications': 'No Pending Applications',
+      'apply_jobs_appear_here': 'Apply to jobs and they will appear here.',
+      'today': 'Today',
+      'yesterday': 'Yesterday',
+      'days_ago': '{days}d ago',
+      'posted_by': 'Posted by',
+      'unknown': 'Unknown',
+      'need_workers': 'Need: {count} {workerWord}',
+      'applications_applied': '{count} Applied',
+      'job_details_coming_soon': 'Job details for "{title}" - coming soon',
+      'apply_for_job_coming_soon': 'Apply for "{title}" - coming soon',
+      'apply_now_uppercase': 'APPLY NOW',
+      'active_subscription_required_apply':
+          'Active subscription required to apply for jobs. Go to Profile -> Subscription to activate.',
+      'subscription_required_apply_uppercase': 'SUBSCRIPTION REQUIRED TO APPLY',
+      'job_details': 'Job Details',
+      'posted_on': 'Posted On',
+      'photos': 'Photos',
     },
     'hi': {
       'register_as_contractor': 'ठेकेदार के रूप में पंजीकरण',
@@ -437,7 +488,7 @@ class AppLocalizations {
       'email_hint': 'name@company.com',
       'email_example_hint': 'name@example.com',
       'mobile_number_hint': 'XXXXX XXXXX',
-      'password_hint': 'कम से कम 8 वर्ण, बड़े अक्षर, छोटे अक्षर और संख्या',
+      'password_hint': 'कम से कम 8 वर्ण',
       'business_reg_number_hint':
           'उदाहरण: 27AAEPM1234C1Z5, AAAPL1234C, या कोई भी व्यवसाय पंजीकरण नंबर',
       'city_hint': 'उदाहरण: मुंबई',
@@ -532,7 +583,7 @@ class AppLocalizations {
       'pincode_required': 'पिनकोड आवश्यक है',
       'address_required': 'पता आवश्यक है',
       'password_required': 'पासवर्ड आवश्यक है',
-      'password_invalid': 'पासवर्ड आवश्यकताओं को पूरा नहीं करता',
+      'password_invalid': 'पासवर्ड कम से कम 8 वर्ण का होना चाहिए',
       'uploading': 'अपलोड हो रहा है...',
       'uploaded': 'अपलोड किया गया ✓',
       'applications_title': 'आवेदन',
@@ -559,6 +610,18 @@ class AppLocalizations {
       'confirm_complete': 'पूर्ण की पुष्टि करें',
       'mark_completed_title': 'पूर्ण के रूप में चिह्नित करें',
       'rate_work_label': '{name} के काम की रेटिंग करें',
+      'rate_contractor': 'ठेकेदार को रेट करें',
+      'rate_contractor_title': 'ठेकेदार को रेट करें',
+      'overall_rating_label': 'कुल रेटिंग',
+      'work_quality_label': 'काम की गुणवत्ता',
+      'communication_label': 'संचार',
+      'timeliness_label': 'समयपालन',
+      'professionalism_label': 'पेशेवर व्यवहार',
+      'feedback_submitted_successfully': 'प्रतिक्रिया सफलतापूर्वक भेजी गई!',
+      'failed_to_submit_feedback': 'प्रतिक्रिया भेजने में विफल',
+      'received_feedback_label': 'ठेकेदार की प्रतिक्रिया',
+      'my_feedback_label': 'आपकी प्रतिक्रिया',
+      'feedback_from_labour_label': 'मजदूर की प्रतिक्रिया',
       'no_applications_yet': 'अब तक कोई आवेदन नहीं',
       'no_applications_hint':
           'इस नौकरी पर कोई आवेदन करने पर\nयहाँ आवेदन दिखाई देंगे।',
@@ -567,6 +630,48 @@ class AppLocalizations {
       'marked_completed_successfully': 'पूर्ण के रूप में चिह्नित किया गया!',
       'failed_to_complete': 'पूर्ण नहीं किया जा सका',
       'good_work_default': 'अच्छा काम',
+      'failed_to_load_jobs': 'नौकरियां लोड नहीं हो सकीं',
+      'failed_to_load_pending_jobs': 'लंबित नौकरियां लोड नहीं हो सकीं',
+      'failed_to_load_accepted_jobs': 'स्वीकृत नौकरियां लोड नहीं हो सकीं',
+      'failed_to_load_completed_jobs': 'पूर्ण नौकरियां लोड नहीं हो सकीं',
+      'available_jobs_uppercase': 'उपलब्ध नौकरियां',
+      'pending_uppercase': 'लंबित',
+      'accepted_uppercase': 'स्वीकृत',
+      'completed_uppercase': 'पूर्ण',
+      'applied': 'आवेदन किया',
+      'pending': 'लंबित',
+      'accepted': 'स्वीकृत',
+      'completed': 'पूर्ण',
+      'rejected': 'अस्वीकृत',
+      'withdrawn': 'वापस लिया',
+      'no_jobs_available': 'कोई नौकरी उपलब्ध नहीं',
+      'new_jobs_will_appear_hint':
+          'नई नौकरियां यहां दिखाई देंगी। रिफ्रेश करने के लिए नीचे खींचें।',
+      'no_accepted_jobs': 'कोई स्वीकृत नौकरी नहीं',
+      'accepted_jobs_appear_here':
+          'नियोक्ता द्वारा स्वीकृत नौकरियां यहां दिखाई देंगी।',
+      'no_completed_jobs': 'कोई पूर्ण नौकरी नहीं',
+      'completed_jobs_appear_here':
+          'आपकी पूरी की हुई नौकरियां यहां दिखाई देंगी।',
+      'no_pending_applications': 'कोई लंबित आवेदन नहीं',
+      'apply_jobs_appear_here': 'नौकरियों पर आवेदन करें, वे यहां दिखाई देंगी।',
+      'today': 'आज',
+      'yesterday': 'कल',
+      'days_ago': '{days} दिन पहले',
+      'posted_by': 'पोस्ट किया',
+      'unknown': 'अज्ञात',
+      'need_workers': 'आवश्यक: {count} {workerWord}',
+      'applications_applied': '{count} आवेदन',
+      'job_details_coming_soon': '"{title}" के लिए नौकरी विवरण जल्द आ रहा है',
+      'apply_for_job_coming_soon':
+          '"{title}" के लिए आवेदन सुविधा जल्द आ रही है',
+      'apply_now_uppercase': 'अभी आवेदन करें',
+      'active_subscription_required_apply':
+          'नौकरियों पर आवेदन करने के लिए सक्रिय सदस्यता आवश्यक है। सक्रिय करने के लिए प्रोफाइल -> सदस्यता पर जाएं।',
+      'subscription_required_apply_uppercase': 'आवेदन के लिए सदस्यता आवश्यक',
+      'job_details': 'नौकरी विवरण',
+      'posted_on': 'पोस्ट किया गया',
+      'photos': 'फोटो',
       'description_label': 'विवरण',
       'work_title': 'काम का शीर्षक',
     },
@@ -719,8 +824,7 @@ class AppLocalizations {
       'email_hint': 'name@company.com',
       'email_example_hint': 'name@example.com',
       'mobile_number_hint': 'XXXXX XXXXX',
-      'password_hint':
-          'किमान 8 वर्ण, मोठ्या आणि लहान अक्षरे आणि संख्या असणे आवश्यक आहे',
+      'password_hint': 'किमान 8 वर्ण',
       'business_reg_number': 'व्यवसाय नोंदणी / GST / PAN क्रमांक',
       'business_reg_number_hint':
           'उदा. 27AAEPM1234C1Z5, AAAPL1234C, किंवा कोणताही व्यवसाय नोंदणी क्रमांक',
@@ -810,7 +914,7 @@ class AppLocalizations {
       'pincode_required': 'पिनकोड आवश्यक आहे',
       'address_required': 'पत्ता आवश्यक आहे',
       'password_required': 'पासवर्ड आवश्यक आहे',
-      'password_invalid': 'पासवर्ड आवश्यकतांना पूर्ण करत नाही',
+      'password_invalid': 'पासवर्ड किमान 8 वर्णांचा असावा',
       'uploading': 'अपलोड करत आहे...',
       'uploaded': 'अपलोड झाले ✓',
       'add_site_photos_hint':
@@ -847,6 +951,18 @@ class AppLocalizations {
       'confirm_complete': 'पूर्ण निश्चित करा',
       'mark_completed_title': 'पूर्ण म्हणून चिन्हांकित करा',
       'rate_work_label': '{name} चे काम रेट करा',
+      'rate_contractor': 'कॉन्ट्रॅक्टरला रेट करा',
+      'rate_contractor_title': 'कॉन्ट्रॅक्टरला रेट करा',
+      'overall_rating_label': 'एकूण रेटिंग',
+      'work_quality_label': 'कामाची गुणवत्ता',
+      'communication_label': 'संवाद',
+      'timeliness_label': 'वेळेचे पालन',
+      'professionalism_label': 'व्यावसायिकता',
+      'feedback_submitted_successfully': 'प्रतिक्रिया यशस्वीरित्या सबमिट झाली!',
+      'failed_to_submit_feedback': 'प्रतिक्रिया सबमिट करता आली नाही',
+      'received_feedback_label': 'कॉन्ट्रॅक्टरकडून प्रतिक्रिया',
+      'my_feedback_label': 'तुमची प्रतिक्रिया',
+      'feedback_from_labour_label': 'मजुराकडून प्रतिक्रिया',
       'no_applications_yet': 'अद्याप कोणतेही अर्ज नाहीत',
       'no_applications_hint':
           'कोणीतरी या कामासाठी अर्ज केल्यावर\nयेथे अर्ज दिसू लागतील.',
@@ -855,6 +971,47 @@ class AppLocalizations {
       'marked_completed_successfully': 'पूर्ण म्हणून चिन्हांकित केले!',
       'failed_to_complete': 'पूर्ण करता आले नाही',
       'good_work_default': 'चांगले काम',
+      'failed_to_load_jobs': 'नोकऱ्या लोड करता आल्या नाहीत',
+      'failed_to_load_pending_jobs': 'प्रलंबित नोकऱ्या लोड करता आल्या नाहीत',
+      'failed_to_load_accepted_jobs': 'स्वीकृत नोकऱ्या लोड करता आल्या नाहीत',
+      'failed_to_load_completed_jobs': 'पूर्ण नोकऱ्या लोड करता आल्या नाहीत',
+      'available_jobs_uppercase': 'उपलब्ध नोकऱ्या',
+      'pending_uppercase': 'प्रलंबित',
+      'accepted_uppercase': 'स्वीकृत',
+      'completed_uppercase': 'पूर्ण',
+      'applied': 'अर्ज केला',
+      'pending': 'प्रलंबित',
+      'accepted': 'स्वीकृत',
+      'completed': 'पूर्ण',
+      'rejected': 'नाकारले',
+      'withdrawn': 'मागे घेतले',
+      'no_jobs_available': 'कोणतीही नोकरी उपलब्ध नाही',
+      'new_jobs_will_appear_hint':
+          'नवीन नोकऱ्या येथे दिसतील. रिफ्रेश करण्यासाठी खाली ओढा.',
+      'no_accepted_jobs': 'स्वीकृत नोकऱ्या नाहीत',
+      'accepted_jobs_appear_here':
+          'नियोक्त्यांनी स्वीकृत केलेल्या नोकऱ्या येथे दिसतील.',
+      'no_completed_jobs': 'पूर्ण नोकऱ्या नाहीत',
+      'completed_jobs_appear_here':
+          'तुम्ही पूर्ण केलेल्या नोकऱ्या येथे दिसतील.',
+      'no_pending_applications': 'प्रलंबित अर्ज नाहीत',
+      'apply_jobs_appear_here': 'नोकऱ्यांसाठी अर्ज करा, ते येथे दिसतील.',
+      'today': 'आज',
+      'yesterday': 'काल',
+      'days_ago': '{days} दिवसांपूर्वी',
+      'posted_by': 'पोस्ट केले',
+      'unknown': 'अज्ञात',
+      'need_workers': 'गरज: {count} {workerWord}',
+      'applications_applied': '{count} अर्ज',
+      'job_details_coming_soon': '"{title}" साठी नोकरीचे तपशील लवकरच येतील',
+      'apply_for_job_coming_soon': '"{title}" साठी अर्ज सुविधा लवकरच येईल',
+      'apply_now_uppercase': 'आत्ता अर्ज करा',
+      'active_subscription_required_apply':
+          'नोकरीसाठी अर्ज करण्यासाठी सक्रिय सदस्यता आवश्यक आहे. सक्रिय करण्यासाठी प्रोफाइल -> सदस्यता येथे जा.',
+      'subscription_required_apply_uppercase': 'अर्जासाठी सदस्यता आवश्यक',
+      'job_details': 'नोकरी तपशील',
+      'posted_on': 'पोस्ट केले',
+      'photos': 'फोटो',
     },
   };
 
@@ -1119,6 +1276,19 @@ class AppLocalizations {
   String get feedbackHint => _t('feedback_hint');
   String get confirmComplete => _t('confirm_complete');
   String get markCompletedTitle => _t('mark_completed_title');
+  String get rateContractor => _t('rate_contractor');
+  String get rateContractorTitle => _t('rate_contractor_title');
+  String get overallRatingLabel => _t('overall_rating_label');
+  String get workQualityLabel => _t('work_quality_label');
+  String get communicationLabel => _t('communication_label');
+  String get timelinessLabel => _t('timeliness_label');
+  String get professionalismLabel => _t('professionalism_label');
+  String get feedbackSubmittedSuccessfully =>
+      _t('feedback_submitted_successfully');
+  String get failedToSubmitFeedback => _t('failed_to_submit_feedback');
+  String get receivedFeedbackLabel => _t('received_feedback_label');
+  String get myFeedbackLabel => _t('my_feedback_label');
+  String get feedbackFromLabourLabel => _t('feedback_from_labour_label');
   String get noApplicationsYet => _t('no_applications_yet');
   String get noApplicationsHint => _t('no_applications_hint');
   String get connectedSuccessfully => _t('connected_successfully');
@@ -1126,6 +1296,50 @@ class AppLocalizations {
   String get markedCompletedSuccessfully => _t('marked_completed_successfully');
   String get failedToComplete => _t('failed_to_complete');
   String get goodWorkDefault => _t('good_work_default');
+  String get failedToLoadJobs => _t('failed_to_load_jobs');
+  String get failedToLoadPendingJobs => _t('failed_to_load_pending_jobs');
+  String get failedToLoadAcceptedJobs => _t('failed_to_load_accepted_jobs');
+  String get failedToLoadCompletedJobs => _t('failed_to_load_completed_jobs');
+  String get availableJobsUppercase => _t('available_jobs_uppercase');
+  String get pendingUppercase => _t('pending_uppercase');
+  String get acceptedUppercase => _t('accepted_uppercase');
+  String get completedUppercase => _t('completed_uppercase');
+  String get applied => _t('applied');
+  String get pending => _t('pending');
+  String get accepted => _t('accepted');
+  String get completed => _t('completed');
+  String get rejected => _t('rejected');
+  String get withdrawn => _t('withdrawn');
+  String get noJobsAvailable => _t('no_jobs_available');
+  String get newJobsWillAppearHint => _t('new_jobs_will_appear_hint');
+  String get noAcceptedJobs => _t('no_accepted_jobs');
+  String get acceptedJobsAppearHere => _t('accepted_jobs_appear_here');
+  String get noCompletedJobs => _t('no_completed_jobs');
+  String get completedJobsAppearHere => _t('completed_jobs_appear_here');
+  String get noPendingApplications => _t('no_pending_applications');
+  String get applyJobsAppearHere => _t('apply_jobs_appear_here');
+  String get today => _t('today');
+  String get yesterday => _t('yesterday');
+  String daysAgo(int days) => _t('days_ago').replaceAll('{days}', '$days');
+  String get postedBy => _t('posted_by');
+  String get unknown => _t('unknown');
+  String needWorkers(int count, bool isSingular) => _t('need_workers')
+      .replaceAll('{count}', '$count')
+      .replaceAll('{workerWord}', isSingular ? workerLabel : workersLabel);
+  String applicationsApplied(int count) =>
+      _t('applications_applied').replaceAll('{count}', '$count');
+  String jobDetailsComingSoon(String title) =>
+      _t('job_details_coming_soon').replaceAll('{title}', title);
+  String applyForJobComingSoon(String title) =>
+      _t('apply_for_job_coming_soon').replaceAll('{title}', title);
+  String get applyNowUppercase => _t('apply_now_uppercase');
+  String get activeSubscriptionRequiredApply =>
+      _t('active_subscription_required_apply');
+  String get subscriptionRequiredApplyUppercase =>
+      _t('subscription_required_apply_uppercase');
+  String get jobDetails => _t('job_details');
+  String get postedOn => _t('posted_on');
+  String get photos => _t('photos');
   String rateWorkLabel(String name) =>
       _t('rate_work_label').replaceAll('{name}', name);
   String get requiredField => _t('required_field');

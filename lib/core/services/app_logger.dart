@@ -26,6 +26,8 @@ class AppLogger {
 
   Map<String, dynamic>? _cachedContext;
   Map<String, dynamic>? _userContext;
+  DateTime? _telegramBackoffUntil;
+  DateTime? _lastTelegramFailureLogAt;
 
   // Call this after login
 
@@ -339,6 +341,11 @@ class AppLogger {
       return;
     }
 
+    final now = DateTime.now();
+    if (_telegramBackoffUntil != null && now.isBefore(_telegramBackoffUntil!)) {
+      return;
+    }
+
     final trimmedText = text.length > 3800
         ? '${text.substring(0, 3800)}...[TRUNCATED]'
         : text;
@@ -353,9 +360,32 @@ class AppLogger {
         },
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 429) {
+        _telegramBackoffUntil = DateTime.now().add(const Duration(minutes: 2));
+      }
+      if (kDebugMode) {
+        final now = DateTime.now();
+        final shouldLog =
+            _lastTelegramFailureLogAt == null ||
+            now.difference(_lastTelegramFailureLogAt!) >
+                const Duration(seconds: 30);
+        if (shouldLog) {
+          _lastTelegramFailureLogAt = now;
+          debugPrint('Telegram logger failed: $e');
+        }
+      }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Telegram logger failed: $e');
+        final now = DateTime.now();
+        final shouldLog =
+            _lastTelegramFailureLogAt == null ||
+            now.difference(_lastTelegramFailureLogAt!) >
+                const Duration(seconds: 30);
+        if (shouldLog) {
+          _lastTelegramFailureLogAt = now;
+          debugPrint('Telegram logger failed: $e');
+        }
       }
     }
   }

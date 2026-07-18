@@ -95,28 +95,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   // Password validation helper
   bool _hasMinLength(String password) => password.length >= 8;
-  bool _hasUppercase(String password) => password.contains(RegExp(r'[A-Z]'));
-  bool _hasLowercase(String password) => password.contains(RegExp(r'[a-z]'));
-  bool _hasNumber(String password) => password.contains(RegExp(r'[0-9]'));
 
-  bool _isPasswordValid(String password) {
-    return _hasMinLength(password) &&
-        _hasUppercase(password) &&
-        _hasLowercase(password) &&
-        _hasNumber(password);
-  }
+  bool _isPasswordValid(String password) => _hasMinLength(password);
 
   String? _getPasswordError(String password) {
     if (password.isEmpty) return null;
-
-    final errors = <String>[];
-    if (!_hasMinLength(password)) errors.add('8 characters');
-    if (!_hasUppercase(password)) errors.add('uppercase letter');
-    if (!_hasLowercase(password)) errors.add('lowercase letter');
-    if (!_hasNumber(password)) errors.add('number');
-
-    if (errors.isEmpty) return null;
-    return 'Must contain: ${errors.join(', ')}';
+    if (_hasMinLength(password)) return null;
+    return 'Password must be at least 8 characters';
   }
 
   Future<void> _sendOtp() async {
@@ -516,18 +501,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 'At least 8 characters',
                 _hasMinLength(_newPasswordController.text),
               ),
-              _buildPasswordRequirement(
-                'One uppercase letter (A-Z)',
-                _hasUppercase(_newPasswordController.text),
-              ),
-              _buildPasswordRequirement(
-                'One lowercase letter (a-z)',
-                _hasLowercase(_newPasswordController.text),
-              ),
-              _buildPasswordRequirement(
-                'One number (0-9)',
-                _hasNumber(_newPasswordController.text),
-              ),
             ],
           ),
         ),
@@ -601,7 +574,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           Padding(
             padding: const EdgeInsets.only(top: 12),
             child: Text(
-              'Please meet all password requirements',
+              'Password must be at least 8 characters',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Colors.orange[700],
