@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/models/business_type_model.dart';
@@ -28,6 +31,50 @@ class _ContractorListViewState extends State<ContractorListView> {
   List<MarketplaceUser> _allContractors = [];
   bool _loading = true;
   String? _error;
+
+  void _debugPrintChunked(String tag, String text) {
+    if (!kDebugMode) return;
+    const chunkSize = 900;
+    for (var i = 0; i < text.length; i += chunkSize) {
+      final end = (i + chunkSize < text.length) ? i + chunkSize : text.length;
+      debugPrint('$tag ${text.substring(i, end)}');
+    }
+  }
+
+  void _debugPrintMap(String tag, Map<String, dynamic> data) {
+    if (!kDebugMode) return;
+    final pretty = const JsonEncoder.withIndent('  ').convert(data);
+    _debugPrintChunked(tag, pretty);
+  }
+
+  String _resolveBusinessTypeLabel(
+    List<String> businessTypeIds,
+    String locale,
+  ) {
+    final labels = <String>[];
+    for (final id in businessTypeIds) {
+      final index = _availableBusinessTypes.indexWhere((item) => item.id == id);
+      if (index == -1) continue;
+
+      final businessType = _availableBusinessTypes[index];
+      final label = switch (locale.toLowerCase()) {
+        'hi' =>
+          businessType.hiName.isNotEmpty
+              ? businessType.hiName
+              : businessType.enName,
+        'mr' =>
+          businessType.mrName.isNotEmpty
+              ? businessType.mrName
+              : businessType.enName,
+        _ => businessType.enName,
+      };
+
+      if (label.isNotEmpty) {
+        labels.add(label);
+      }
+    }
+    return labels.join(', ');
+  }
 
   @override
   void initState() {
@@ -72,8 +119,30 @@ class _ContractorListViewState extends State<ContractorListView> {
       }
     }
 
+    final payload = _filter.toQueryParameters(isLabour: false);
+    if (kDebugMode) {
+      debugPrint(
+        '[Contractor Filter][Request] useSavedCity=$useSavedCity payload=$payload',
+      );
+    }
+
     final response = await ApiService.fetchContractors(filter: _filter);
     if (!mounted) return;
+
+    if (kDebugMode) {
+      final data = response['data'] as Map<String, dynamic>? ?? {};
+      final users = (data['users'] as List<dynamic>? ?? const []);
+      debugPrint(
+        '[Contractor Filter][Response] success=${response['success']} message=${response['message']} usersCount=${users.length}',
+      );
+      _debugPrintMap('[Contractor Filter][Response Body]', response);
+      if (users.isNotEmpty) {
+        _debugPrintChunked(
+          '[Contractor Filter][First User]',
+          const JsonEncoder.withIndent('  ').convert(users.first),
+        );
+      }
+    }
 
     if (response['success'] == true) {
       final data = response['data'] as Map<String, dynamic>?;
@@ -104,6 +173,11 @@ class _ContractorListViewState extends State<ContractorListView> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final localeCode = Localizations.localeOf(context).languageCode;
+    final selectedBusinessTypeLabels = _resolveBusinessTypeLabel(
+      _filter.businessTypeIds,
+      localeCode,
+    );
     final query = _searchController.text.trim().toLowerCase();
     final filtered = _allContractors.where((contractor) {
       final haystack =
@@ -184,6 +258,11 @@ class _ContractorListViewState extends State<ContractorListView> {
                     ),
                   );
                   if (result != null) {
+                    if (kDebugMode) {
+                      debugPrint(
+                        '[Contractor Filter][Apply Tap] selectedFilter=${result.toQueryParameters(isLabour: false)}',
+                      );
+                    }
                     setState(() {
                       _filter = result;
                     });
@@ -206,12 +285,36 @@ class _ContractorListViewState extends State<ContractorListView> {
           if (_filter.hasAnyFilter)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                '${loc.activeFilterLabel} ${_filter.city.isNotEmpty ? '${loc.filterCity}${_filter.city}; ' : ''}${_filter.minRating > 0 ? '${loc.filterRating}${_filter.minRating}; ' : ''}${_filter.minExperience > 0 ? '${loc.filterExperience}${_filter.minExperience}; ' : ''}${_filter.businessTypeIds.isNotEmpty ? '${loc.filterBusinessTypes}${_filter.businessTypeIds.length}; ' : ''}'
-                    .trim(),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${loc.activeFilterLabel} ${_filter.city.isNotEmpty ? '${loc.filterCity}${_filter.city}; ' : ''}${_filter.minRating > 0 ? '${loc.filterRating}${_filter.minRating}; ' : ''}${_filter.minExperience > 0 ? '${loc.filterExperience}${_filter.minExperience}; ' : ''}${_filter.businessTypeIds.isNotEmpty ? '${loc.filterBusinessTypes}${selectedBusinessTypeLabels.isNotEmpty ? selectedBusinessTypeLabels : _filter.businessTypeIds.join(', ')}; ' : ''}'
+                          .trim(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () async {
+                      setState(() {
+                        _filter = const MarketplaceFilter();
+                      });
+                      await _loadContractors(useSavedCity: false);
+                    },
+                    style: TextButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                    ),
+                    icon: const Icon(Icons.clear_rounded, size: 16),
+                    label: Text(loc.clearLabel),
+                  ),
+                ],
               ),
             ),
         ],

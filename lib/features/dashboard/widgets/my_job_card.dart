@@ -3,6 +3,8 @@ import '../models/my_job.dart';
 import '../../../common/models/skill_model.dart';
 import '../../../common/models/business_type_model.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../theme/app_card_metrics.dart';
+import '../../../theme/app_font_scale.dart';
 import 'my_Job_Detail_Screen.dart';
 
 class MyJobCard extends StatefulWidget {
@@ -155,10 +157,10 @@ class _MyJobCardState extends State<MyJobCard> {
           ),
         ),
         child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
+          margin: const EdgeInsets.only(bottom: AppCardMetrics.cardGap),
           decoration: BoxDecoration(
             color: cs.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppCardMetrics.cardRadius),
             border: Border.all(
               color: isLive
                   ? const Color(0xFF059669).withValues(alpha: 0.4)
@@ -198,14 +200,19 @@ class _MyJobCardState extends State<MyJobCard> {
                 children: [
                   // ── Header row ──
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppCardMetrics.headerPadding,
+                      AppCardMetrics.headerPadding,
+                      AppCardMetrics.headerPadding,
+                      0,
+                    ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Job icon
                         Container(
-                          width: 44,
-                          height: 44,
+                          width: AppCardMetrics.iconBox,
+                          height: AppCardMetrics.iconBox,
                           decoration: BoxDecoration(
                             color: primaryColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
@@ -213,7 +220,7 @@ class _MyJobCardState extends State<MyJobCard> {
                           child: Icon(
                             Icons.work_outline_rounded,
                             color: primaryColor,
-                            size: 22,
+                            size: AppCardMetrics.iconSize,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -226,7 +233,7 @@ class _MyJobCardState extends State<MyJobCard> {
                                     ? loc.untitledJob
                                     : job.workTitle,
                                 style: TextStyle(
-                                  fontSize: 15,
+                                  fontSize: AppFontScale.title,
                                   fontWeight: FontWeight.w800,
                                   color: cs.onSurface,
                                 ),
@@ -249,7 +256,7 @@ class _MyJobCardState extends State<MyJobCard> {
                                       child: Text(
                                         location,
                                         style: TextStyle(
-                                          fontSize: 12,
+                                          fontSize: AppFontScale.body,
                                           color: cs.onSurface.withValues(
                                             alpha: 0.55,
                                           ),
@@ -302,7 +309,7 @@ class _MyJobCardState extends State<MyJobCard> {
                               Text(
                                 isLive ? loc.liveLabel : loc.hiddenLabel,
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppFontScale.caption,
                                   fontWeight: FontWeight.w700,
                                   color: isLive
                                       ? const Color(0xFF059669)
@@ -369,7 +376,7 @@ class _MyJobCardState extends State<MyJobCard> {
                               Text(
                                 loc.businessTypesLabel,
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppFontScale.caption,
                                   fontWeight: FontWeight.w700,
                                   color: primaryColor.withValues(alpha: 0.8),
                                   letterSpacing: 0.2,
@@ -401,7 +408,7 @@ class _MyJobCardState extends State<MyJobCard> {
                                     Text(
                                       bt.enName,
                                       style: TextStyle(
-                                        fontSize: 11,
+                                        fontSize: AppFontScale.caption,
                                         fontWeight: FontWeight.w600,
                                         color: primaryColor,
                                       ),
@@ -412,7 +419,7 @@ class _MyJobCardState extends State<MyJobCard> {
                                       Text(
                                         bt.hiName,
                                         style: TextStyle(
-                                          fontSize: 9,
+                                          fontSize: AppFontScale.micro,
                                           fontWeight: FontWeight.w600,
                                           color: primaryColor.withValues(
                                             alpha: 0.7,
@@ -451,7 +458,7 @@ class _MyJobCardState extends State<MyJobCard> {
                               Text(
                                 loc.skillsRequiredLabel,
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppFontScale.caption,
                                   fontWeight: FontWeight.w700,
                                   color: primaryColor.withValues(alpha: 0.8),
                                   letterSpacing: 0.2,
@@ -483,7 +490,7 @@ class _MyJobCardState extends State<MyJobCard> {
                                     Text(
                                       skill.enName,
                                       style: TextStyle(
-                                        fontSize: 11,
+                                        fontSize: AppFontScale.caption,
                                         fontWeight: FontWeight.w600,
                                         color: primaryColor,
                                       ),
@@ -494,7 +501,7 @@ class _MyJobCardState extends State<MyJobCard> {
                                       Text(
                                         skill.hiName,
                                         style: TextStyle(
-                                          fontSize: 9,
+                                          fontSize: AppFontScale.micro,
                                           fontWeight: FontWeight.w600,
                                           color: primaryColor.withValues(
                                             alpha: 0.7,
@@ -531,7 +538,7 @@ class _MyJobCardState extends State<MyJobCard> {
                               Text(
                                 loc.aboutThisJob,
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppFontScale.caption,
                                   fontWeight: FontWeight.w700,
                                   color: cs.onSurface.withValues(alpha: 0.4),
                                   letterSpacing: 0.2,
@@ -543,7 +550,7 @@ class _MyJobCardState extends State<MyJobCard> {
                           Text(
                             job.description,
                             style: TextStyle(
-                              fontSize: 12.5,
+                              fontSize: AppFontScale.body,
                               color: cs.onSurface.withValues(alpha: 0.8),
                               height: 1.5,
                             ),
@@ -563,7 +570,7 @@ class _MyJobCardState extends State<MyJobCard> {
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         itemCount: job.images.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        separatorBuilder: (_, _) => const SizedBox(width: 8),
                         itemBuilder: (_, i) => GestureDetector(
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
@@ -667,7 +674,7 @@ class _MyJobCardState extends State<MyJobCard> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           textStyle: const TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFontScale.button,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.2,
                           ),
@@ -700,7 +707,7 @@ class _MyJobCardState extends State<MyJobCard> {
                               ),
                               elevation: 0,
                               textStyle: const TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFontScale.button,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -726,7 +733,7 @@ class _MyJobCardState extends State<MyJobCard> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               textStyle: const TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFontScale.button,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -765,7 +772,7 @@ class _MyJobCardState extends State<MyJobCard> {
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: AppFontScale.caption,
                 fontWeight: FontWeight.w600,
                 color: textColor,
               ),
@@ -913,7 +920,10 @@ class _ImageGalleryViewerState extends State<_ImageGalleryViewer> {
         title: widget.images.length > 1
             ? Text(
                 '${_current + 1} / ${widget.images.length}',
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: AppFontScale.section,
+                ),
               )
             : null,
       ),
@@ -928,7 +938,7 @@ class _ImageGalleryViewerState extends State<_ImageGalleryViewer> {
                 child: Image.network(
                   widget.images[i],
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(
+                  errorBuilder: (_, _, _) => const Icon(
                     Icons.broken_image_outlined,
                     color: Colors.white38,
                     size: 64,

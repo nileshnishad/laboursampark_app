@@ -299,188 +299,191 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
-          height: MediaQuery.of(context).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: _primaryColor.withOpacity(0.05),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20),
+        builder: (context, setModalState) {
+          final cs = Theme.of(context).colorScheme;
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.75,
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _primaryColor.withValues(alpha: 0.08),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.handyman_outlined, color: _primaryColor),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Select Skills',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: cs.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Choose multiple skills for this job',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.handyman_outlined,
-                      color: Color(0xFF2563EB),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Select Skills',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
+                Expanded(
+                  child: _skillsLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _availableSkills.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No skills available',
+                            style: TextStyle(color: cs.onSurfaceVariant),
                           ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Choose multiple skills for this job',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6B7280),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: _skillsLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _availableSkills.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No skills available',
-                          style: TextStyle(color: Color(0xFF6B7280)),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _availableSkills.length,
-                        itemBuilder: (context, index) {
-                          final skill = _availableSkills[index];
-                          final skillId = skill.id;
-                          final isSelected = _selectedSkillIds.contains(
-                            skillId,
-                          );
-                          return InkWell(
-                            onTap: () {
-                              setState(() {
-                                if (isSelected) {
-                                  _selectedSkillIds.remove(skillId);
-                                } else {
-                                  _selectedSkillIds.add(skillId);
-                                }
-                              });
-                              setModalState(() {});
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? _primaryColor.withOpacity(0.08)
-                                    : const Color(0xFFF9FAFB),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _availableSkills.length,
+                          itemBuilder: (context, index) {
+                            final skill = _availableSkills[index];
+                            final skillId = skill.id;
+                            final isSelected = _selectedSkillIds.contains(
+                              skillId,
+                            );
+                            return InkWell(
+                              onTap: () {
+                                setState(() {
+                                  if (isSelected) {
+                                    _selectedSkillIds.remove(skillId);
+                                  } else {
+                                    _selectedSkillIds.add(skillId);
+                                  }
+                                });
+                                setModalState(() {});
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
                                   color: isSelected
-                                      ? _primaryColor
-                                      : const Color(0xFFE5E7EB),
-                                  width: isSelected ? 1.5 : 1,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isSelected
-                                        ? Icons.check_circle
-                                        : Icons.circle_outlined,
+                                      ? _primaryColor.withValues(alpha: 0.08)
+                                      : cs.surfaceContainerLowest,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
                                     color: isSelected
                                         ? _primaryColor
-                                        : const Color(0xFF9CA3AF),
-                                    size: 22,
+                                        : cs.outlineVariant,
+                                    width: isSelected ? 1.5 : 1,
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _skillLabel(skill),
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: isSelected
-                                            ? _primaryColor
-                                            : const Color(0xFF111827),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      isSelected
+                                          ? Icons.check_circle
+                                          : Icons.circle_outlined,
+                                      color: isSelected
+                                          ? _primaryColor
+                                          : cs.onSurfaceVariant,
+                                      size: 22,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        _skillLabel(skill),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: isSelected
+                                              ? _primaryColor
+                                              : cs.onSurface,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
+                ),
+                Container(
+                  padding: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: 16,
+                    bottom: 16 + MediaQuery.of(context).padding.bottom,
+                  ),
+                  decoration: BoxDecoration(
+                    color: cs.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, -3),
                       ),
-              ),
-              Container(
-                padding: EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  top: 16,
-                  bottom: 16 + MediaQuery.of(context).padding.bottom,
-                ),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 10,
-                      offset: Offset(0, -3),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${_selectedSkillIds.length} selected',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF6B7280),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${_selectedSkillIds.length} selected',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: cs.onSurfaceVariant,
+                          ),
                         ),
                       ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                        child: const Text(
+                          'Done',
+                          style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
-                      child: const Text(
-                        'Done',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -648,15 +651,16 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     final loc = AppLocalizations.of(context);
     final primary = _primaryColor;
     final isContractor = widget.userType == 'contractor';
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF111827),
+        backgroundColor: cs.surface,
+        foregroundColor: cs.onSurface,
         elevation: 0,
         scrolledUnderElevation: 1,
-        surfaceTintColor: Colors.transparent,
+        surfaceTintColor: cs.surfaceTint,
         title: Text(
           _isEditMode
               ? loc.editJob
@@ -672,7 +676,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Color(0xFF2563EB),
+                      color: Colors.white,
                     ),
                   )
                 : TextButton(
@@ -815,20 +819,20 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                         vertical: 16,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFAFAFA),
+                        color: cs.surfaceContainerLowest,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: _selectedSkillIds.isEmpty
-                              ? const Color(0xFFD1D5DB)
+                              ? cs.outlineVariant
                               : _primaryColor,
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.handyman_outlined,
                             size: 20,
-                            color: Color(0xFF6B7280),
+                            color: cs.onSurfaceVariant,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -837,7 +841,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                                     loc.loadingSkills,
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Color(0xFF9CA3AF),
+                                      color: cs.onSurfaceVariant,
                                     ),
                                   )
                                 : _selectedSkillIds.isEmpty
@@ -845,7 +849,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                                     loc.selectSkills,
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Color(0xFF9CA3AF),
+                                      color: cs.onSurfaceVariant,
                                     ),
                                   )
                                 : Text(
@@ -860,8 +864,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                           Icon(
                             Icons.arrow_drop_down,
                             color: _skillsLoading
-                                ? const Color(0xFF9CA3AF)
-                                : const Color(0xFF6B7280),
+                                ? cs.onSurfaceVariant
+                                : cs.onSurfaceVariant,
                           ),
                         ],
                       ),
@@ -904,10 +908,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
                         loc.selectAtLeastOneSkill,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.red.shade400,
-                        ),
+                        style: TextStyle(fontSize: 11, color: cs.error),
                       ),
                     ),
                 ] else if (_target == 'sub_contractor') ...[
@@ -931,7 +932,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF374151),
+                          color: cs.onSurface,
                         ),
                       ),
                     ],
@@ -948,20 +949,20 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                         vertical: 16,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFAFAFA),
+                        color: cs.surfaceContainerLowest,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: _selectedBusinessTypeIds.isEmpty
-                              ? const Color(0xFFD1D5DB)
+                              ? cs.outlineVariant
                               : _primaryColor,
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.category_outlined,
                             size: 20,
-                            color: Color(0xFF6B7280),
+                            color: cs.onSurfaceVariant,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -970,7 +971,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                                     loc.loadingBusinessTypes,
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Color(0xFF9CA3AF),
+                                      color: cs.onSurfaceVariant,
                                     ),
                                   )
                                 : _availableBusinessTypes.isEmpty
@@ -978,7 +979,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                                     loc.noBusinessTypesAvailable,
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Color(0xFF9CA3AF),
+                                      color: cs.onSurfaceVariant,
                                     ),
                                   )
                                 : _selectedBusinessTypeIds.isEmpty
@@ -986,7 +987,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                                     loc.selectBusinessTypes,
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Color(0xFF9CA3AF),
+                                      color: cs.onSurfaceVariant,
                                     ),
                                   )
                                 : Text(
@@ -1001,8 +1002,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                           Icon(
                             Icons.arrow_drop_down,
                             color: _businessTypesLoading
-                                ? const Color(0xFF9CA3AF)
-                                : const Color(0xFF6B7280),
+                                ? cs.onSurfaceVariant
+                                : cs.onSurfaceVariant,
                           ),
                         ],
                       ),
@@ -1047,10 +1048,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
                         loc.selectAtLeastOneBusinessType,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.red.shade400,
-                        ),
+                        style: TextStyle(fontSize: 11, color: cs.error),
                       ),
                     ),
                 ],
@@ -1066,18 +1064,18 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                       color: Color(0xFF9CA3AF),
                     ),
                     filled: true,
-                    fillColor: const Color(0xFFF9FAFB),
+                    fillColor: cs.surfaceContainerLowest,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 12,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      borderSide: BorderSide(color: cs.outlineVariant),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      borderSide: BorderSide(color: cs.outlineVariant),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -1107,14 +1105,14 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     hintText: loc.stateLabelDropdown,
                     prefixIcon: const Icon(Icons.map),
                     filled: true,
-                    fillColor: const Color(0xFFF9FAFB),
+                    fillColor: cs.surfaceContainerLowest,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      borderSide: BorderSide(color: cs.outlineVariant),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      borderSide: BorderSide(color: cs.outlineVariant),
                     ),
                   ),
                   items: () {
@@ -1148,14 +1146,14 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     hintText: loc.cityLabelDropdown,
                     prefixIcon: const Icon(Icons.location_city),
                     filled: true,
-                    fillColor: const Color(0xFFF9FAFB),
+                    fillColor: cs.surfaceContainerLowest,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      borderSide: BorderSide(color: cs.outlineVariant),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      borderSide: BorderSide(color: cs.outlineVariant),
                     ),
                   ),
                   items: () {
@@ -1191,14 +1189,14 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     hintText: loc.areaLabelDropdown,
                     prefixIcon: const Icon(Icons.location_pin),
                     filled: true,
-                    fillColor: const Color(0xFFF9FAFB),
+                    fillColor: cs.surfaceContainerLowest,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      borderSide: BorderSide(color: cs.outlineVariant),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      borderSide: BorderSide(color: cs.outlineVariant),
                     ),
                   ),
                   items: () {
@@ -1274,9 +1272,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 if (_newImages.isEmpty && _existingImageUrls.isEmpty)
                   Text(
                     loc.addSitePhotosHint,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF6B7280),
+                      color: cs.onSurfaceVariant,
                       height: 1.4,
                     ),
                   ),
@@ -1558,30 +1556,31 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   Widget _label(String text, {bool required = false, bool optional = false}) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: RichText(
         text: TextSpan(
           text: text,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF374151),
+            color: cs.onSurface,
             letterSpacing: 0.2,
           ),
           children: [
             if (required)
-              const TextSpan(
+              TextSpan(
                 text: ' *',
-                style: TextStyle(color: Color(0xFFDC2626)),
+                style: TextStyle(color: cs.error),
               ),
             if (optional)
-              const TextSpan(
+              TextSpan(
                 text: '  (opt)',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w400,
-                  color: Color(0xFF9CA3AF),
+                  color: cs.onSurfaceVariant,
                 ),
               ),
           ],
@@ -1600,6 +1599,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     int maxLines = 1,
   }) {
     final primary = _primaryColor;
+    final cs = Theme.of(context).colorScheme;
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
@@ -1608,20 +1608,20 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       decoration: InputDecoration(
         hintText: hint,
         prefixText: prefixText,
-        hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+        hintStyle: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
         filled: true,
-        fillColor: const Color(0xFFF9FAFB),
+        fillColor: cs.surfaceContainerLowest,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 12,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+          borderSide: BorderSide(color: cs.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+          borderSide: BorderSide(color: cs.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -1629,11 +1629,11 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFDC2626)),
+          borderSide: BorderSide(color: cs.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
+          borderSide: BorderSide(color: cs.error, width: 1.5),
         ),
       ),
       validator: validator,
@@ -1658,12 +1658,13 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: cs.outlineVariant),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -1691,7 +1692,7 @@ class _SectionCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
-                  color: color,
+                  color: cs.onSurface,
                   letterSpacing: 0.4,
                 ),
               ),
@@ -1718,24 +1719,25 @@ class _DropdownField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
+        color: cs.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: DropdownButton<String>(
         value: value,
         isExpanded: true,
         underline: const SizedBox.shrink(),
-        icon: const Icon(
+        icon: Icon(
           Icons.keyboard_arrow_down_rounded,
-          color: Color(0xFF6B7280),
+          color: cs.onSurfaceVariant,
         ),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
-          color: Color(0xFF111827),
+          color: cs.onSurface,
           fontFamily: 'Poppins',
         ),
         items: items,

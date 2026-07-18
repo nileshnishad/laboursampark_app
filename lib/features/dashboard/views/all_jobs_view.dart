@@ -6,6 +6,7 @@ import '../../../common/widgets/loading_skeleton.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/api_service.dart';
 import '../../../services/skills_service.dart';
+import '../../../theme/app_card_metrics.dart';
 
 // ── Models ────────────────────────────────────────────────────────────────────
 
@@ -212,6 +213,16 @@ class _AppliedJobEntry {
       postedByState: (byLoc['state'] ?? '').toString(),
     );
   }
+}
+
+class _LabourTextScale {
+  static const double display = 18;
+  static const double title = 15;
+  static const double section = 13;
+  static const double body = 12;
+  static const double caption = 11;
+  static const double micro = 10;
+  static const double button = 12;
 }
 
 // ── AllJobsView ───────────────────────────────────────────────────────────────
@@ -533,7 +544,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                         ? '${loc.availableJobsUppercase} (${_jobs.length})'
                         : '${_appliedTabTitle(loc, _appliedSubTab)} (${_appliedSubTabCount()})',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: _LabourTextScale.section,
                       fontWeight: FontWeight.w800,
                       color: Theme.of(context).colorScheme.onSurface,
                       letterSpacing: 0.5,
@@ -551,7 +562,12 @@ class _AllJobsViewState extends State<AllJobsView> {
             color: const Color(0xFF2563EB),
             onRefresh: _onRefresh,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
+              padding: const EdgeInsets.fromLTRB(
+                AppCardMetrics.pageHorizontal,
+                4,
+                AppCardMetrics.pageHorizontal,
+                AppCardMetrics.pageBottom,
+              ),
               children: [
                 if (isAvailable)
                   ..._buildAvailableContent()
@@ -643,7 +659,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                         Text(
                           _loading ? '—' : _total.toString(),
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: _LabourTextScale.display,
                             fontWeight: FontWeight.w800,
                             color: isAvailable
                                 ? const Color(0xFF2563EB)
@@ -653,7 +669,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                         Text(
                           loc.available,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: _LabourTextScale.caption,
                             color: Theme.of(
                               context,
                             ).colorScheme.onSurface.withValues(alpha: 0.55),
@@ -722,7 +738,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                                         _completedJobs.length)
                               .toString(),
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: _LabourTextScale.display,
                             fontWeight: FontWeight.w800,
                             color: !isAvailable
                                 ? const Color(0xFF059669)
@@ -732,7 +748,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                         Text(
                           loc.applied,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: _LabourTextScale.caption,
                             color: Theme.of(
                               context,
                             ).colorScheme.onSurface.withValues(alpha: 0.55),
@@ -855,7 +871,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                   Text(
                     label,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: _LabourTextScale.body,
                       fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
                       color: isActive
                           ? fg
@@ -893,7 +909,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                         : Text(
                             count.toString(),
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: _LabourTextScale.caption,
                               fontWeight: FontWeight.w800,
                               color: isActive
                                   ? fg
@@ -940,7 +956,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                 Text(
                   loc.noJobsAvailable,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: _LabourTextScale.display,
                     fontWeight: FontWeight.w800,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
@@ -949,7 +965,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                 Text(
                   loc.newJobsWillAppearHint,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: _LabourTextScale.section,
                     color: Theme.of(
                       context,
                     ).colorScheme.onSurface.withValues(alpha: 0.55),
@@ -1050,7 +1066,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                     color: Theme.of(
                       context,
                     ).colorScheme.onSurface.withValues(alpha: 0.75),
-                    fontSize: 13,
+                    fontSize: _LabourTextScale.section,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -1091,7 +1107,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                 Text(
                   emptyLabel,
                   style: TextStyle(
-                    fontSize: 17,
+                    fontSize: _LabourTextScale.display,
                     fontWeight: FontWeight.w800,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
@@ -1100,7 +1116,7 @@ class _AllJobsViewState extends State<AllJobsView> {
                 Text(
                   emptySubLabel,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: _LabourTextScale.section,
                     color: Theme.of(
                       context,
                     ).colorScheme.onSurface.withValues(alpha: 0.55),
@@ -1518,10 +1534,10 @@ class _AppliedJobCard extends StatelessWidget {
         myFeedbackText.isNotEmpty;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: AppCardMetrics.cardGap),
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppCardMetrics.cardRadius),
         border: Border.all(color: info.fg.withValues(alpha: 0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
@@ -1542,8 +1558,8 @@ class _AppliedJobCard extends StatelessWidget {
               children: [
                 // Job icon
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: AppCardMetrics.iconBox,
+                  height: AppCardMetrics.iconBox,
                   decoration: BoxDecoration(
                     color: primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -1551,7 +1567,7 @@ class _AppliedJobCard extends StatelessWidget {
                   child: Icon(
                     Icons.work_outline_rounded,
                     color: primaryColor,
-                    size: 22,
+                    size: AppCardMetrics.iconSize,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1564,7 +1580,7 @@ class _AppliedJobCard extends StatelessWidget {
                             ? loc.untitledJob
                             : entry.workTitle,
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: _LabourTextScale.title,
                           fontWeight: FontWeight.w800,
                           color: cs.onSurface,
                         ),
@@ -1585,7 +1601,7 @@ class _AppliedJobCard extends StatelessWidget {
                               child: Text(
                                 location,
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: _LabourTextScale.body,
                                   color: cs.onSurface.withValues(alpha: 0.55),
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -1617,7 +1633,7 @@ class _AppliedJobCard extends StatelessWidget {
                       Text(
                         info.label,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: _LabourTextScale.caption,
                           fontWeight: FontWeight.w700,
                           color: info.fg,
                         ),
@@ -1676,7 +1692,7 @@ class _AppliedJobCard extends StatelessWidget {
                             Text(
                               '${loc.postedBy}: ',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: _LabourTextScale.caption,
                                 color: cs.onSurface.withValues(alpha: 0.5),
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1687,7 +1703,7 @@ class _AppliedJobCard extends StatelessWidget {
                                     ? loc.unknown
                                     : entry.postedByName,
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: _LabourTextScale.body,
                                   fontWeight: FontWeight.w700,
                                   color: cs.onSurface,
                                 ),
@@ -1711,7 +1727,7 @@ class _AppliedJobCard extends StatelessWidget {
                               child: Text(
                                 _postedByLabel(loc, entry.postedByUserType),
                                 style: TextStyle(
-                                  fontSize: 10,
+                                  fontSize: _LabourTextScale.micro,
                                   color: Theme.of(context).colorScheme.surface,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -1797,7 +1813,7 @@ class _AppliedJobCard extends StatelessWidget {
                       Text(
                         loc.skillsRequiredLabel,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: _LabourTextScale.caption,
                           fontWeight: FontWeight.w700,
                           color: primaryColor.withValues(alpha: 0.8),
                           letterSpacing: 0.2,
@@ -1827,7 +1843,7 @@ class _AppliedJobCard extends StatelessWidget {
                             child: Text(
                               s,
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: _LabourTextScale.caption,
                                 fontWeight: FontWeight.w600,
                                 color: primaryColor,
                               ),
@@ -1860,7 +1876,7 @@ class _AppliedJobCard extends StatelessWidget {
                       Text(
                         loc.aboutThisJob,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: _LabourTextScale.caption,
                           fontWeight: FontWeight.w700,
                           color: cs.onSurface.withValues(alpha: 0.4),
                           letterSpacing: 0.2,
@@ -1872,7 +1888,7 @@ class _AppliedJobCard extends StatelessWidget {
                   Text(
                     entry.description,
                     style: TextStyle(
-                      fontSize: 12.5,
+                      fontSize: _LabourTextScale.body,
                       color: cs.onSurface.withValues(alpha: 0.8),
                       height: 1.5,
                     ),
@@ -1893,7 +1909,7 @@ class _AppliedJobCard extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 itemCount: entry.images.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
                 itemBuilder: (_, i) => ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: Image.network(
@@ -1901,7 +1917,7 @@ class _AppliedJobCard extends StatelessWidget {
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    errorBuilder: (_, _, _) => Container(
                       width: 80,
                       height: 80,
                       color: cs.onSurface.withValues(alpha: 0.08),
@@ -1952,7 +1968,7 @@ class _AppliedJobCard extends StatelessWidget {
                     Text(
                       loc.receivedFeedbackLabel,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: _LabourTextScale.body,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF065F46),
                       ),
@@ -1980,7 +1996,7 @@ class _AppliedJobCard extends StatelessWidget {
                       Text(
                         contractorFeedbackText,
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: _LabourTextScale.body,
                           color: Color(0xFF065F46),
                         ),
                       ),
@@ -2010,7 +2026,7 @@ class _AppliedJobCard extends StatelessWidget {
                           Text(
                             loc.myFeedbackLabel,
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: _LabourTextScale.body,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF1D4ED8),
                             ),
@@ -2038,7 +2054,7 @@ class _AppliedJobCard extends StatelessWidget {
                             Text(
                               myFeedbackText,
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: _LabourTextScale.body,
                                 color: Color(0xFF1E3A8A),
                               ),
                             ),
@@ -2094,7 +2110,7 @@ class _AppliedJobCard extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: _LabourTextScale.caption,
               fontWeight: FontWeight.w600,
               color: textColor,
             ),
@@ -2298,10 +2314,10 @@ class _JobCard extends StatelessWidget {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
+        margin: const EdgeInsets.only(bottom: AppCardMetrics.cardGap),
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppCardMetrics.cardRadius),
           border: Border.all(
             color: primaryColor.withValues(alpha: 0.25),
             width: 1.5,
@@ -2325,8 +2341,8 @@ class _JobCard extends StatelessWidget {
                 children: [
                   // Job icon
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: AppCardMetrics.iconBox,
+                    height: AppCardMetrics.iconBox,
                     decoration: BoxDecoration(
                       color: primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -2334,7 +2350,7 @@ class _JobCard extends StatelessWidget {
                     child: Icon(
                       Icons.work_outline_rounded,
                       color: primaryColor,
-                      size: 22,
+                      size: AppCardMetrics.iconSize,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -2347,7 +2363,7 @@ class _JobCard extends StatelessWidget {
                               ? loc.untitledJob
                               : job.workTitle,
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: _LabourTextScale.title,
                             fontWeight: FontWeight.w800,
                             color: cs.onSurface,
                           ),
@@ -2368,7 +2384,7 @@ class _JobCard extends StatelessWidget {
                                 child: Text(
                                   location,
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: _LabourTextScale.body,
                                     color: cs.onSurface.withValues(alpha: 0.55),
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -2398,7 +2414,7 @@ class _JobCard extends StatelessWidget {
                       child: Text(
                         _fmtDate(loc, job.postedAt),
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: _LabourTextScale.caption,
                           fontWeight: FontWeight.w700,
                           color: primaryColor,
                         ),
@@ -2455,7 +2471,7 @@ class _JobCard extends StatelessWidget {
                               Text(
                                 '${loc.postedBy}: ',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: _LabourTextScale.caption,
                                   color: cs.onSurface.withValues(alpha: 0.5),
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -2466,7 +2482,7 @@ class _JobCard extends StatelessWidget {
                                       ? loc.unknown
                                       : job.postedByName,
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: _LabourTextScale.body,
                                     fontWeight: FontWeight.w700,
                                     color: cs.onSurface,
                                   ),
@@ -2490,7 +2506,7 @@ class _JobCard extends StatelessWidget {
                                 child: Text(
                                   _postedByLabel(loc, job.postedByUserType),
                                   style: TextStyle(
-                                    fontSize: 10,
+                                    fontSize: _LabourTextScale.micro,
                                     color: Theme.of(
                                       context,
                                     ).colorScheme.surface,
@@ -2577,7 +2593,7 @@ class _JobCard extends StatelessWidget {
                         Text(
                           loc.skillsRequiredLabel,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: _LabourTextScale.caption,
                             fontWeight: FontWeight.w700,
                             color: primaryColor.withValues(alpha: 0.8),
                             letterSpacing: 0.2,
@@ -2607,7 +2623,7 @@ class _JobCard extends StatelessWidget {
                               child: Text(
                                 s,
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: _LabourTextScale.caption,
                                   fontWeight: FontWeight.w600,
                                   color: primaryColor,
                                 ),
@@ -2642,7 +2658,7 @@ class _JobCard extends StatelessWidget {
                         Text(
                           loc.aboutThisJob,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: _LabourTextScale.caption,
                             fontWeight: FontWeight.w700,
                             color: cs.onSurface.withValues(alpha: 0.4),
                             letterSpacing: 0.2,
@@ -2654,7 +2670,7 @@ class _JobCard extends StatelessWidget {
                     Text(
                       job.description,
                       style: TextStyle(
-                        fontSize: 12.5,
+                        fontSize: _LabourTextScale.body,
                         color: cs.onSurface.withValues(alpha: 0.8),
                         height: 1.5,
                       ),
@@ -2675,7 +2691,7 @@ class _JobCard extends StatelessWidget {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   itemCount: job.images.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
                   itemBuilder: (_, i) => ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: Image.network(
@@ -2683,7 +2699,7 @@ class _JobCard extends StatelessWidget {
                       width: 80,
                       height: 80,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (_, _, _) => Container(
                         width: 80,
                         height: 80,
                         color: cs.onSurface.withValues(alpha: 0.08),
@@ -2738,7 +2754,7 @@ class _JobCard extends StatelessWidget {
                       ),
                       elevation: 0,
                       textStyle: const TextStyle(
-                        fontSize: 12,
+                        fontSize: _LabourTextScale.button,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -2787,7 +2803,7 @@ class _JobCard extends StatelessWidget {
                             Text(
                               loc.subscriptionRequiredApplyUppercase,
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: _LabourTextScale.button,
                                 fontWeight: FontWeight.w800,
                                 color: Color(0xFFEA580C),
                                 letterSpacing: 0.3,
@@ -2827,7 +2843,7 @@ class _JobCard extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: _LabourTextScale.caption,
                 fontWeight: FontWeight.w600,
                 color: textColor,
               ),
@@ -2926,7 +2942,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
         title: Text(
           job.workTitle.isEmpty ? loc.jobDetails : job.workTitle,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: _LabourTextScale.title,
             fontWeight: FontWeight.w800,
             color: cs.onSurface,
           ),
@@ -2965,11 +2981,11 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                           child: Image.network(
                             job.postedByPhoto!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Center(
+                            errorBuilder: (_, _, _) => Center(
                               child: Text(
                                 initials,
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: _LabourTextScale.display,
                                   fontWeight: FontWeight.w700,
                                   color: postedByColor,
                                 ),
@@ -2981,7 +2997,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                           child: Text(
                             initials,
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: _LabourTextScale.display,
                               fontWeight: FontWeight.w700,
                               color: postedByColor,
                             ),
@@ -2997,7 +3013,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                       Text(
                         loc.postedBy,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: _LabourTextScale.caption,
                           color: cs.onSurface.withValues(alpha: 0.5),
                           fontWeight: FontWeight.w600,
                         ),
@@ -3008,7 +3024,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                             ? loc.unknown
                             : job.postedByName,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: _LabourTextScale.section,
                           fontWeight: FontWeight.w700,
                           color: cs.onSurface,
                         ),
@@ -3026,7 +3042,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                         child: Text(
                           _postedByLabel(loc, job.postedByUserType),
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: _LabourTextScale.micro,
                             fontWeight: FontWeight.w700,
                             color: postedByColor,
                           ),
@@ -3061,7 +3077,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                         Text(
                           job.postedByRating.toString(),
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: _LabourTextScale.body,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFFD97706),
                           ),
@@ -3094,7 +3110,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                         Text(
                           loc.locationSection,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: _LabourTextScale.caption,
                             color: cs.onSurface.withValues(alpha: 0.45),
                             fontWeight: FontWeight.w600,
                           ),
@@ -3103,7 +3119,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                         Text(
                           location,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: _LabourTextScale.section,
                             fontWeight: FontWeight.w600,
                             color: cs.onSurface,
                           ),
@@ -3167,7 +3183,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                   Text(
                     loc.photos,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: _LabourTextScale.section,
                       fontWeight: FontWeight.w800,
                       color: cs.onSurface,
                     ),
@@ -3190,7 +3206,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                   Text(
                     loc.descriptionLabel,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: _LabourTextScale.section,
                       fontWeight: FontWeight.w800,
                       color: cs.onSurface,
                     ),
@@ -3199,7 +3215,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                   Text(
                     job.description,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: _LabourTextScale.body,
                       color: cs.onSurface.withValues(alpha: 0.8),
                       height: 1.55,
                     ),
@@ -3220,7 +3236,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                   Text(
                     loc.requiredSkillsLabel,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: _LabourTextScale.section,
                       fontWeight: FontWeight.w800,
                       color: cs.onSurface,
                     ),
@@ -3246,7 +3262,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                             child: Text(
                               s,
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: _LabourTextScale.body,
                                 fontWeight: FontWeight.w600,
                                 color: primaryColor,
                               ),
@@ -3311,7 +3327,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: _LabourTextScale.micro,
                   color: color.withValues(alpha: 0.7),
                   fontWeight: FontWeight.w600,
                 ),
@@ -3322,7 +3338,7 @@ class _AvailableJobDetailScreen extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: _LabourTextScale.section,
               fontWeight: FontWeight.w700,
               color: color,
             ),
@@ -3390,7 +3406,7 @@ class _AvailableJobImageGalleryState extends State<_AvailableJobImageGallery> {
                   child: Image.network(
                     widget.images[i],
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => ColoredBox(
+                    errorBuilder: (_, _, _) => ColoredBox(
                       color: cs.onSurface.withValues(alpha: 0.08),
                       child: Center(
                         child: Icon(
@@ -3502,7 +3518,7 @@ class _AvailableJobImageViewerState extends State<_AvailableJobImageViewer> {
                 child: Image.network(
                   widget.images[i],
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(
+                  errorBuilder: (_, _, _) => const Icon(
                     Icons.broken_image_outlined,
                     color: Colors.white38,
                     size: 64,

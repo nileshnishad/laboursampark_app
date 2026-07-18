@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../common/widgets/loading_skeleton.dart';
@@ -8,6 +9,8 @@ import '../../l10n/app_localizations.dart';
 import '../../common/utils/skill_display_utils.dart';
 import '../../services/api_service.dart';
 import '../../services/skills_service.dart';
+import '../../theme/app_card_metrics.dart';
+import '../../theme/app_font_scale.dart';
 
 class JobApplicationsScreen extends StatefulWidget {
   final String token;
@@ -34,6 +37,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
   String _statusFilter = 'all';
 
   void _debugPrintChunked(String tag, String text) {
+    if (!kDebugMode) return;
     const chunkSize = 900;
     for (var i = 0; i < text.length; i += chunkSize) {
       final end = (i + chunkSize < text.length) ? i + chunkSize : text.length;
@@ -42,6 +46,8 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
   }
 
   void _logApplicantsPayload(Map<String, dynamic> res) {
+    if (!kDebugMode) return;
+
     final data = res['data'] as Map<String, dynamic>? ?? {};
     final apps = (data['applications'] as List? ?? [])
         .whereType<Map<String, dynamic>>()
@@ -145,9 +151,11 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
       _error = null;
     });
 
-    debugPrint(
-      '[Applicants API][Request] jobId=${widget.jobId} tokenLen=${widget.token.length}',
-    );
+    if (kDebugMode) {
+      debugPrint(
+        '[Applicants API][Request] jobId=${widget.jobId} tokenLen=${widget.token.length}',
+      );
+    }
 
     final res = await ApiService.fetchJobApplications(
       token: widget.token,
@@ -157,18 +165,20 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
     final success = res['success'] == true;
     final data = res['data'] as Map<String, dynamic>? ?? {};
     final apps = (data['applications'] as List? ?? []);
-    debugPrint(
-      '[Applicants API][Response] success=$success message=${res['message']} totalApplications=${apps.length}',
-    );
-    if (apps.isNotEmpty) {
-      final first = apps.first;
-      if (first is Map<String, dynamic>) {
-        debugPrint(
-          '[Applicants API][First Application] keys=${first.keys.toList()}',
-        );
-        debugPrint(
-          '[Applicants API][First Application] status=${first['status']} enquiryId=${first['enquiryId']}',
-        );
+    if (kDebugMode) {
+      debugPrint(
+        '[Applicants API][Response] success=$success message=${res['message']} totalApplications=${apps.length}',
+      );
+      if (apps.isNotEmpty) {
+        final first = apps.first;
+        if (first is Map<String, dynamic>) {
+          debugPrint(
+            '[Applicants API][First Application] keys=${first.keys.toList()}',
+          );
+          debugPrint(
+            '[Applicants API][First Application] status=${first['status']} enquiryId=${first['enquiryId']}',
+          );
+        }
       }
     }
     _logApplicantsPayload(res);
@@ -257,9 +267,10 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     final filteredApplications = _filteredApplications();
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -267,19 +278,22 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
             Text(
               loc.applicationsTitle,
               style: const TextStyle(
-                fontSize: 17,
+                fontSize: AppFontScale.title,
                 fontWeight: FontWeight.w800,
                 color: Colors.white,
               ),
             ),
             Text(
               widget.jobTitle,
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
+              style: const TextStyle(
+                fontSize: AppFontScale.body,
+                color: Colors.white70,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF2563EB),
+        backgroundColor: cs.primary,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -304,7 +318,9 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                     Text(
                       _error!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Color(0xFF374151)),
+                      style: TextStyle(
+                        color: cs.onSurface.withValues(alpha: 0.8),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
@@ -312,8 +328,8 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                       icon: const Icon(Icons.refresh_rounded, size: 16),
                       label: Text(loc.retry),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
-                        foregroundColor: Colors.white,
+                        backgroundColor: cs.primary,
+                        foregroundColor: cs.onPrimary,
                       ),
                     ),
                   ],
@@ -321,10 +337,15 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
               ),
             )
           : RefreshIndicator(
-              color: const Color(0xFF2563EB),
+              color: cs.primary,
               onRefresh: _load,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+                padding: const EdgeInsets.fromLTRB(
+                  AppCardMetrics.pageHorizontal,
+                  14,
+                  AppCardMetrics.pageHorizontal,
+                  AppCardMetrics.pageBottom,
+                ),
                 children: [
                   // Job info card
                   if (_jobInfo != null)
@@ -345,7 +366,9 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                             'withdrawn',
                           ].map((status) {
                             final isActive = _statusFilter == status;
-                            final color = _statusColor(status);
+                            final color = status == 'all'
+                                ? cs.primary
+                                : _statusColor(status);
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
                               child: FilterChip(
@@ -354,22 +377,22 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                                 label: Text(
                                   '${_filterLabel(loc, status)} (${_statusCount(status)})',
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: AppFontScale.body,
                                     fontWeight: FontWeight.w700,
                                     color: isActive
                                         ? color
-                                        : const Color(0xFF4B5563),
+                                        : cs.onSurfaceVariant,
                                   ),
                                 ),
                                 onSelected: (_) {
                                   setState(() => _statusFilter = status);
                                 },
                                 selectedColor: color.withValues(alpha: 0.14),
-                                backgroundColor: Colors.white,
+                                backgroundColor: cs.surface,
                                 side: BorderSide(
                                   color: isActive
                                       ? color.withValues(alpha: 0.6)
-                                      : const Color(0xFFE5E7EB),
+                                      : cs.outlineVariant,
                                   width: isActive ? 1.3 : 1,
                                 ),
                               ),
@@ -386,7 +409,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                         width: 4,
                         height: 20,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB),
+                          color: cs.primary,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -395,10 +418,10 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                         _statusFilter == 'all'
                             ? '${loc.applicantsCount} (${filteredApplications.length})'
                             : '${_filterLabel(loc, _statusFilter)} ${loc.applicantsCount} (${filteredApplications.length})',
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: AppFontScale.section,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF111827),
+                          color: cs.onSurface,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -414,9 +437,9 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                         padding: const EdgeInsets.only(top: 26),
                         child: Text(
                           'No ${_filterLabel(loc, _statusFilter).toLowerCase()} applications',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF6B7280),
+                          style: TextStyle(
+                            fontSize: AppFontScale.section,
+                            color: cs.onSurfaceVariant,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -457,6 +480,7 @@ class _JobInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     final title = (job['workTitle'] ?? loc.untitledJob).toString();
     final status = (job['status'] ?? 'open').toString();
     final workersNeeded = (job['workersNeeded'] as num?)?.toInt() ?? 1;
@@ -486,10 +510,10 @@ class _JobInfoCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(AppCardMetrics.cardRadius),
         border: Border.all(
-          color: isOpen ? const Color(0xFF86EFAC) : const Color(0xFFE5E7EB),
+          color: isOpen ? const Color(0xFF86EFAC) : cs.outlineVariant,
           width: isOpen ? 1.5 : 1,
         ),
         boxShadow: [
@@ -515,10 +539,10 @@ class _JobInfoCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: AppFontScale.title,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF111827),
+                          color: cs.onSurface,
                         ),
                       ),
                     ),
@@ -532,17 +556,17 @@ class _JobInfoCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: isOpen
                               ? const Color(0xFFDCFCE7)
-                              : const Color(0xFFF3F4F6),
+                              : cs.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           isOpen ? 'OPEN' : 'CLOSED',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFontScale.caption,
                             fontWeight: FontWeight.w700,
                             color: isOpen
                                 ? const Color(0xFF059669)
-                                : const Color(0xFF6B7280),
+                                : cs.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -598,7 +622,7 @@ class _JobInfoCard extends StatelessWidget {
                             child: Text(
                               s,
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: AppFontScale.caption,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF1D4ED8),
                               ),
@@ -624,14 +648,18 @@ class _InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 13, color: const Color(0xFF6B7280)),
+        Icon(icon, size: 13, color: cs.onSurfaceVariant),
         const SizedBox(width: 3),
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF374151)),
+          style: TextStyle(
+            fontSize: AppFontScale.body,
+            color: cs.onSurface.withValues(alpha: 0.85),
+          ),
         ),
       ],
     );
@@ -715,6 +743,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
             final mq = MediaQuery.of(ctx);
+            final cs = Theme.of(ctx).colorScheme;
             return Padding(
               padding: EdgeInsets.only(
                 left: 20,
@@ -729,17 +758,17 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                   Text(
                     loc.markCompletedTitle,
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: AppFontScale.display,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF111827),
+                      color: cs.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     loc.rateWorkLabel(applicantName),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF6B7280),
+                    style: TextStyle(
+                      fontSize: AppFontScale.section,
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -748,9 +777,9 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                   Text(
                     loc.ratingLabelSmall,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontScale.section,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF374151),
+                      color: cs.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -787,7 +816,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                             Text(
                               rating.toStringAsFixed(1),
                               style: const TextStyle(
-                                fontSize: 15,
+                                fontSize: AppFontScale.title,
                                 fontWeight: FontWeight.w800,
                                 color: Color(0xFF92400E),
                               ),
@@ -803,9 +832,9 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                   Text(
                     loc.feedbackLabel,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontScale.section,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF374151),
+                      color: cs.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -814,9 +843,20 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                     maxLines: 3,
                     decoration: InputDecoration(
                       hintText: loc.feedbackHint,
+                      hintStyle: TextStyle(color: cs.onSurfaceVariant),
+                      filled: true,
+                      fillColor: cs.surfaceContainerLowest,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                        borderSide: BorderSide(color: cs.outlineVariant),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: cs.outlineVariant),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: cs.primary, width: 1.2),
                       ),
                       contentPadding: const EdgeInsets.all(12),
                     ),
@@ -862,8 +902,8 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF059669),
-                        foregroundColor: Colors.white,
+                        backgroundColor: cs.primary,
+                        foregroundColor: cs.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -873,7 +913,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                       child: Text(
                         loc.confirmComplete,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppFontScale.button,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -917,6 +957,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     final application = widget.application;
     final statusColor = widget.statusColor;
     final statusLabel = widget.statusLabel;
@@ -1020,11 +1061,11 @@ class _ApplicationCardState extends State<_ApplicationCard> {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: AppCardMetrics.cardGap),
+      padding: const EdgeInsets.all(AppCardMetrics.headerPadding),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(AppCardMetrics.cardRadius),
         border: Border.all(
           color: statusColor.withValues(alpha: 0.35),
           width: 1.5,
@@ -1061,17 +1102,17 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                       ),
                       child: CircleAvatar(
                         radius: 24,
-                        backgroundColor: const Color(0xFFF0F0F0),
+                        backgroundColor: cs.surfaceContainerHighest,
                         backgroundImage: profilePhoto.isNotEmpty
                             ? NetworkImage(profilePhoto)
                             : null,
                         child: profilePhoto.isEmpty
                             ? Text(
                                 name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                style: const TextStyle(
-                                  fontSize: 18,
+                                style: TextStyle(
+                                  fontSize: AppFontScale.display,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xFF374151),
+                                  color: cs.onSurface,
                                 ),
                               )
                             : null,
@@ -1084,10 +1125,10 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                         children: [
                           Text(
                             name,
-                            style: const TextStyle(
-                              fontSize: 15,
+                            style: TextStyle(
+                              fontSize: AppFontScale.title,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF111827),
+                              color: cs.onSurface,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -1099,15 +1140,15 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF3F4F6),
+                                  color: cs.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(5),
                                 ),
                                 child: Text(
                                   typeLabel(userType),
-                                  style: const TextStyle(
-                                    fontSize: 11,
+                                  style: TextStyle(
+                                    fontSize: AppFontScale.caption,
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xFF374151),
+                                    color: cs.onSurface,
                                   ),
                                 ),
                               ),
@@ -1125,7 +1166,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                                 Text(
                                   loc.availableLabel,
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: AppFontScale.caption,
                                     color: Color(0xFF059669),
                                   ),
                                 ),
@@ -1136,17 +1177,17 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                             const SizedBox(height: 3),
                             Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.location_on_outlined,
                                   size: 12,
-                                  color: Color(0xFF9CA3AF),
+                                  color: cs.onSurfaceVariant,
                                 ),
                                 const SizedBox(width: 2),
                                 Text(
                                   locationStr,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF6B7280),
+                                  style: TextStyle(
+                                    fontSize: AppFontScale.body,
+                                    color: cs.onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -1180,7 +1221,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                           Text(
                             statusLabel,
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppFontScale.body,
                               fontWeight: FontWeight.w800,
                               color: statusColor,
                             ),
@@ -1192,7 +1233,10 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                 ),
 
                 const SizedBox(height: 10),
-                const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                Divider(
+                  height: 1,
+                  color: cs.outlineVariant.withValues(alpha: 0.7),
+                ),
                 const SizedBox(height: 10),
 
                 // Stats
@@ -1235,7 +1279,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                             child: Text(
                               s,
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: AppFontScale.caption,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF1D4ED8),
                               ),
@@ -1250,17 +1294,17 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.phone_outlined,
                         size: 13,
-                        color: Color(0xFF6B7280),
+                        color: cs.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         mobile,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF374151),
+                        style: TextStyle(
+                          fontSize: AppFontScale.body,
+                          color: cs.onSurface,
                         ),
                       ),
                     ],
@@ -1270,18 +1314,18 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                   const SizedBox(height: 3),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.email_outlined,
                         size: 13,
-                        color: Color(0xFF6B7280),
+                        color: cs.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           email,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF374151),
+                          style: TextStyle(
+                            fontSize: AppFontScale.body,
+                            color: cs.onSurface,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1295,25 +1339,25 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF9FAFB),
+                      color: cs.surfaceContainerLowest,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      border: Border.all(color: cs.outlineVariant),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.format_quote_rounded,
                           size: 14,
-                          color: Color(0xFF9CA3AF),
+                          color: cs.onSurfaceVariant,
                         ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             message,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF374151),
+                            style: TextStyle(
+                              fontSize: AppFontScale.body,
+                              color: cs.onSurface,
                             ),
                           ),
                         ),
@@ -1347,7 +1391,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                             Text(
                               loc.myFeedbackLabel,
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFontScale.body,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xFF065F46),
                               ),
@@ -1357,7 +1401,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                               Text(
                                 contractorRating.toStringAsFixed(1),
                                 style: const TextStyle(
-                                  fontSize: 12,
+                                  fontSize: AppFontScale.body,
                                   fontWeight: FontWeight.w800,
                                   color: Color(0xFF065F46),
                                 ),
@@ -1370,7 +1414,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                           Text(
                             contractorFeedback,
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: AppFontScale.body,
                               color: Color(0xFF065F46),
                             ),
                           ),
@@ -1405,7 +1449,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                             Text(
                               loc.feedbackFromLabourLabel,
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFontScale.body,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xFF1E3A8A),
                               ),
@@ -1415,7 +1459,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                               Text(
                                 labourRating.toStringAsFixed(1),
                                 style: const TextStyle(
-                                  fontSize: 12,
+                                  fontSize: AppFontScale.body,
                                   fontWeight: FontWeight.w800,
                                   color: Color(0xFF1E3A8A),
                                 ),
@@ -1428,7 +1472,7 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                           Text(
                             labourFeedback,
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: AppFontScale.body,
                               color: Color(0xFF1E3A8A),
                             ),
                           ),
@@ -1443,17 +1487,17 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.access_time_rounded,
                         size: 12,
-                        color: Color(0xFF9CA3AF),
+                        color: cs.onSurfaceVariant,
                       ),
                       const SizedBox(width: 3),
                       Text(
                         '${loc.appliedOn} ${fmtDate(appliedAt)}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF9CA3AF),
+                        style: TextStyle(
+                          fontSize: AppFontScale.caption,
+                          color: cs.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -1463,7 +1507,10 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                 // ── Action buttons ────────────────────────────────────
                 if (status == 'pending' || status == 'accepted') ...[
                   const SizedBox(height: 12),
-                  const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                  Divider(
+                    height: 1,
+                    color: cs.outlineVariant.withValues(alpha: 0.7),
+                  ),
                   const SizedBox(height: 12),
                   if (_actionLoading)
                     const Center(
@@ -1485,14 +1532,14 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                         label: Text(
                           loc.connectAccept,
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: AppFontScale.button,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.5,
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          foregroundColor: Colors.white,
+                          backgroundColor: cs.primary,
+                          foregroundColor: cs.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -1516,14 +1563,14 @@ class _ApplicationCardState extends State<_ApplicationCard> {
                         label: Text(
                           loc.markCompleted,
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: AppFontScale.button,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.5,
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF059669),
-                          foregroundColor: Colors.white,
+                          backgroundColor: cs.primary,
+                          foregroundColor: cs.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -1573,7 +1620,7 @@ class _StatChip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppFontScale.body,
               fontWeight: FontWeight.w600,
               color: color,
             ),
@@ -1592,30 +1639,34 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(top: 40),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.people_outline_rounded,
               size: 56,
-              color: Color(0xFFD1D5DB),
+              color: cs.onSurfaceVariant.withValues(alpha: 0.45),
             ),
             const SizedBox(height: 14),
             Text(
               loc.noApplicationsYet,
-              style: const TextStyle(
-                fontSize: 18,
+              style: TextStyle(
+                fontSize: AppFontScale.display,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF374151),
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               loc.noApplicationsHint,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+              style: TextStyle(
+                fontSize: AppFontScale.section,
+                color: cs.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],

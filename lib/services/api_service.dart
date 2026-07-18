@@ -17,6 +17,15 @@ class ApiService {
     ),
   )..interceptors.add(AppInterceptor());
 
+  static void _debugPrintChunked(String tag, String text) {
+    if (!kDebugMode) return;
+    const chunkSize = 900;
+    for (var i = 0; i < text.length; i += chunkSize) {
+      final end = (i + chunkSize < text.length) ? i + chunkSize : text.length;
+      debugPrint('$tag ${text.substring(i, end)}');
+    }
+  }
+
   /// POST /auth/register — register a new user (labour / sub_contractor / contractor).
   static Future<Map<String, dynamic>> registerUser(
     Map<String, dynamic> body,
@@ -187,6 +196,16 @@ class ApiService {
 
     try {
       final params = filter?.toQueryParameters(isLabour: false) ?? {};
+      if (kDebugMode) {
+        final queryAsStringMap = params.map(
+          (key, value) => MapEntry(key, value.toString()),
+        );
+        final uri = Uri.parse('${Env.baseUrl}/api/users/contractors').replace(
+          queryParameters: queryAsStringMap.isEmpty ? null : queryAsStringMap,
+        );
+        debugPrint('[Contractor API][Request Payload] $params');
+        _debugPrintChunked('[Contractor API][Request URL]', uri.toString());
+      }
       final response = await _dio.get(
         '${Env.baseUrl}/api/users/contractors',
         queryParameters: params.isEmpty ? null : params,
@@ -212,6 +231,16 @@ class ApiService {
 
     try {
       final params = filter?.toQueryParameters(isLabour: true) ?? {};
+      if (kDebugMode) {
+        final queryAsStringMap = params.map(
+          (key, value) => MapEntry(key, value.toString()),
+        );
+        final uri = Uri.parse('${Env.baseUrl}/api/users/labours').replace(
+          queryParameters: queryAsStringMap.isEmpty ? null : queryAsStringMap,
+        );
+        debugPrint('[Labour API][Request Payload] $params');
+        _debugPrintChunked('[Labour API][Request URL]', uri.toString());
+      }
       final response = await _dio.get(
         '${Env.baseUrl}/api/users/labours',
         queryParameters: params.isEmpty ? null : params,

@@ -11,6 +11,8 @@ import '../../../common/models/skill_model.dart';
 import '../../../common/models/business_type_model.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/business_type_service.dart';
+import '../../../theme/app_font_scale.dart';
+import '../../../theme/app_card_metrics.dart';
 
 // ── View ──────────────────────────────────────────────────────────────────────
 
@@ -166,7 +168,12 @@ class _MyJobsViewState extends State<MyJobsView> {
       color: _primaryColor,
       onRefresh: _load,
       child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
+        padding: const EdgeInsets.fromLTRB(
+          AppCardMetrics.pageHorizontal,
+          12,
+          AppCardMetrics.pageHorizontal,
+          AppCardMetrics.pageBottom,
+        ),
         // slots: 0=header, 1=gap, 2=section row, 3=gap, 4..N=cards (or 1 empty state)
         itemCount: 4 + (_filtered.isEmpty ? 1 : _filtered.length),
         itemBuilder: (context, index) {
@@ -209,7 +216,7 @@ class _MyJobsViewState extends State<MyJobsView> {
                 Text(
                   loc.postNew,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: AppFontScale.display,
                     fontWeight: FontWeight.w800,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
@@ -217,7 +224,7 @@ class _MyJobsViewState extends State<MyJobsView> {
                 Text(
                   loc.requirement,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: AppFontScale.display,
                     fontWeight: FontWeight.w800,
                     color: _primaryColor,
                   ),
@@ -240,7 +247,7 @@ class _MyJobsViewState extends State<MyJobsView> {
             label: Text(
               loc.createNewJob,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: AppFontScale.button,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.5,
               ),
@@ -293,7 +300,7 @@ class _MyJobsViewState extends State<MyJobsView> {
             Text(
               '${loc.publishedJobs.toUpperCase()} (${_filtered.length})',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: AppFontScale.section,
                 fontWeight: FontWeight.w800,
                 color: Theme.of(context).colorScheme.onSurface,
                 letterSpacing: 0.5,
@@ -329,7 +336,7 @@ class _MyJobsViewState extends State<MyJobsView> {
             hint,
             key: ValueKey(_filter),
             style: TextStyle(
-              fontSize: 11,
+              fontSize: AppFontScale.caption,
               color: hintColor.withValues(alpha: 0.85),
               fontWeight: FontWeight.w500,
             ),
@@ -375,7 +382,7 @@ class _MyJobsViewState extends State<MyJobsView> {
                   ? loc.noLiveJobs
                   : loc.noHiddenJobs,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: AppFontScale.display,
                 fontWeight: FontWeight.w800,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
@@ -386,7 +393,7 @@ class _MyJobsViewState extends State<MyJobsView> {
                   ? loc.tapCreateJobToPostFirstRequirement
                   : loc.noJobsMatchFilter,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: AppFontScale.section,
                 color: Theme.of(
                   context,
                 ).colorScheme.onSurface.withValues(alpha: 0.55),
@@ -479,7 +486,7 @@ class _FilterChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: AppFontScale.caption,
             fontWeight: FontWeight.w700,
             color: active ? Colors.white : color,
             letterSpacing: 0.3,
