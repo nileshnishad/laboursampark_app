@@ -36,7 +36,7 @@ class AppLocalizations {
       'sign_in': 'Sign In',
       'signing_in': 'Signing in...',
       'dont_have_an_account': "Don't have an account?",
-      'need_help_call_support': 'Need help? Call support: +91 9172272305',
+      'need_help_call_support': 'Need help? Call support: +91 9702701777',
       'choose_your_role': 'Choose Your Role',
       'choose_role_description':
           'Select the type of account that best describes you',
@@ -365,7 +365,7 @@ class AppLocalizations {
       'sign_in': 'साइन इन करें',
       'signing_in': 'साइन इन किया जा रहा है...',
       'dont_have_an_account': 'खाता नहीं है?',
-      'need_help_call_support': 'मदद चाहिए? सपोर्ट पर कॉल करें: +91 9172272305',
+      'need_help_call_support': 'मदद चाहिए? सपोर्ट पर कॉल करें: +91 9702701777',
       'choose_your_role': 'अपना रोल चुनें',
       'choose_role_description': 'अपने लिए सबसे उपयुक्त खाता प्रकार चुनें',
       'labour_role_title': 'मज़दूर',
@@ -700,7 +700,7 @@ class AppLocalizations {
       'signing_in': 'साइन इन केला जात आहे...',
       'dont_have_an_account': 'खाते नाही का?',
       'need_help_call_support':
-          'मदतीची गरज आहे? समर्थनाला कॉल करा: +91 9172272305',
+          'मदतीची गरज आहे? समर्थनाला कॉल करा: +91 9702701777',
       'choose_your_role': 'आपला रोल निवडा',
       'choose_role_description': 'तुमच्यासाठी सर्वोत्तम खाते प्रकार निवडा',
       'labour_role_title': 'कामगार',

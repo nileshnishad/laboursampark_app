@@ -7,7 +7,11 @@ class _QuickAction {
   final IconData icon;
   final String title;
   final String subtitle;
-  const _QuickAction({required this.icon, required this.title, required this.subtitle});
+  const _QuickAction({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
 }
 
 class DashboardHomeView extends StatelessWidget {
@@ -32,26 +36,70 @@ class DashboardHomeView extends StatelessWidget {
     switch (userType.toLowerCase()) {
       case 'labour':
         return const [
-          _QuickAction(icon: Icons.work_outline, title: 'Find Work', subtitle: 'Browse jobs'),
-          _QuickAction(icon: Icons.people_outline, title: 'Contractors', subtitle: 'Trusted people'),
-          _QuickAction(icon: Icons.history, title: 'History', subtitle: 'Past activity'),
+          _QuickAction(
+            icon: Icons.work_outline,
+            title: 'Find Work',
+            subtitle: 'Browse jobs',
+          ),
+          _QuickAction(
+            icon: Icons.people_outline,
+            title: 'Contractors',
+            subtitle: 'Trusted people',
+          ),
+          _QuickAction(
+            icon: Icons.history,
+            title: 'History',
+            subtitle: 'Past activity',
+          ),
         ];
       case 'sub_contractor':
         return const [
-          _QuickAction(icon: Icons.add_box_outlined, title: 'Create Job', subtitle: 'Post quickly'),
-          _QuickAction(icon: Icons.post_add_rounded, title: 'My Jobs', subtitle: 'View posted jobs'),
-          _QuickAction(icon: Icons.groups_outlined, title: 'Labours', subtitle: 'Manage team'),
+          _QuickAction(
+            icon: Icons.add_box_outlined,
+            title: 'Create Job',
+            subtitle: 'Post quickly',
+          ),
+          _QuickAction(
+            icon: Icons.post_add_rounded,
+            title: 'My Jobs',
+            subtitle: 'View posted jobs',
+          ),
+          _QuickAction(
+            icon: Icons.groups_outlined,
+            title: 'Labours',
+            subtitle: 'Manage team',
+          ),
         ];
       case 'contractor':
         return const [
-          _QuickAction(icon: Icons.add_box_outlined, title: 'Create Job', subtitle: 'Post requirement'),
-          _QuickAction(icon: Icons.post_add_rounded, title: 'My Jobs', subtitle: 'View posted jobs'),
-          _QuickAction(icon: Icons.groups_outlined, title: 'Labours', subtitle: 'Find workers'),
+          _QuickAction(
+            icon: Icons.add_box_outlined,
+            title: 'Create Job',
+            subtitle: 'Post requirement',
+          ),
+          _QuickAction(
+            icon: Icons.post_add_rounded,
+            title: 'My Jobs',
+            subtitle: 'View posted jobs',
+          ),
+          _QuickAction(
+            icon: Icons.groups_outlined,
+            title: 'Labours',
+            subtitle: 'Find workers',
+          ),
         ];
       default:
         return const [
-          _QuickAction(icon: Icons.home_outlined, title: 'Home', subtitle: 'Overview'),
-          _QuickAction(icon: Icons.person_outline, title: 'Profile', subtitle: 'Your details'),
+          _QuickAction(
+            icon: Icons.home_outlined,
+            title: 'Home',
+            subtitle: 'Overview',
+          ),
+          _QuickAction(
+            icon: Icons.person_outline,
+            title: 'Profile',
+            subtitle: 'Your details',
+          ),
         ];
     }
   }
@@ -61,7 +109,8 @@ class DashboardHomeView extends StatelessWidget {
     final theme = Theme.of(context);
     final actions = _quickActions();
     final isContractor =
-        userType.toLowerCase() == 'contractor' || userType.toLowerCase() == 'sub_contractor';
+        userType.toLowerCase() == 'contractor' ||
+        userType.toLowerCase() == 'sub_contractor';
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
@@ -78,7 +127,11 @@ class DashboardHomeView extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.warning_rounded, color: Color(0xFFB45309), size: 20),
+                const Icon(
+                  Icons.warning_rounded,
+                  color: Color(0xFFB45309),
+                  size: 20,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -93,15 +146,22 @@ class DashboardHomeView extends StatelessWidget {
                 TextButton(
                   onPressed: () => onShowSubscription(subscriptionPlan),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     backgroundColor: const Color(0xFF2563EB),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  child: const Text('Pay Now',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                  child: const Text(
+                    'Pay Now',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                  ),
                 ),
               ],
             ),
@@ -139,7 +199,9 @@ class DashboardHomeView extends StatelessWidget {
                 label: isContractor ? 'Jobs Posted' : 'Jobs Available',
                 value: isContractor ? '0' : '4',
                 color: const Color(0xFF2563EB),
-                icon: isContractor ? Icons.post_add_rounded : Icons.work_outline_rounded,
+                icon: isContractor
+                    ? Icons.post_add_rounded
+                    : Icons.work_outline_rounded,
               ),
             ),
             const SizedBox(width: 10),
@@ -161,7 +223,9 @@ class DashboardHomeView extends StatelessWidget {
                 label: isContractor ? 'Hired' : 'Accepted',
                 value: '0',
                 color: const Color(0xFF059669),
-                icon: isContractor ? Icons.handshake_outlined : Icons.check_circle_outline_rounded,
+                icon: isContractor
+                    ? Icons.handshake_outlined
+                    : Icons.check_circle_outline_rounded,
               ),
             ),
             const SizedBox(width: 10),
@@ -181,11 +245,13 @@ class DashboardHomeView extends StatelessWidget {
         Row(
           children: [
             Container(
-                width: 4,
-                height: 20,
-                decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB),
-                    borderRadius: BorderRadius.circular(4))),
+              width: 4,
+              height: 20,
+              decoration: BoxDecoration(
+                color: const Color(0xFF2563EB),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
             const SizedBox(width: 10),
             Text(
               isContractor ? 'MANAGE WORK' : 'QUICK ACTIONS',
@@ -209,13 +275,17 @@ class DashboardHomeView extends StatelessWidget {
               border: Border.all(color: const Color(0xFFE5E7EB)),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2)),
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
               ],
             ),
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 6,
+              ),
               leading: Container(
                 width: 44,
                 height: 44,
@@ -223,14 +293,28 @@ class DashboardHomeView extends StatelessWidget {
                   color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(action.icon, color: const Color(0xFF2563EB), size: 22),
+                child: Icon(
+                  action.icon,
+                  color: const Color(0xFF2563EB),
+                  size: 22,
+                ),
               ),
-              title: Text(action.title,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF111827))),
-              subtitle: Text(action.subtitle,
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
-              trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF9CA3AF)),
+              title: Text(
+                action.title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  color: Color(0xFF111827),
+                ),
+              ),
+              subtitle: Text(
+                action.subtitle,
+                style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF9CA3AF),
+              ),
               onTap: () {
                 switch (action.title) {
                   case 'Create Job':
@@ -287,12 +371,19 @@ class DashboardHomeView extends StatelessWidget {
                   color: const Color(0xFF059669).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.support_agent_rounded,
-                    color: Color(0xFF059669), size: 20),
+                child: const Icon(
+                  Icons.support_agent_rounded,
+                  color: Color(0xFF059669),
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
-              Text('Support: +91 9172272305',
-                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+              Text(
+                'Support: +91 9702701777',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ),
