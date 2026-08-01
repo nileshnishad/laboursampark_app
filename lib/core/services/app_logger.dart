@@ -92,9 +92,7 @@ class AppLogger {
           'deviceVersion': deviceInfo.version,
         });
       } else if (deviceInfo is WebBrowserInfo) {
-        device.addAll({
-          'browserName': deviceInfo.browserName.name,
-        });
+        device.addAll({'browserName': deviceInfo.browserName.name});
       }
     }
 
@@ -124,12 +122,11 @@ class AppLogger {
             .toString()
             .trim();
     final userId = (user['_id'] ?? user['id'] ?? '').toString().trim();
-    final userCode =
-      (user['userCode'] ?? user['code'] ?? '').toString().trim();
+    final userCode = (user['userCode'] ?? user['code'] ?? '').toString().trim();
     final userRole =
-      (user['userType'] ?? user['role'] ?? user['userRole'] ?? '')
-        .toString()
-        .trim();
+        (user['userType'] ?? user['role'] ?? user['userRole'] ?? '')
+            .toString()
+            .trim();
 
     final userContext = <String, dynamic>{};
     if (email.isNotEmpty) {
@@ -156,11 +153,7 @@ class AppLogger {
     Map<String, dynamic>? data,
   }) async {
     final enrichedData = _collectStructuredLogData
-        ? {
-            ...await _contextData(),
-            ..._dynamicUserContext(),
-            ...?data,
-          }
+        ? {...await _contextData(), ..._dynamicUserContext(), ...?data}
         : null;
     final text = _buildText('INFO', event, message, enrichedData);
     _logger.i(text);
@@ -174,11 +167,7 @@ class AppLogger {
     Object? error,
   }) async {
     final enrichedData = _collectStructuredLogData
-        ? {
-            ...await _contextData(),
-            ..._dynamicUserContext(),
-            ...?data,
-          }
+        ? {...await _contextData(), ..._dynamicUserContext(), ...?data}
         : null;
     final text = _buildText(
       'WARNING',
@@ -199,11 +188,7 @@ class AppLogger {
     StackTrace? stackTrace,
   }) async {
     final enrichedData = _collectStructuredLogData
-        ? {
-            ...await _contextData(),
-            ..._dynamicUserContext(),
-            ...?data,
-          }
+        ? {...await _contextData(), ..._dynamicUserContext(), ...?data}
         : null;
     final text = _buildText(
       'ERROR',
