@@ -6,6 +6,21 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 class DefaultFirebaseOptions {
+  static bool get hasCurrentPlatformConfig {
+    if (kIsWeb) {
+      return false;
+    }
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return true;
+      case TargetPlatform.iOS:
+        return false;
+      default:
+        return false;
+    }
+  }
+
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
       throw UnsupportedError(

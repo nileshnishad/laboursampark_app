@@ -32,8 +32,15 @@ const AndroidNotificationChannel _channel = AndroidNotificationChannel(
   importance: Importance.high,
 );
 
+bool get _isFirebaseConfigured =>
+    DefaultFirebaseOptions.hasCurrentPlatformConfig;
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  if (!_isFirebaseConfigured) {
+    return;
+  }
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
@@ -43,7 +50,7 @@ void main() async {
   final logger = Logger();
   await AppLogger.instance.info('app_started', message: 'App launched');
   await AppLogger.instance.sendTestLog();
-  if (!kIsWeb) {
+  if (!kIsWeb && _isFirebaseConfigured) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
@@ -149,6 +156,10 @@ void main() async {
         _handleNotificationRoute(initialMessage.data);
       });
     }
+  } else if (!kIsWeb) {
+    debugPrint(
+      'Firebase is not configured for ${defaultTargetPlatform.name}; skipping iOS-only Firebase setup.',
+    );
   }
   Get.put(UserController(), permanent: true);
   runApp(const MyApp());
@@ -189,10 +200,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed) {
       final loggedIn = await AuthService.isLoggedIn();
+      if (!mounted) return;
       if (!loggedIn) return;
       final otpVerified = await AuthService.isOtpVerified();
+      if (!mounted) return;
       if (!otpVerified) {
         final userData = await AuthService.getUserData();
+        if (!mounted) return;
         final phone =
             (userData?['phone'] ??
                     userData?['mobile'] ??
@@ -200,11 +214,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                     '')
                 .toString();
         final userId = (userData?['_id'] ?? userData?['id'] ?? '').toString();
-        final ctx = navigatorKey.currentContext;
-        if (ctx == null) return;
-        // Only push if not already on MobileVerifyScreen
-        final currentRoute = ModalRoute.of(ctx);
-        if (currentRoute?.settings.name == '/mobile_verify') return;
         navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute(
             settings: const RouteSettings(name: '/mobile_verify'),

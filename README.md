@@ -17,3 +17,20 @@ samples, guidance on mobile development, and a full API reference.
 
 
 flutter build appbundle --release For build aap file for Plat Store
+
+## iOS release setup
+
+This app now includes the base iOS project changes required for App Store preparation:
+
+- Bundle identifier: `com.laboursampark.app`
+- iOS deployment target: `13.0`
+- App icon asset catalog is wired in the Runner target
+- Camera, photo library, location, and remote notification usage strings are declared
+
+Manual steps still required before an App Store build will fully work:
+
+1. Add your Apple Developer team in Xcode Signing & Capabilities for the Runner target.
+2. Download the iOS `GoogleService-Info.plist` from the Firebase project and place it in `ios/Runner/`.
+3. Run `flutterfire configure --platforms=ios` to regenerate `lib/firebase_options.dart` with iOS values.
+4. Enable Push Notifications and Background Modes > Remote notifications in Xcode if Firebase Messaging is required on iOS.
+5. Build with `flutter build ios --release` or archive from Xcode after signing is configured.

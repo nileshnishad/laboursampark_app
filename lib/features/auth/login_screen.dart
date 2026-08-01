@@ -13,6 +13,7 @@ import '../../common/widgets/language_picker.dart';
 import '../../l10n/app_localizations.dart';
 import '../../core/user_controller.dart';
 import '../../core/auth_service.dart';
+import '../../firebase_options.dart';
 import '../../core/services/app_logger.dart';
 import '../../utils/toast_utils.dart';
 
@@ -182,9 +183,11 @@ class _LoginScreenState extends State<LoginScreen> {
           },
         );
         // Register FCM token to backend (non-blocking)
-        final fcmToken = await FirebaseMessaging.instance.getToken();
-        if (fcmToken != null) {
-          ApiService.registerFcmToken(token: token, fcmToken: fcmToken);
+        if (DefaultFirebaseOptions.hasCurrentPlatformConfig) {
+          final fcmToken = await FirebaseMessaging.instance.getToken();
+          if (fcmToken != null) {
+            ApiService.registerFcmToken(token: token, fcmToken: fcmToken);
+          }
         }
         if (!mounted) return;
 

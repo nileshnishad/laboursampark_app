@@ -8,6 +8,7 @@ import '../../core/auth_service.dart';
 import '../../core/user_controller.dart';
 import '../../services/api_service.dart';
 import '../../core/services/app_logger.dart';
+import '../../firebase_options.dart';
 import '../auth/login_screen.dart';
 import '../auth/mobile_verify_screen.dart';
 import '../dashboard/user_dashboard_screen.dart';
@@ -89,10 +90,12 @@ class _SplashScreenState extends State<SplashScreen> {
           return;
         }
         // Refresh FCM token on every app open (token can change)
-        final fcmToken = await FirebaseMessaging.instance.getToken();
-        final authToken = userController.token.value;
-        if (fcmToken != null && authToken != null) {
-          ApiService.registerFcmToken(token: authToken, fcmToken: fcmToken);
+        if (DefaultFirebaseOptions.hasCurrentPlatformConfig) {
+          final fcmToken = await FirebaseMessaging.instance.getToken();
+          final authToken = userController.token.value;
+          if (fcmToken != null && authToken != null) {
+            ApiService.registerFcmToken(token: authToken, fcmToken: fcmToken);
+          }
         }
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
