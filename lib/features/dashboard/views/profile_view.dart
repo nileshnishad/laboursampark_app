@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
@@ -21,6 +22,7 @@ class ProfileView extends StatefulWidget {
   final VoidCallback onSettings;
   final VoidCallback onLogout;
   final VoidCallback onUpdateProfile;
+  final VoidCallback onOpenHistory;
 
   const ProfileView({
     super.key,
@@ -36,6 +38,7 @@ class ProfileView extends StatefulWidget {
     required this.onSettings,
     required this.onLogout,
     required this.onUpdateProfile,
+    required this.onOpenHistory,
   });
 
   @override
@@ -223,12 +226,21 @@ class _ProfileViewState extends State<ProfileView> {
       if (d == null) return '';
       return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
     }();
+    final userCode =
+        (widget.profileData?['userCode'] ??
+                widget.profileData?['user_code'] ??
+                '')
+            .toString()
+            .trim();
     final rawId =
         (widget.profileData?['userId'] ?? widget.profileData?['_id'] ?? '')
             .toString();
-    final shortId = rawId.length > 6
-        ? 'ID: #${rawId.substring(0, 6).toUpperCase()}'
-        : (rawId.isNotEmpty ? 'ID: #$rawId' : '');
+    final shortId = userCode.isNotEmpty
+        ? 'ID: $userCode'
+        : (rawId.length > 6
+              ? 'ID: #${rawId.substring(0, 6).toUpperCase()}'
+              : (rawId.isNotEmpty ? 'ID: #$rawId' : ''));
+    final copyableId = userCode.isNotEmpty ? userCode : rawId;
 
     final displayVerified = (widget.profileData?['display'] as bool?) ?? false;
     final emailVerified =
@@ -541,7 +553,21 @@ class _ProfileViewState extends State<ProfileView> {
                                 color: avatarColor,
                               ),
                               if (shortId.isNotEmpty)
-                                ProfileBadge(label: shortId),
+                                GestureDetector(
+                                  onLongPress: () {
+                                    if (copyableId.isEmpty) return;
+                                    Clipboard.setData(
+                                      ClipboardData(text: copyableId),
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('User code copied'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                  },
+                                  child: ProfileBadge(label: shortId),
+                                ),
                             ],
                           ),
                         ],
@@ -1422,6 +1448,16 @@ class _ProfileViewState extends State<ProfileView> {
                     icon: Icons.refresh_rounded,
                     label: 'Refresh Profile',
                     onTap: widget.onRetry,
+                  ),
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    color: ics.outline.withValues(alpha: 0.2),
+                  ),
+                  ProfileActionTile(
+                    icon: Icons.history_rounded,
+                    label: 'History',
+                    onTap: widget.onOpenHistory,
                   ),
                   Divider(
                     height: 1,

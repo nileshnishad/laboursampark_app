@@ -207,8 +207,6 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         }
 
-        debugPrint('>>> OTPstatus: $otpStatus');
-
         if (!mounted) return;
 
         if (otpStatus == 'inactive') {

@@ -1,6 +1,3 @@
-import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/models/business_type_model.dart';
@@ -31,21 +28,6 @@ class _ContractorListViewState extends State<ContractorListView> {
   List<MarketplaceUser> _allContractors = [];
   bool _loading = true;
   String? _error;
-
-  void _debugPrintChunked(String tag, String text) {
-    if (!kDebugMode) return;
-    const chunkSize = 900;
-    for (var i = 0; i < text.length; i += chunkSize) {
-      final end = (i + chunkSize < text.length) ? i + chunkSize : text.length;
-      debugPrint('$tag ${text.substring(i, end)}');
-    }
-  }
-
-  void _debugPrintMap(String tag, Map<String, dynamic> data) {
-    if (!kDebugMode) return;
-    final pretty = const JsonEncoder.withIndent('  ').convert(data);
-    _debugPrintChunked(tag, pretty);
-  }
 
   String _resolveBusinessTypeLabel(
     List<String> businessTypeIds,
@@ -119,30 +101,8 @@ class _ContractorListViewState extends State<ContractorListView> {
       }
     }
 
-    final payload = _filter.toQueryParameters(isLabour: false);
-    if (kDebugMode) {
-      debugPrint(
-        '[Contractor Filter][Request] useSavedCity=$useSavedCity payload=$payload',
-      );
-    }
-
     final response = await ApiService.fetchContractors(filter: _filter);
     if (!mounted) return;
-
-    if (kDebugMode) {
-      final data = response['data'] as Map<String, dynamic>? ?? {};
-      final users = (data['users'] as List<dynamic>? ?? const []);
-      debugPrint(
-        '[Contractor Filter][Response] success=${response['success']} message=${response['message']} usersCount=${users.length}',
-      );
-      _debugPrintMap('[Contractor Filter][Response Body]', response);
-      if (users.isNotEmpty) {
-        _debugPrintChunked(
-          '[Contractor Filter][First User]',
-          const JsonEncoder.withIndent('  ').convert(users.first),
-        );
-      }
-    }
 
     if (response['success'] == true) {
       final data = response['data'] as Map<String, dynamic>?;
@@ -173,6 +133,25 @@ class _ContractorListViewState extends State<ContractorListView> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
+    if (AuthService.isInUserInitiatedLogoutGrace) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 26,
+              height: 26,
+              child: CircularProgressIndicator(strokeWidth: 2.4),
+            ),
+            SizedBox(height: 10),
+            Text('Logging out...'),
+          ],
+        ),
+      );
+    }
+
     final localeCode = Localizations.localeOf(context).languageCode;
     final selectedBusinessTypeLabels = _resolveBusinessTypeLabel(
       _filter.businessTypeIds,
@@ -208,7 +187,7 @@ class _ContractorListViewState extends State<ContractorListView> {
     }
 
     final headerSection = Padding(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -218,73 +197,70 @@ class _ContractorListViewState extends State<ContractorListView> {
                 context,
               ).colorScheme.primary.withValues(alpha: 0.10),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
                 child: Text(
                   loc.subscriptionInactiveContractorMasked,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
             ),
-          if (!widget.canViewSensitiveData) const SizedBox(height: 10),
+          if (!widget.canViewSensitiveData) const SizedBox(height: 4),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(
-                  loc.contractorProfiles,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                flex: 9,
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search),
+                    labelText: loc.searchContractor,
+                    hintText: loc.searchContractorHint,
+                  ),
                 ),
               ),
-              TextButton.icon(
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                icon: const Icon(Icons.filter_list, size: 18),
-                label: Text(AppLocalizations.of(context).filterLabel),
-                onPressed: () async {
-                  final result = await showModalBottomSheet<MarketplaceFilter>(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (_) => MarketplaceFilterSheet(
-                      initialFilter: _filter,
-                      skills: const [],
-                      businessTypes: _availableBusinessTypes,
-                      isLabourPage: false,
+              const SizedBox(width: 4),
+              Expanded(
+                flex: 1,
+                child: SizedBox(
+                  height: 46,
+                  child: Tooltip(
+                    message: loc.filterLabel,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () async {
+                        final result =
+                            await showModalBottomSheet<MarketplaceFilter>(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (_) => MarketplaceFilterSheet(
+                                initialFilter: _filter,
+                                skills: const [],
+                                businessTypes: _availableBusinessTypes,
+                                isLabourPage: false,
+                              ),
+                            );
+                        if (result != null) {
+                          setState(() {
+                            _filter = result;
+                          });
+                          await _loadContractors(useSavedCity: false);
+                        }
+                      },
+                      child: const Icon(Icons.filter_list, size: 28),
                     ),
-                  );
-                  if (result != null) {
-                    if (kDebugMode) {
-                      debugPrint(
-                        '[Contractor Filter][Apply Tap] selectedFilter=${result.toQueryParameters(isLabour: false)}',
-                      );
-                    }
-                    setState(() {
-                      _filter = result;
-                    });
-                    await _loadContractors(useSavedCity: false);
-                  }
-                },
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              prefixIcon: const Icon(Icons.search),
-              labelText: loc.searchContractor,
-              hintText: loc.searchContractorHint,
-            ),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
           if (_filter.hasAnyFilter)
             Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 children: [
                   Expanded(
@@ -323,7 +299,7 @@ class _ContractorListViewState extends State<ContractorListView> {
 
     final contentSection = filtered.isEmpty
         ? ListView(
-            padding: const EdgeInsets.only(left: 14, right: 14, bottom: 14),
+            padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
             children: [
               AppStateMessage(
                 icon: Icons.search_off,
@@ -333,7 +309,7 @@ class _ContractorListViewState extends State<ContractorListView> {
             ],
           )
         : ListView.builder(
-            padding: const EdgeInsets.only(left: 14, right: 14, bottom: 14),
+            padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
             itemCount: filtered.length,
             itemBuilder: (_, index) {
               final contractor = filtered[index];
@@ -345,16 +321,19 @@ class _ContractorListViewState extends State<ContractorListView> {
             },
           );
 
-    return Column(
-      children: [
-        headerSection,
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: () => _loadContractors(useSavedCity: false),
-            child: contentSection,
+    return Container(
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.24),
+      child: Column(
+        children: [
+          headerSection,
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => _loadContractors(useSavedCity: false),
+              child: contentSection,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

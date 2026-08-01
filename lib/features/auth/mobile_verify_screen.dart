@@ -172,18 +172,46 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
       ),
     );
     if (confirmed != true) return;
-    final userController = Get.find<UserController>();
-    userController.clearUser();
-    await AuthService.clearSession();
-    await AppLogger.instance.info(
-      'logout',
-      message: 'User logged out from mobile verify screen',
-    );
+
     if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => const PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2.2),
+              ),
+              SizedBox(width: 12),
+              Text('Logging out...'),
+            ],
+          ),
+        ),
+      ),
     );
+
+    AuthService.startUserInitiatedLogoutGrace();
+    try {
+      final userController = Get.find<UserController>();
+      userController.clearUser();
+      await AuthService.clearSession();
+      await AppLogger.instance.info(
+        'logout',
+        message: 'User logged out from mobile verify screen',
+      );
+    } finally {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    }
   }
 
   void _onOtpDigit(int index, String value) {

@@ -13,6 +13,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../services/business_type_service.dart';
 import '../../../theme/app_font_scale.dart';
 import '../../../theme/app_card_metrics.dart';
+import '../../../core/auth_service.dart';
 
 // ── View ──────────────────────────────────────────────────────────────────────
 
@@ -118,6 +119,23 @@ class _MyJobsViewState extends State<MyJobsView> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+
+    if (AuthService.isInUserInitiatedLogoutGrace) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 26,
+              height: 26,
+              child: CircularProgressIndicator(strokeWidth: 2.4),
+            ),
+            SizedBox(height: 10),
+            Text('Logging out...'),
+          ],
+        ),
+      );
+    }
 
     if (_loading) {
       return const LoadingSkeleton(

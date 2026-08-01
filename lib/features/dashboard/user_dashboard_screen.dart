@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:app_links/app_links.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/user_controller.dart';
 import '../../core/auth_service.dart';
@@ -375,10 +376,6 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             label: loc.contractors,
           ),
           BottomNavigationBarItem(
-            icon: const Icon(Icons.history),
-            label: loc.history,
-          ),
-          BottomNavigationBarItem(
             icon: const Icon(Icons.person_outline),
             label: loc.profile,
           ),
@@ -398,8 +395,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             label: loc.labours,
           ),
           BottomNavigationBarItem(
-            icon: const Icon(Icons.history),
-            label: loc.history,
+            icon: const Icon(Icons.engineering_outlined),
+            label: loc.contractors,
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.person_outline),
@@ -421,10 +418,6 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             label: loc.contractors,
           ),
           BottomNavigationBarItem(
-            icon: const Icon(Icons.history),
-            label: loc.history,
-          ),
-          BottomNavigationBarItem(
             icon: const Icon(Icons.person_outline),
             label: loc.profile,
           ),
@@ -434,10 +427,6 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
           BottomNavigationBarItem(
             icon: const Icon(Icons.work_outline),
             label: loc.jobs,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.history),
-            label: loc.history,
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.person_outline),
@@ -460,18 +449,67 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     }
   }
 
+  String? _topAppBarTitle(AppLocalizations loc, String userType) {
+    switch (userType.toLowerCase()) {
+      case 'labour':
+        if (_selectedIndex == 0) return null;
+        if (_selectedIndex == 1) return loc.contractors;
+        return null;
+      case 'sub_contractor':
+        if (_selectedIndex == 1) return loc.jobs;
+        if (_selectedIndex == 2) return loc.labours;
+        if (_selectedIndex == 3) return loc.contractors;
+        return null;
+      case 'contractor':
+        if (_selectedIndex == 1) return loc.labours;
+        if (_selectedIndex == 2) return loc.contractors;
+        return null;
+      default:
+        if (_selectedIndex == 0) return loc.jobs;
+        return null;
+    }
+  }
+
   Future<void> _logout() async {
-    final userController = Get.find<UserController>();
-    userController.clearUser();
-    await AuthService.clearSession();
-    await AppLogger.instance.info(
-      'logout',
-      message: 'User logged out from dashboard',
-    );
     if (!mounted) return;
-    Navigator.of(
-      context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => const PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2.2),
+              ),
+              SizedBox(width: 12),
+              Text('Logging out...'),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    AuthService.startUserInitiatedLogoutGrace();
+    try {
+      final userController = Get.find<UserController>();
+      userController.clearUser();
+      await AuthService.clearSession();
+      await AppLogger.instance.info(
+        'logout',
+        message: 'User logged out from dashboard',
+      );
+    } finally {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    }
   }
 
   void _openEditProfile(
@@ -489,6 +527,83 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
           },
         ),
       ),
+    );
+  }
+
+  void _openHistory(
+    BuildContext context, {
+    required String token,
+    required String userType,
+  }) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) {
+          final theme = Theme.of(context);
+          return Scaffold(
+            backgroundColor: theme.colorScheme.surface,
+            appBar: AppBar(
+              backgroundColor: theme.colorScheme.surface,
+              foregroundColor: theme.colorScheme.onSurface,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              surfaceTintColor: Colors.transparent,
+              title: Text(
+                AppLocalizations.of(context).history,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(2),
+                child: Container(
+                  height: 2,
+                  color: theme.colorScheme.outlineVariant,
+                ),
+              ),
+            ),
+            body: Container(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.18,
+              ),
+              child: HistoryView(token: token, userType: userType),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _shareProfile(BuildContext context) async {
+    final user = Get.find<UserController>().user.value;
+    if (user == null) return;
+
+    final fullName = (user['fullName'] ?? user['name'] ?? 'LabourSampark User')
+        .toString();
+    final userType = (user['userType'] ?? 'user').toString();
+    final city =
+        (user['city'] ??
+                (user['location'] as Map<String, dynamic>?)?['city'] ??
+                '')
+            .toString();
+    final mobile = (user['mobile'] ?? user['phone'] ?? '').toString();
+    final userCode = (user['userCode'] ?? user['user_code'] ?? '')
+        .toString()
+        .trim();
+
+    final lines = <String>[
+      'LabourSampark Profile',
+      'Name: $fullName',
+      'Role: $userType',
+      if (userCode.isNotEmpty) 'User Code: $userCode',
+      if (city.isNotEmpty) 'City: $city',
+      if (mobile.isNotEmpty) 'Contact: $mobile',
+    ];
+
+    await Share.share(
+      lines.join('\n'),
+      subject: 'LabourSampark Profile - $fullName',
     );
   }
 
@@ -693,11 +808,6 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             key: const ValueKey('contractor_list_view'),
             canViewSensitiveData: _subscriptionActive,
           ),
-          HistoryView(
-            key: const ValueKey('history_view'),
-            token: token,
-            userType: userType,
-          ),
           ProfileView(
             key: const ValueKey('profile_view'),
             fullName: fullName,
@@ -714,6 +824,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             onLogout: _logout,
             onUpdateProfile: () =>
                 _openEditProfile(context, profileData, userType),
+            onOpenHistory: () =>
+                _openHistory(context, token: token, userType: userType),
           ),
         ];
       case 'sub_contractor':
@@ -733,10 +845,9 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             key: const ValueKey('labour_list_view'),
             canViewSensitiveData: _subscriptionActive,
           ),
-          HistoryView(
-            key: const ValueKey('history_view'),
-            token: token,
-            userType: userType,
+          ContractorListView(
+            key: const ValueKey('contractor_list_view'),
+            canViewSensitiveData: _subscriptionActive,
           ),
           ProfileView(
             key: const ValueKey('profile_view'),
@@ -754,6 +865,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             onLogout: _logout,
             onUpdateProfile: () =>
                 _openEditProfile(context, profileData, userType),
+            onOpenHistory: () =>
+                _openHistory(context, token: token, userType: userType),
           ),
         ];
       case 'contractor':
@@ -771,11 +884,6 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             key: const ValueKey('contractor_list_view'),
             canViewSensitiveData: _subscriptionActive,
           ),
-          HistoryView(
-            key: const ValueKey('history_view'),
-            token: token,
-            userType: userType,
-          ),
           ProfileView(
             key: const ValueKey('profile_view'),
             fullName: fullName,
@@ -792,6 +900,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             onLogout: _logout,
             onUpdateProfile: () =>
                 _openEditProfile(context, profileData, userType),
+            onOpenHistory: () =>
+                _openHistory(context, token: token, userType: userType),
           ),
         ];
       default:
@@ -802,11 +912,6 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             userType: userType,
             subscriptionActive: _subscriptionActive,
           ),
-          HistoryView(
-            key: const ValueKey('history_view'),
-            token: token,
-            userType: userType,
-          ),
           ProfileView(
             key: const ValueKey('profile_view'),
             fullName: fullName,
@@ -823,6 +928,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             onLogout: _logout,
             onUpdateProfile: () =>
                 _openEditProfile(context, profileData, userType),
+            onOpenHistory: () =>
+                _openHistory(context, token: token, userType: userType),
           ),
         ];
     }
@@ -1166,6 +1273,10 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
       final userType = (user?['userType'] ?? '').toString();
       final token = userController.token.value ?? '';
       final navItems = _getNavItems(context, userType);
+      final loc = AppLocalizations.of(context);
+      final topAppBarTitle = _topAppBarTitle(loc, userType);
+      final roleVisibilityText =
+          '${_roleLabel(userType)} • ${_subscriptionActive ? 'Visible' : 'Hidden'}';
 
       if (_selectedIndex >= navItems.length) {
         _selectedIndex = 0;
@@ -1189,7 +1300,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             scrolledUnderElevation: 0,
             surfaceTintColor: Colors.transparent,
             automaticallyImplyLeading: false,
-            toolbarHeight: 56,
+            toolbarHeight: 64,
             titleSpacing: 10,
             flexibleSpace: Container(
               decoration: BoxDecoration(
@@ -1203,107 +1314,127 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                 ],
               ),
             ),
-            title: Row(
-              children: [
-                Builder(
-                  builder: (context) {
-                    final isDark =
-                        Theme.of(context).brightness == Brightness.dark;
-                    final photoUrl = (user?['profilePhotoUrl'] ?? '')
-                        .toString()
-                        .trim();
-                    final hasPhoto = photoUrl.isNotEmpty;
-                    return Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(hasPhoto ? 18 : 10),
-                        border: Border.all(
-                          color: hasPhoto
-                              ? const Color(0xFF2563EB).withValues(alpha: 0.35)
-                              : Theme.of(context).colorScheme.outlineVariant,
-                          width: 1.6,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(hasPhoto ? 18 : 9),
-                        child: hasPhoto
-                            ? Image.network(
-                                photoUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Image.asset(
-                                  isDark
-                                      ? 'assets/images/app_logo_dark.png'
-                                      : 'assets/images/app_logo.png',
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : Image.asset(
-                                isDark
-                                    ? 'assets/images/app_logo_dark.png'
-                                    : 'assets/images/app_logo.png',
-                                fit: BoxFit.cover,
-                              ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
+            title: topAppBarTitle != null
+                ? Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        fullName.isEmpty ? 'Welcome' : fullName,
+                        topAppBarTitle,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: Theme.of(context).colorScheme.onSurface,
-                          letterSpacing: 0.2,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 1),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 1,
-                        ),
-                        decoration: BoxDecoration(
+                      const SizedBox(height: 2),
+                      Text(
+                        roleVisibilityText,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                           color: _subscriptionActive
-                              ? const Color(0xFFE8F5E9)
-                              : const Color(0xFFFFF8E1),
-                          border: Border.all(
-                            color: _subscriptionActive
-                                ? const Color(0xFF81C784)
-                                : const Color(0xFFFFCC80),
-                          ),
-                          borderRadius: BorderRadius.circular(999),
+                              ? const Color(0xFF2E7D32)
+                              : const Color(0xFFB45309),
                         ),
-                        child: Text(
-                          '${_roleLabel(userType)} • ${_subscriptionActive ? 'Visible' : 'Hidden'}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: _subscriptionActive
-                                ? const Color(0xFF2E7D32)
-                                : const Color(0xFFB45309),
-                            fontWeight: FontWeight.w600,
-                          ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Builder(
+                        builder: (context) {
+                          final isDark =
+                              Theme.of(context).brightness == Brightness.dark;
+                          final photoUrl = (user?['profilePhotoUrl'] ?? '')
+                              .toString()
+                              .trim();
+                          final hasPhoto = photoUrl.isNotEmpty;
+                          return Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(
+                                hasPhoto ? 18 : 10,
+                              ),
+                              border: Border.all(
+                                color: hasPhoto
+                                    ? const Color(
+                                        0xFF2563EB,
+                                      ).withValues(alpha: 0.35)
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.outlineVariant,
+                                width: 1.6,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.08),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                hasPhoto ? 18 : 9,
+                              ),
+                              child: hasPhoto
+                                  ? Image.network(
+                                      photoUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Image.asset(
+                                        isDark
+                                            ? 'assets/images/app_logo_dark.png'
+                                            : 'assets/images/app_logo.png',
+                                        fit: BoxFit.cover,
+                                      ),
+                                    )
+                                  : Image.asset(
+                                      isDark
+                                          ? 'assets/images/app_logo_dark.png'
+                                          : 'assets/images/app_logo.png',
+                                      fit: BoxFit.cover,
+                                    ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              fullName.isEmpty ? 'Welcome' : fullName,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: Theme.of(context).colorScheme.onSurface,
+                                letterSpacing: 0.2,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              roleVisibilityText,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: _subscriptionActive
+                                    ? const Color(0xFF2E7D32)
+                                    : const Color(0xFFB45309),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
             actions: [
               // ID Card button
               Padding(
@@ -1343,6 +1474,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                       final appState = context.read<AppState>();
                       if (value == 'settings') {
                         _showSettingsSheet(context);
+                      } else if (value == 'share_profile') {
+                        await _shareProfile(context);
                       } else if (value == 'language') {
                         // show language dialog
                         showDialog<void>(
@@ -1403,6 +1536,10 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                       }
                     },
                     itemBuilder: (ctx) => [
+                      PopupMenuItem(
+                        value: 'share_profile',
+                        child: Text('Share Profile'),
+                      ),
                       PopupMenuItem(
                         value: 'settings',
                         child: Text(AppLocalizations.of(ctx).settings),

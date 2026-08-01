@@ -12,6 +12,8 @@ class AppLogger {
   AppLogger._();
 
   static final AppLogger instance = AppLogger._();
+  static const bool _collectStructuredLogData = true;
+  static const bool _includeRawErrorDetails = false;
 
   final Logger _logger = Logger(
     printer: PrettyPrinter(
@@ -35,11 +37,13 @@ class AppLogger {
     required String email,
     String? phone,
     String? userId, // optional if you have it
+    String? userRole,
   }) {
     _userContext = {
       'userEmail': email,
       ...?(phone != null ? {'userPhone': phone} : null),
       ...?(userId != null ? {'userId': userId} : null),
+      ...?(userRole != null ? {'userRole': userRole} : null),
     };
   }
 
@@ -72,7 +76,6 @@ class AppLogger {
           'deviceManufacturer': deviceInfo.manufacturer,
           'androidVersion': deviceInfo.version.release,
           'androidSdk': deviceInfo.version.sdkInt,
-          'deviceId': deviceInfo.id,
           'isPhysicalDevice': deviceInfo.isPhysicalDevice,
         });
       } else if (deviceInfo is IosDeviceInfo) {
@@ -87,12 +90,10 @@ class AppLogger {
         device.addAll({
           'deviceName': deviceInfo.name,
           'deviceVersion': deviceInfo.version,
-          'deviceId': deviceInfo.id,
         });
       } else if (deviceInfo is WebBrowserInfo) {
         device.addAll({
           'browserName': deviceInfo.browserName.name,
-          'userAgent': deviceInfo.userAgent,
         });
       }
     }
@@ -123,6 +124,12 @@ class AppLogger {
             .toString()
             .trim();
     final userId = (user['_id'] ?? user['id'] ?? '').toString().trim();
+    final userCode =
+      (user['userCode'] ?? user['code'] ?? '').toString().trim();
+    final userRole =
+      (user['userType'] ?? user['role'] ?? user['userRole'] ?? '')
+        .toString()
+        .trim();
 
     final userContext = <String, dynamic>{};
     if (email.isNotEmpty) {
@@ -134,6 +141,12 @@ class AppLogger {
     if (userId.isNotEmpty) {
       userContext['userId'] = userId;
     }
+    if (userCode.isNotEmpty) {
+      userContext['userCode'] = userCode;
+    }
+    if (userRole.isNotEmpty) {
+      userContext['userRole'] = userRole;
+    }
     return userContext;
   }
 
@@ -142,11 +155,13 @@ class AppLogger {
     String? message,
     Map<String, dynamic>? data,
   }) async {
-    final enrichedData = {
-      ...await _contextData(),
-      ..._dynamicUserContext(),
-      ...?data,
-    };
+    final enrichedData = _collectStructuredLogData
+        ? {
+            ...await _contextData(),
+            ..._dynamicUserContext(),
+            ...?data,
+          }
+        : null;
     final text = _buildText('INFO', event, message, enrichedData);
     _logger.i(text);
     await _sendToTelegram(text);
@@ -158,17 +173,19 @@ class AppLogger {
     Map<String, dynamic>? data,
     Object? error,
   }) async {
-    final enrichedData = {
-      ...await _contextData(),
-      ..._dynamicUserContext(),
-      ...?data,
-    };
+    final enrichedData = _collectStructuredLogData
+        ? {
+            ...await _contextData(),
+            ..._dynamicUserContext(),
+            ...?data,
+          }
+        : null;
     final text = _buildText(
       'WARNING',
       event,
       message,
       enrichedData,
-      error: error,
+      error: _includeRawErrorDetails ? error : null,
     );
     _logger.w(text);
     await _sendToTelegram(text);
@@ -181,19 +198,21 @@ class AppLogger {
     Object? error,
     StackTrace? stackTrace,
   }) async {
-    final enrichedData = {
-      ...await _contextData(),
-      ..._dynamicUserContext(),
-      ...?data,
-    };
+    final enrichedData = _collectStructuredLogData
+        ? {
+            ...await _contextData(),
+            ..._dynamicUserContext(),
+            ...?data,
+          }
+        : null;
     final text = _buildText(
       'ERROR',
       event,
       message,
       enrichedData,
-      error: error,
+      error: _includeRawErrorDetails ? error : null,
     );
-    if (stackTrace != null) {
+    if (_includeRawErrorDetails && stackTrace != null) {
       _logger.e('$text\n$stackTrace');
     } else {
       _logger.e(text);
@@ -247,11 +266,10 @@ class AppLogger {
         'method': err.requestOptions.method,
         'path': err.requestOptions.uri.toString(),
         'statusCode': err.response?.statusCode,
-        'responseData': _safeValue(err.response?.data),
         ...?data,
       },
-      error: err,
-      stackTrace: err.stackTrace,
+      error: _includeRawErrorDetails ? err : null,
+      stackTrace: _includeRawErrorDetails ? err.stackTrace : null,
     );
   }
 

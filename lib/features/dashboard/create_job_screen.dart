@@ -90,7 +90,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('initState: initial _target = $_target');
     final job = widget.existingJob;
     if (job != null) {
       _titleController.text = job.workTitle;
@@ -119,18 +118,12 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       } else {
         _target = 'labour';
       }
-      debugPrint('initState: job loaded, _target set to $_target');
     }
-    // Now fetch based on _target
-    debugPrint('initState: after job check, _target = $_target');
+    // Fetch metadata based on selected target.
     if (_target == 'sub_contractor') {
-      debugPrint(
-        'initState: Fetching business types for sub_contractor target',
-      );
       _fetchBusinessTypes();
     }
     if (_target == 'labour') {
-      debugPrint('initState: Fetching skills for labour target');
       _fetchSkills();
     }
   }
@@ -205,7 +198,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   }
 
   Future<void> _uploadSingleImage(_NewImageItem item) async {
-    debugPrint('[imgUpload] Uploading ${item.name}...');
     final url = await S3UploadService.upload(
       bytes: item.bytes,
       filename: item.name,
@@ -216,10 +208,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       if (url != null) {
         item.status = _UploadStatus.done;
         item.uploadedUrl = url;
-        debugPrint('[imgUpload] Done: $url');
       } else {
         item.status = _UploadStatus.failed;
-        debugPrint('[imgUpload] Failed for ${item.name}');
       }
     });
   }
@@ -272,7 +262,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   Future<void> _fetchBusinessTypes() async {
     setState(() => _businessTypesLoading = true);
     final result = await BusinessTypeService.getAllBusinessTypes();
-    print('>>> Business types fetch result: $result');
     if (!mounted) return;
     if (result['success'] == true) {
       final list = result['businessTypes'] ?? result['businesses'];
@@ -491,28 +480,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   // ── Form submit ───────────────────────────────────────────────────────────────────
 
   Future<void> _submit() async {
-    debugPrint('══════════ [submit] FORM STATE ══════════');
-    debugPrint('[submit] _target: \'$_target\'');
-    debugPrint('[submit] _selectedSkillIds: \'$_selectedSkillIds\'');
-    debugPrint(
-      '[submit] _selectedBusinessTypeIds: \'$_selectedBusinessTypeIds\'',
-    );
-    debugPrint('[submit] _titleController: \'${_titleController.text}\'');
-    debugPrint(
-      '[submit] _descriptionController: \'${_descriptionController.text}\'',
-    );
-    debugPrint('[submit] _workersController: \'${_workersController.text}\'');
-    debugPrint('[submit] _cityController: \'${_cityController.text}\'');
-    debugPrint('[submit] _areaController: \'${_areaController.text}\'');
-    debugPrint('[submit] _pincodeController: \'${_pincodeController.text}\'');
-    debugPrint('[submit] _stateController: \'${_stateController.text}\'');
-    debugPrint('[submit] _addressController: \'${_addressController.text}\'');
-    debugPrint('[submit] _budgetController: \'${_budgetController.text}\'');
-    debugPrint('[submit] _existingImageUrls: $_existingImageUrls');
-    debugPrint(
-      '[submit] _newImages: ${_newImages.map((img) => img.uploadedUrl).toList()}',
-    );
-
     if (!_formKey.currentState!.validate()) return;
     final loc = AppLocalizations.of(context);
     if (_target == 'labour' && _selectedSkillIds.isEmpty) {
@@ -538,7 +505,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     setState(() => _submitting = true);
 
     final token = Get.find<UserController>().token.value ?? '';
-    debugPrint('[submit] token: $token');
 
     // Images already uploaded — just collect URLs
     final newImageUrls = _newImages
@@ -549,13 +515,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     // Combine existing remote URLs + newly uploaded URLs
     final allImageUrls = [..._existingImageUrls, ...newImageUrls];
 
-    debugPrint('══════════ [submit] IMAGE STATE ══════════');
-    debugPrint(
-      '[submit] _existingImageUrls (${_existingImageUrls.length}): $_existingImageUrls',
-    );
-    debugPrint('[submit] newImageUrls (${newImageUrls.length}): $newImageUrls');
-    debugPrint('[submit] allImageUrls (${allImageUrls.length}): $allImageUrls');
-    debugPrint('══════════════════════════════════════════');
     // Build target array
     final List<String> targetList = _target == 'both'
         ? ['labour', 'sub_contractor']
@@ -581,8 +540,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
         'estimatedBudget': double.tryParse(_budgetController.text.trim()),
       'images': allImageUrls,
     };
-    debugPrint('[submit] jobData payload: ' + jobData.toString());
-
     await AppLogger.instance.info(
       _isEditMode ? 'job_update_attempt' : 'job_create_attempt',
       message: _isEditMode ? 'Job update attempted' : 'Job create attempted',
@@ -756,20 +713,11 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                                   ],
                             onChanged: (v) {
                               final newTarget = v ?? _target;
-                              debugPrint(
-                                'Dropdown: Target changed to $newTarget',
-                              );
                               setState(() {
                                 _target = newTarget;
                                 if (_target == 'sub_contractor') {
-                                  debugPrint(
-                                    'Dropdown: Fetching business types for sub_contractor target',
-                                  );
                                   _fetchBusinessTypes();
                                 } else if (_target == 'labour') {
-                                  debugPrint(
-                                    'Dropdown: Fetching skills for labour target',
-                                  );
                                   _fetchSkills();
                                 }
                               });

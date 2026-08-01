@@ -10,6 +10,23 @@ class AuthService {
   static const String _keyRememberMe = 'remember_me';
   static const String _keyRememberedEmail = 'remembered_email';
   static const String _keyRememberedPassword = 'remembered_password';
+  static DateTime? _userLogoutGraceUntil;
+
+  static void startUserInitiatedLogoutGrace({
+    Duration duration = const Duration(seconds: 8),
+  }) {
+    _userLogoutGraceUntil = DateTime.now().add(duration);
+  }
+
+  static bool get isInUserInitiatedLogoutGrace {
+    final until = _userLogoutGraceUntil;
+    if (until == null) return false;
+    if (DateTime.now().isAfter(until)) {
+      _userLogoutGraceUntil = null;
+      return false;
+    }
+    return true;
+  }
 
   static Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
@@ -19,6 +36,9 @@ class AuthService {
   static Future<void> setLoggedIn(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyIsLoggedIn, value);
+    if (value) {
+      _userLogoutGraceUntil = null;
+    }
     await AppLogger.instance.info(
       value ? 'login_state_saved' : 'logout_state_saved',
       message: value ? 'User marked as logged in' : 'User marked as logged out',

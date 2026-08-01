@@ -1,7 +1,4 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../../common/models/skill_model.dart';
 import '../../../common/widgets/app_state_message.dart';
@@ -31,21 +28,6 @@ class _LabourListViewState extends State<LabourListView> {
   List<MarketplaceUser> _allLabours = [];
   bool _loading = true;
   String? _error;
-
-  void _debugPrintChunked(String tag, String text) {
-    if (!kDebugMode) return;
-    const chunkSize = 900;
-    for (var i = 0; i < text.length; i += chunkSize) {
-      final end = (i + chunkSize < text.length) ? i + chunkSize : text.length;
-      debugPrint('$tag ${text.substring(i, end)}');
-    }
-  }
-
-  void _debugPrintMap(String tag, Map<String, dynamic> data) {
-    if (!kDebugMode) return;
-    final pretty = const JsonEncoder.withIndent('  ').convert(data);
-    _debugPrintChunked(tag, pretty);
-  }
 
   @override
   void initState() {
@@ -108,30 +90,8 @@ class _LabourListViewState extends State<LabourListView> {
       }
     }
 
-    final payload = _filter.toQueryParameters(isLabour: true);
-    if (kDebugMode) {
-      debugPrint(
-        '[Labour Filter][Request] useSavedCity=$useSavedCity payload=$payload',
-      );
-    }
-
     final response = await ApiService.fetchLabours(filter: _filter);
     if (!mounted) return;
-
-    if (kDebugMode) {
-      final data = response['data'] as Map<String, dynamic>? ?? {};
-      final users = (data['users'] as List<dynamic>? ?? const []);
-      debugPrint(
-        '[Labour Filter][Response] success=${response['success']} message=${response['message']} usersCount=${users.length}',
-      );
-      _debugPrintMap('[Labour Filter][Response Body]', response);
-      if (users.isNotEmpty) {
-        _debugPrintChunked(
-          '[Labour Filter][First User]',
-          const JsonEncoder.withIndent('  ').convert(users.first),
-        );
-      }
-    }
 
     if (response['success'] == true) {
       final data = response['data'] as Map<String, dynamic>?;
@@ -157,6 +117,24 @@ class _LabourListViewState extends State<LabourListView> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final theme = Theme.of(context);
+
+    if (AuthService.isInUserInitiatedLogoutGrace) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 26,
+              height: 26,
+              child: CircularProgressIndicator(strokeWidth: 2.4),
+            ),
+            SizedBox(height: 10),
+            Text('Logging out...'),
+          ],
+        ),
+      );
+    }
+
     final localeCode = Localizations.localeOf(context).languageCode;
     final selectedSkillLabels = _resolveSkillLabel(
       _filter.skillIds,
@@ -192,7 +170,7 @@ class _LabourListViewState extends State<LabourListView> {
     }
 
     final headerSection = Padding(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -202,73 +180,70 @@ class _LabourListViewState extends State<LabourListView> {
                 context,
               ).colorScheme.primary.withValues(alpha: 0.10),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
                 child: Text(
                   loc.subscriptionInactiveLabourMasked,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
             ),
-          if (!widget.canViewSensitiveData) const SizedBox(height: 10),
+          if (!widget.canViewSensitiveData) const SizedBox(height: 4),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(
-                  loc.labourProfiles,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
+                flex: 9,
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search),
+                    labelText: loc.searchLabour,
+                    hintText: loc.searchLabourHint,
                   ),
                 ),
               ),
-              TextButton.icon(
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                icon: const Icon(Icons.filter_list, size: 18),
-                label: Text(loc.filterLabel),
-                onPressed: () async {
-                  final result = await showModalBottomSheet<MarketplaceFilter>(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (_) => MarketplaceFilterSheet(
-                      initialFilter: _filter,
-                      skills: _availableSkills,
-                      businessTypes: const [],
-                      isLabourPage: true,
+              const SizedBox(width: 4),
+              Expanded(
+                flex: 1,
+                child: SizedBox(
+                  height: 46,
+                  child: Tooltip(
+                    message: loc.filterLabel,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () async {
+                        final result =
+                            await showModalBottomSheet<MarketplaceFilter>(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (_) => MarketplaceFilterSheet(
+                                initialFilter: _filter,
+                                skills: _availableSkills,
+                                businessTypes: const [],
+                                isLabourPage: true,
+                              ),
+                            );
+                        if (result != null) {
+                          setState(() {
+                            _filter = result;
+                          });
+                          await _loadLabours(useSavedCity: false);
+                        }
+                      },
+                      child: const Icon(Icons.filter_list, size: 28),
                     ),
-                  );
-                  if (result != null) {
-                    if (kDebugMode) {
-                      debugPrint(
-                        '[Labour Filter][Apply Tap] selectedFilter=${result.toQueryParameters(isLabour: true)}',
-                      );
-                    }
-                    setState(() {
-                      _filter = result;
-                    });
-                    await _loadLabours(useSavedCity: false);
-                  }
-                },
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              prefixIcon: const Icon(Icons.search),
-              labelText: loc.searchLabour,
-              hintText: loc.searchLabourHint,
-            ),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
           if (_filter.hasAnyFilter)
             Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 children: [
                   Expanded(
@@ -307,7 +282,7 @@ class _LabourListViewState extends State<LabourListView> {
 
     final contentSection = filtered.isEmpty
         ? ListView(
-            padding: const EdgeInsets.only(left: 14, right: 14, bottom: 14),
+            padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
             children: [
               AppStateMessage(
                 icon: Icons.credit_card_off,
@@ -317,7 +292,7 @@ class _LabourListViewState extends State<LabourListView> {
             ],
           )
         : ListView.builder(
-            padding: const EdgeInsets.only(left: 14, right: 14, bottom: 14),
+            padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
             itemCount: filtered.length,
             itemBuilder: (_, index) {
               final user = filtered[index];
@@ -335,7 +310,7 @@ class _LabourListViewState extends State<LabourListView> {
           );
 
     return Container(
-      color: theme.colorScheme.surface,
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.24),
       child: Column(
         children: [
           headerSection,

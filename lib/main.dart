@@ -174,7 +174,7 @@ void _handleNotificationRoute(Map<String, dynamic> data) {
   // if (route == 'jobs') navigatorKey.currentState?.pushNamed('/jobs');
 }
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> navigatorKey = Get.key;
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -247,6 +247,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 darkTheme: AppTheme.darkTheme,
                 themeMode: appState.themeMode,
                 locale: appState.locale,
+                builder: (context, child) {
+                  final media = MediaQuery.of(context);
+                  final clampedTextScaler = media.textScaler.clamp(
+                    minScaleFactor: 0.9,
+                    maxScaleFactor: 1.15,
+                  );
+
+                  return MediaQuery(
+                    data: media.copyWith(textScaler: clampedTextScaler),
+                    child: child ?? const SizedBox.shrink(),
+                  );
+                },
                 home: const SplashScreen(),
                 debugShowCheckedModeBanner: false,
                 localizationsDelegates: const [

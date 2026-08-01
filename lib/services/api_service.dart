@@ -1,6 +1,6 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import '../core/app_interceptor.dart';
 import '../core/env.dart';
 import '../core/errors/app_error.dart';
@@ -16,15 +16,6 @@ class ApiService {
       sendTimeout: const Duration(seconds: 12),
     ),
   )..interceptors.add(AppInterceptor());
-
-  static void _debugPrintChunked(String tag, String text) {
-    if (!kDebugMode) return;
-    const chunkSize = 900;
-    for (var i = 0; i < text.length; i += chunkSize) {
-      final end = (i + chunkSize < text.length) ? i + chunkSize : text.length;
-      debugPrint('$tag ${text.substring(i, end)}');
-    }
-  }
 
   /// POST /auth/register — register a new user (labour / sub_contractor / contractor).
   static Future<Map<String, dynamic>> registerUser(
@@ -78,8 +69,6 @@ class ApiService {
           'email': emailOrMobile,
         'password': password,
       };
-
-      debugPrint('>>> Login Payload: ${jsonEncode(requestData)}');
 
       final response = await _dio.post(
         '${Env.baseUrl}/auth/login',
@@ -196,16 +185,6 @@ class ApiService {
 
     try {
       final params = filter?.toQueryParameters(isLabour: false) ?? {};
-      if (kDebugMode) {
-        final queryAsStringMap = params.map(
-          (key, value) => MapEntry(key, value.toString()),
-        );
-        final uri = Uri.parse('${Env.baseUrl}/api/users/contractors').replace(
-          queryParameters: queryAsStringMap.isEmpty ? null : queryAsStringMap,
-        );
-        debugPrint('[Contractor API][Request Payload] $params');
-        _debugPrintChunked('[Contractor API][Request URL]', uri.toString());
-      }
       final response = await _dio.get(
         '${Env.baseUrl}/api/users/contractors',
         queryParameters: params.isEmpty ? null : params,
@@ -231,16 +210,6 @@ class ApiService {
 
     try {
       final params = filter?.toQueryParameters(isLabour: true) ?? {};
-      if (kDebugMode) {
-        final queryAsStringMap = params.map(
-          (key, value) => MapEntry(key, value.toString()),
-        );
-        final uri = Uri.parse('${Env.baseUrl}/api/users/labours').replace(
-          queryParameters: queryAsStringMap.isEmpty ? null : queryAsStringMap,
-        );
-        debugPrint('[Labour API][Request Payload] $params');
-        _debugPrintChunked('[Labour API][Request URL]', uri.toString());
-      }
       final response = await _dio.get(
         '${Env.baseUrl}/api/users/labours',
         queryParameters: params.isEmpty ? null : params,
@@ -570,10 +539,6 @@ class ApiService {
     }
     try {
       final url = '${Env.baseUrl}/api/jobs/$jobId';
-      debugPrint('══════════════════════════════════════');
-      debugPrint('[updateJob] PUT $url');
-      debugPrint('[updateJob] Payload: ${jsonEncode(jobData)}');
-      debugPrint('══════════════════════════════════════');
       final response = await _dio.put(
         url,
         data: jsonEncode(jobData),
@@ -584,20 +549,13 @@ class ApiService {
           },
         ),
       );
-      debugPrint('[updateJob] Response status: ${response.statusCode}');
-      debugPrint('[updateJob] Response data: ${jsonEncode(response.data)}');
-      debugPrint('══════════════════════════════════════');
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      debugPrint(
-        '[updateJob] DioException: ${e.response?.statusCode} ${e.response?.data}',
-      );
       return {
         'success': false,
         'message': AppError.fromDioException(e).userMessage,
       };
-    } catch (e) {
-      debugPrint('[updateJob] Unknown error: $e');
+    } catch (_) {
       return {'success': false, 'message': ErrorMessages.unknown};
     }
   }
@@ -849,10 +807,8 @@ class ApiService {
           },
         ),
       );
-      debugPrint('✅ FCM token registered to backend');
-    } catch (e) {
+    } catch (_) {
       // Non-critical — don't block user flow
-      debugPrint('⚠️ FCM token registration failed: $e');
     }
   }
 

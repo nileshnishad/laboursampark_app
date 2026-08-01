@@ -7,6 +7,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../services/api_service.dart';
 import '../../../services/skills_service.dart';
 import '../../../theme/app_card_metrics.dart';
+import '../../../core/auth_service.dart';
 
 // ── Models ────────────────────────────────────────────────────────────────────
 
@@ -465,6 +466,23 @@ class _AllJobsViewState extends State<AllJobsView> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final isAvailable = _mainTab == 'available';
+
+    if (AuthService.isInUserInitiatedLogoutGrace) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 26,
+              height: 26,
+              child: CircularProgressIndicator(strokeWidth: 2.4),
+            ),
+            SizedBox(height: 10),
+            Text('Logging out...'),
+          ],
+        ),
+      );
+    }
 
     if (isAvailable && _loading && _jobs.isEmpty) {
       return const LoadingSkeleton(
