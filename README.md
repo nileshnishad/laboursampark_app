@@ -34,3 +34,52 @@ Manual steps still required before an App Store build will fully work:
 3. Run `flutterfire configure --platforms=ios` to regenerate `lib/firebase_options.dart` with iOS values.
 4. Enable Push Notifications and Background Modes > Remote notifications in Xcode if Firebase Messaging is required on iOS.
 5. Build with `flutter build ios --release` or archive from Xcode after signing is configured.
+
+## macOS release setup
+
+This app also includes base macOS project changes for desktop builds:
+
+- macOS bundle identifier: `com.laboursampark.app.macos`
+- macOS app name: `Labour Sampark`
+- macOS app icon asset catalog is wired in the Runner target
+
+Manual steps still required before a macOS build will fully work:
+
+1. Open `macos/Runner.xcworkspace` in Xcode.
+2. Set the Team for the Runner target to your Apple Developer team.
+3. Confirm the macOS bundle identifier is `com.laboursampark.app.macos`.
+4. Build with `flutter build macos --release` or archive from Xcode after signing is configured.
+
+## Platform summary
+
+- iPhone/iPad: use the iOS Runner target and the bundle ID `com.laboursampark.app`.
+- macOS: use the macOS Runner target and the bundle ID `com.laboursampark.app.macos`.
+- Both targets share the same Flutter codebase, settings screen, and metadata approach.
+
+See also: [docs/platform_release_checklist.md](docs/platform_release_checklist.md) for the full release checklist.
+
+## iOS App Store fields
+
+The following app-facing support items are now exposed in the app under Settings > App Support and are controlled from `lib/core/app_metadata.dart`:
+
+- App name
+- Privacy Policy URL
+- Support URL
+- Support email
+- Support phone
+- App Store category reference
+- App Store age rating reference
+- App Store keywords reference
+
+Items that still must be entered in App Store Connect:
+
+- Screenshots for iPhone and iPad if you support iPad
+- App description
+- Keywords
+- Category
+- Age rating questionnaire
+- Contact details
+- Privacy policy URL
+- Support URL
+
+Recommended next step: replace the empty values in `lib/core/app_metadata.dart` with your official support and privacy links before submission.
