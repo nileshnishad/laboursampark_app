@@ -14,7 +14,8 @@ class NetworkService {
     try {
       final host = Uri.parse(Env.baseUrl).host;
       final lookupResult = await InternetAddress.lookup(host);
-      return lookupResult.isNotEmpty && lookupResult.first.rawAddress.isNotEmpty;
+      return lookupResult.isNotEmpty &&
+          lookupResult.first.rawAddress.isNotEmpty;
     } catch (_) {
       // On desktop, connectivity_plus can report a connection while DNS fails.
       // Fall back to allowing the app request path to surface the real error.
