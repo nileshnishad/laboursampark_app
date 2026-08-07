@@ -1,10 +1,11 @@
 class AppMetadata {
   static const String appName = 'Labour Sampark';
 
-  static const String supportEmail = '';
-  static const String supportPhone = '';
-  static const String privacyPolicyUrl = '';
-  static const String supportUrl = '';
+  static const String supportEmail = 'laboursampark@gmail.com';
+  static const String supportPhone = '9702701777';
+  static const String privacyPolicyUrl =
+      'https://laboursampark.com/privacy-policy';
+  static const String supportUrl = 'https://laboursampark.com/privacy-policy';
 
   static const String appStoreCategory = 'Business';
   static const String appStoreAgeRating = '4+';
