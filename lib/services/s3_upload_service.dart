@@ -27,26 +27,32 @@ class S3UploadService {
     String folder = 'uploads/jobs', // e.g. 'labour' for profile photos
   }) async {
     final now = DateTime.now().toUtc();
-    final dateStamp = _fmtDate(now);   // YYYYMMDD
-    final amzDate  = _fmtAmzDate(now); // YYYYMMDDTHHMMSSZ
+    final dateStamp = _fmtDate(now); // YYYYMMDD
+    final amzDate = _fmtAmzDate(now); // YYYYMMDDTHHMMSSZ
 
     // Unique object key — normalize extension from content-type to avoid mismatch
-    final ts  = now.millisecondsSinceEpoch;
+    final ts = now.millisecondsSinceEpoch;
     final ext = _extFromContentType(contentType);
     final key = '$folder/$ts.$ext';
 
     final payloadHash = _sha256Hex(bytes);
 
     // Canonical headers — keys must be lowercase and sorted
-    final signedHeaderNames = ['content-type', 'host', 'x-amz-content-sha256', 'x-amz-date'];
+    final signedHeaderNames = [
+      'content-type',
+      'host',
+      'x-amz-content-sha256',
+      'x-amz-date',
+    ];
     final headerValues = {
-      'content-type':        contentType,
-      'host':                _host,
+      'content-type': contentType,
+      'host': _host,
       'x-amz-content-sha256': payloadHash,
-      'x-amz-date':          amzDate,
+      'x-amz-date': amzDate,
     };
-    final canonicalHeaders =
-        signedHeaderNames.map((k) => '$k:${headerValues[k]!}\n').join();
+    final canonicalHeaders = signedHeaderNames
+        .map((k) => '$k:${headerValues[k]!}\n')
+        .join();
     final signedHeaders = signedHeaderNames.join(';');
 
     // Build canonical request
@@ -70,7 +76,7 @@ class S3UploadService {
 
     // Derive signing key and calculate signature
     final signingKey = _signingKey(dateStamp);
-    final signature  = _hmacHex(signingKey, stringToSign);
+    final signature = _hmacHex(signingKey, stringToSign);
 
     final authorization =
         'AWS4-HMAC-SHA256 Credential=$_accessKeyId/$credentialScope, '
@@ -97,10 +103,10 @@ class S3UploadService {
         data: bytes,
         options: Options(
           headers: {
-            'Content-Type':          contentType,
-            'x-amz-date':            amzDate,
-            'x-amz-content-sha256':  payloadHash,
-            'Authorization':         authorization,
+            'Content-Type': contentType,
+            'x-amz-date': amzDate,
+            'x-amz-content-sha256': payloadHash,
+            'Authorization': authorization,
           },
           // Don't set Content-Length — browser (XHR) sets it automatically
           validateStatus: (s) => s != null && s < 400,
@@ -171,8 +177,8 @@ class S3UploadService {
   static String _hmacHex(List<int> key, String data) => _hex(_hmac(key, data));
 
   static List<int> _signingKey(String dateStamp) {
-    final kDate    = _hmac(utf8.encode('AWS4$_secretAccessKey'), dateStamp);
-    final kRegion  = _hmac(kDate, _region);
+    final kDate = _hmac(utf8.encode('AWS4$_secretAccessKey'), dateStamp);
+    final kRegion = _hmac(kDate, _region);
     final kService = _hmac(kRegion, _service);
     return _hmac(kService, 'aws4_request');
   }
@@ -180,10 +186,14 @@ class S3UploadService {
   /// Maps content-type to a safe S3 file extension.
   static String _extFromContentType(String contentType) {
     switch (contentType) {
-      case 'image/png':  return 'png';
-      case 'image/webp': return 'webp';
-      case 'image/gif':  return 'gif';
-      default:           return 'jpg'; // image/jpeg + HEIC (already converted)
+      case 'image/png':
+        return 'png';
+      case 'image/webp':
+        return 'webp';
+      case 'image/gif':
+        return 'gif';
+      default:
+        return 'jpg'; // image/jpeg + HEIC (already converted)
     }
   }
 }

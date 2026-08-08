@@ -65,9 +65,7 @@ class TicketService {
         'POST',
         '${Env.baseUrl}/api/tickets',
         response.statusCode,
-        data: {
-          'responseData': response.data,
-        },
+        data: {'responseData': response.data},
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {

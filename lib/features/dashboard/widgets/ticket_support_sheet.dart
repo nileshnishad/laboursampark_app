@@ -421,7 +421,9 @@ class _TicketSupportSheetState extends State<TicketSupportSheet> {
               ),
               const Spacer(),
               Icon(
-                attachmentCount > 0 ? Icons.attach_file_rounded : Icons.link_off,
+                attachmentCount > 0
+                    ? Icons.attach_file_rounded
+                    : Icons.link_off,
                 size: 16,
                 color: attachmentCount > 0
                     ? const Color(0xFF2563EB)
@@ -465,14 +467,15 @@ class _TicketSupportSheetState extends State<TicketSupportSheet> {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: adminResponse == null
-                  ? Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.12)
+                  ? Theme.of(context).colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.12)
                   : const Color(0xFFECFDF5),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: adminResponse == null
-                    ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)
+                    ? Theme.of(
+                        context,
+                      ).colorScheme.outline.withValues(alpha: 0.2)
                     : const Color(0xFFBBF7D0),
               ),
             ),
@@ -729,7 +732,9 @@ class _TicketSupportSheetState extends State<TicketSupportSheet> {
                         : _errorMessage != null
                         ? SingleChildScrollView(child: Text(_errorMessage!))
                         : _tickets.isEmpty
-                        ? const Text('No tickets yet. Create one to get started.')
+                        ? const Text(
+                            'No tickets yet. Create one to get started.',
+                          )
                         : ListView.builder(
                             itemCount: _tickets.length,
                             itemBuilder: (context, index) {
