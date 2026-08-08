@@ -35,17 +35,58 @@ class AppUpdateService {
     final data = updateInfo['data'];
     if (data is! Map<String, dynamic>) return null;
 
-    final message = data['message']?.toString() ?? '';
-    final hasUpdate = message.toLowerCase().contains('latest version') == false;
+    final latestVersion = data['latestVersion']?.toString().trim() ?? '';
+    final minimumVersion = data['minimumVersion']?.toString().trim() ?? '';
+    final currentVsLatest = _compareVersions(currentVersion, latestVersion);
+    final currentVsMinimum = _compareVersions(currentVersion, minimumVersion);
 
+    // No update prompt when current version is latest or newer.
+    if (latestVersion.isNotEmpty && currentVsLatest >= 0) {
+      return null;
+    }
+
+    // When latestVersion is missing, avoid false prompts.
+    if (latestVersion.isEmpty) return null;
+
+    final hasUpdate = currentVsLatest < 0;
     if (!hasUpdate) return null;
 
     final storeUrl =
         data['iosStoreUrl']?.toString() ??
         'https://apps.apple.com/app/id6797599845';
-    final forceUpdate = data['forceUpdate'] == true;
+
+    // Force update if backend explicitly flags it or app is below minimum version.
+    final forceUpdate =
+        data['forceUpdate'] == true ||
+        (minimumVersion.isNotEmpty && currentVsMinimum < 0);
 
     return AppUpdateResult(forceUpdate: forceUpdate, storeUrl: storeUrl);
+  }
+
+  int _compareVersions(String current, String target) {
+    if (current.trim().isEmpty || target.trim().isEmpty) return 0;
+
+    List<int> toParts(String value) {
+      final cleaned = value.trim().split('+').first;
+      return cleaned
+          .split('.')
+          .map(
+            (part) => int.tryParse(part.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0,
+          )
+          .toList();
+    }
+
+    final a = toParts(current);
+    final b = toParts(target);
+    final length = a.length > b.length ? a.length : b.length;
+
+    for (int i = 0; i < length; i++) {
+      final av = i < a.length ? a[i] : 0;
+      final bv = i < b.length ? b[i] : 0;
+      if (av > bv) return 1;
+      if (av < bv) return -1;
+    }
+    return 0;
   }
 
   Future<Map<String, dynamic>?> _fetchRemoteUpdateInfo(
