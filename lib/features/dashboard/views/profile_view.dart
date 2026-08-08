@@ -23,6 +23,7 @@ class ProfileView extends StatefulWidget {
   final VoidCallback onLogout;
   final VoidCallback onUpdateProfile;
   final VoidCallback onOpenHistory;
+  final VoidCallback onOpenSupport;
 
   const ProfileView({
     super.key,
@@ -39,6 +40,7 @@ class ProfileView extends StatefulWidget {
     required this.onLogout,
     required this.onUpdateProfile,
     required this.onOpenHistory,
+    required this.onOpenSupport,
   });
 
   @override
@@ -1458,6 +1460,16 @@ class _ProfileViewState extends State<ProfileView> {
                     icon: Icons.history_rounded,
                     label: 'History',
                     onTap: widget.onOpenHistory,
+                  ),
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    color: ics.outline.withValues(alpha: 0.2),
+                  ),
+                  ProfileActionTile(
+                    icon: Icons.support_agent_rounded,
+                    label: 'Support Tickets',
+                    onTap: widget.onOpenSupport,
                   ),
                   Divider(
                     height: 1,

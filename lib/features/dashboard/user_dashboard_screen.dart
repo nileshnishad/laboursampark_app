@@ -24,6 +24,7 @@ import 'views/labour_list_view.dart';
 import 'views/my_jobs_view.dart';
 import 'views/profile_view.dart';
 import 'payment_webview_screen.dart';
+import 'widgets/ticket_support_sheet.dart';
 import '../../l10n/app_localizations.dart';
 
 class UserDashboardScreen extends StatefulWidget {
@@ -575,6 +576,26 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     );
   }
 
+  void _openSupportTickets(BuildContext context, {required String token}) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.85,
+            ),
+            child: TicketSupportSheet(token: token),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _shareProfile(BuildContext context) async {
     final user = Get.find<UserController>().user.value;
     if (user == null) return;
@@ -826,6 +847,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                 _openEditProfile(context, profileData, userType),
             onOpenHistory: () =>
                 _openHistory(context, token: token, userType: userType),
+            onOpenSupport: () => _openSupportTickets(context, token: token),
           ),
         ];
       case 'sub_contractor':
@@ -867,6 +889,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                 _openEditProfile(context, profileData, userType),
             onOpenHistory: () =>
                 _openHistory(context, token: token, userType: userType),
+            onOpenSupport: () => _openSupportTickets(context, token: token),
           ),
         ];
       case 'contractor':
@@ -902,6 +925,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                 _openEditProfile(context, profileData, userType),
             onOpenHistory: () =>
                 _openHistory(context, token: token, userType: userType),
+            onOpenSupport: () => _openSupportTickets(context, token: token),
           ),
         ];
       default:
@@ -930,6 +954,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                 _openEditProfile(context, profileData, userType),
             onOpenHistory: () =>
                 _openHistory(context, token: token, userType: userType),
+            onOpenSupport: () => _openSupportTickets(context, token: token),
           ),
         ];
     }

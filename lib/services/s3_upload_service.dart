@@ -7,6 +7,7 @@ import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:laboursampark_app/core/secrets.dart';
+import '../core/services/app_logger.dart';
 
 class S3UploadService {
   static const String _region = kS3Region;
@@ -76,9 +77,23 @@ class S3UploadService {
         'SignedHeaders=$signedHeaders, '
         'Signature=$signature';
 
+    final uploadUrl = 'https://$_host/$key';
+
     try {
+      await AppLogger.instance.info(
+        's3_upload_request',
+        message: 'Uploading file to S3',
+        data: {
+          'method': 'PUT',
+          'path': uploadUrl,
+          'filename': filename,
+          'contentType': contentType,
+          'folder': folder,
+          'sizeBytes': bytes.length,
+        },
+      );
       final response = await Dio().put<dynamic>(
-        'https://$_host/$key',
+        uploadUrl,
         data: bytes,
         options: Options(
           headers: {
@@ -92,15 +107,40 @@ class S3UploadService {
         ),
       );
       if (response.statusCode != null && response.statusCode! < 400) {
-        return 'https://$_host/$key';
+        await AppLogger.instance.info(
+          's3_upload_response',
+          message: 'S3 upload success',
+          data: {
+            'method': 'PUT',
+            'path': uploadUrl,
+            'statusCode': response.statusCode,
+          },
+        );
+        return uploadUrl;
       }
-      // ...existing code...
+      await AppLogger.instance.warning(
+        's3_upload_response',
+        message: 'S3 upload non-success response',
+        data: {
+          'method': 'PUT',
+          'path': uploadUrl,
+          'statusCode': response.statusCode,
+        },
+      );
       return null;
-    } on DioException catch (_) {
-      // ...existing code...
+    } on DioException catch (e) {
+      await AppLogger.instance.logApiError(
+        e,
+        message: 'S3 upload failed',
+        data: {'path': uploadUrl, 'filename': filename},
+      );
       return null;
     } catch (e) {
-      // ...existing code...
+      await AppLogger.instance.error(
+        's3_upload_error',
+        message: 'Unexpected S3 upload error',
+        data: {'path': uploadUrl, 'filename': filename},
+      );
       return null;
     }
   }

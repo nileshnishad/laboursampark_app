@@ -165,11 +165,12 @@ class NotificationService {
     final otpVerified = await AuthService.isOtpVerified();
     if (!otpVerified) {
       final userData = await AuthService.getUserData();
-      final phone = (userData?['phone'] ??
-              userData?['mobile'] ??
-              userData?['mobileNumber'] ??
-              '')
-          .toString();
+      final phone =
+          (userData?['phone'] ??
+                  userData?['mobile'] ??
+                  userData?['mobileNumber'] ??
+                  '')
+              .toString();
       final userId = (userData?['_id'] ?? userData?['id'] ?? '').toString();
       navigator.pushAndRemoveUntil(
         MaterialPageRoute(
