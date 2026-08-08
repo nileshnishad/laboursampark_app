@@ -6,8 +6,9 @@ import 'package:get/get.dart';
 import 'package:in_app_update/in_app_update.dart';
 import '../../core/auth_service.dart';
 import '../../core/user_controller.dart';
-import '../../services/api_service.dart';
 import '../../core/services/app_logger.dart';
+import '../../core/services/app_update_service.dart';
+import '../../services/api_service.dart';
 import '../../firebase_options.dart';
 import '../auth/login_screen.dart';
 import '../auth/mobile_verify_screen.dart';
@@ -28,29 +29,42 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkForUpdates() async {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
-    try {
-      final updateInfo = await InAppUpdate.checkForUpdate();
-      if (updateInfo.updateAvailability == UpdateAvailability.updateAvailable) {
-        if (updateInfo.immediateUpdateAllowed) {
-          await InAppUpdate.performImmediateUpdate();
-        } else if (updateInfo.flexibleUpdateAllowed) {
-          await InAppUpdate.startFlexibleUpdate();
-          bool downloaded = false;
-          for (int i = 0; i < 30 && !downloaded; i++) {
-            await Future.delayed(const Duration(seconds: 2));
-            final status = await InAppUpdate.checkForUpdate();
-            if (status.installStatus == InstallStatus.downloaded) {
-              downloaded = true;
+    if (kIsWeb) return;
+
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        final updateInfo = await InAppUpdate.checkForUpdate();
+        if (updateInfo.updateAvailability ==
+            UpdateAvailability.updateAvailable) {
+          if (updateInfo.immediateUpdateAllowed) {
+            await InAppUpdate.performImmediateUpdate();
+          } else if (updateInfo.flexibleUpdateAllowed) {
+            await InAppUpdate.startFlexibleUpdate();
+            bool downloaded = false;
+            for (int i = 0; i < 30 && !downloaded; i++) {
+              await Future.delayed(const Duration(seconds: 2));
+              final status = await InAppUpdate.checkForUpdate();
+              if (status.installStatus == InstallStatus.downloaded) {
+                downloaded = true;
+              }
+            }
+            if (downloaded) {
+              await InAppUpdate.completeFlexibleUpdate();
             }
           }
-          if (downloaded) {
-            await InAppUpdate.completeFlexibleUpdate();
-          }
         }
+      } catch (_) {
+        // Ignore update check errors for Android builds that are not from Play Store.
       }
-    } catch (_) {
-      // Ignore update check errors (e.g. not on Play Store / debug build)
+      return;
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      final updateResult = await AppUpdateService.instance.checkForUpdate();
+      if (updateResult == null || !mounted) return;
+      if (!context.mounted) return;
+
+      await AppUpdateService.instance.openStore(updateResult.storeUrl);
     }
   }
 
