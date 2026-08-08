@@ -5,7 +5,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'core/app_state.dart';
 import 'features/settings/settings_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -19,18 +18,7 @@ import 'features/splash/splash_screen.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:logger/logger.dart';
 import 'core/services/app_logger.dart';
-
-// ── Local Notifications plugin (singleton) ───────────────────────────────────
-final FlutterLocalNotificationsPlugin _localNotifications =
-    FlutterLocalNotificationsPlugin();
-
-// Android notification channel — must match AndroidManifest meta-data
-const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-  'laboursampark_channel',
-  'Labour Sampark Notifications',
-  description: 'General notifications from Labour Sampark',
-  importance: Importance.high,
-);
+import 'core/services/notification_service.dart';
 
 bool get _isFirebaseConfigured =>
     DefaultFirebaseOptions.hasCurrentPlatformConfig;
@@ -85,77 +73,7 @@ void main() async {
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    // ── flutter_local_notifications setup ─────────────────────────────────
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(_channel);
-
-    await _localNotifications.initialize(
-      const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-      ),
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        // Notification tapped while app in foreground — handled here
-        debugPrint('🔔 Local notification tapped: ${response.payload}');
-      },
-    );
-
-    // Request notification permission
-    final messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission();
-
-    // Subscribe to topics
-    await messaging.subscribeToTopic('all_users');
-    await messaging.subscribeToTopic('announcements');
-    debugPrint('✅ Subscribed to FCM topics: all_users, announcements');
-
-    // ── Foreground notifications (app open) ───────────────────────────────
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      final notification = message.notification;
-      final android = message.notification?.android;
-      if (notification != null) {
-        debugPrint(
-          '📬 Foreground FCM: ${notification.title} — ${notification.body}',
-        );
-        // Show as heads-up local notification so user sees it while in app
-        _localNotifications.show(
-          notification.hashCode,
-          notification.title,
-          notification.body,
-          NotificationDetails(
-            android: AndroidNotificationDetails(
-              _channel.id,
-              _channel.name,
-              channelDescription: _channel.description,
-              importance: Importance.high,
-              priority: Priority.high,
-              icon: android?.smallIcon ?? '@mipmap/ic_launcher',
-            ),
-          ),
-          payload: message.data['route']?.toString(),
-        );
-      }
-    });
-
-    // ── Notification tapped (background → foreground) ─────────────────────
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('🔔 Notification opened app: ${message.notification?.title}');
-      _handleNotificationRoute(message.data);
-    });
-
-    // ── App launched from terminated state via notification tap ───────────
-    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-    if (initialMessage != null) {
-      debugPrint(
-        '🚀 App opened from notification: ${initialMessage.notification?.title}',
-      );
-      // Delay so the widget tree is ready before navigating
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _handleNotificationRoute(initialMessage.data);
-      });
-    }
+    await NotificationService.instance.initialize();
   } else if (!kIsWeb) {
     debugPrint(
       'Firebase is not configured for ${defaultTargetPlatform.name}; skipping iOS-only Firebase setup.',
@@ -163,15 +81,6 @@ void main() async {
   }
   Get.put(UserController(), permanent: true);
   runApp(const MyApp());
-}
-
-/// Navigate based on the `route` key in the FCM data payload.
-/// Backend can send `"data": { "route": "jobs" }` to deep-link into the app.
-void _handleNotificationRoute(Map<String, dynamic> data) {
-  final route = data['route']?.toString() ?? '';
-  debugPrint('📍 Notification route: $route');
-  // Add navigation logic here when ready, e.g.:
-  // if (route == 'jobs') navigatorKey.currentState?.pushNamed('/jobs');
 }
 
 final GlobalKey<NavigatorState> navigatorKey = Get.key;
