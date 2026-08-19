@@ -93,6 +93,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  bool _redirectingToOtp = false;
+
   @override
   void initState() {
     super.initState();
@@ -110,9 +112,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       final loggedIn = await AuthService.isLoggedIn();
       if (!mounted) return;
-      if (!loggedIn) return;
+      if (!loggedIn) {
+        _redirectingToOtp = false;
+        return;
+      }
       final otpVerified = await AuthService.isOtpVerified();
       if (!mounted) return;
+      if (otpVerified) {
+        _redirectingToOtp = false;
+        return;
+      }
       if (!otpVerified) {
         final userData = await AuthService.getUserData();
         if (!mounted) return;
@@ -123,6 +132,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                     '')
                 .toString();
         final userId = (userData?['_id'] ?? userData?['id'] ?? '').toString();
+        final currentRoute = navigatorKey.currentContext == null
+            ? null
+            : ModalRoute.of(navigatorKey.currentContext!)?.settings.name;
+        if (_redirectingToOtp || currentRoute == '/mobile_verify') return;
+        _redirectingToOtp = true;
         navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute(
             settings: const RouteSettings(name: '/mobile_verify'),

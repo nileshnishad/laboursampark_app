@@ -361,7 +361,7 @@ class LanguageSelectorField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    const color = Color(0xFFF59E0B);
+    const color = Color(0xFF7C3AED);
 
     // Map English names to native display names
     String nativeName(String en) {
@@ -376,42 +376,36 @@ class LanguageSelectorField extends StatelessWidget {
         final result = await showLanguagePicker(context, selected: selected);
         if (result != null) onChanged(result);
       },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 4),
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-        decoration: BoxDecoration(
-          color: cs.onSurface.withOpacity(0.02),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: cs.outline.withOpacity(0.18)),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Languages',
+          prefixIcon: const Icon(Icons.translate_rounded, color: color),
+          suffixIcon: const Icon(Icons.add_rounded, color: color),
+          contentPadding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+          filled: true,
+          fillColor: cs.surfaceContainerLow,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFF059669)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFF059669)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFF059669), width: 1.5),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.translate_rounded, size: 14, color: color),
-                const SizedBox(width: 6),
-                const Expanded(
-                  child: Text(
-                    'Languages',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: color,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                ),
-                const Icon(Icons.add_rounded, size: 18, color: color),
-              ],
-            ),
-            const SizedBox(height: 8),
             if (selected.isEmpty)
               Text(
                 'Tap to select languages',
                 style: TextStyle(
                   fontSize: 12,
-                  color: cs.onSurface.withOpacity(0.35),
+                  color: cs.onSurface.withValues(alpha: 0.45),
                 ),
               )
             else
@@ -427,9 +421,11 @@ class LanguageSelectorField extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(10, 5, 6, 5),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.08),
+                        color: color.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: color.withOpacity(0.25)),
+                        border: Border.all(
+                          color: color.withValues(alpha: 0.25),
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

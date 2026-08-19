@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
 import '../../common/widgets/app_primary_button.dart';
 import '../../common/widgets/app_text_field.dart';
@@ -29,7 +30,12 @@ class ForgotPasswordScreen extends StatefulWidget {
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
+    with WidgetsBindingObserver {
+  static const _stepKey = 'forgot_password_step';
+  static const _emailKey = 'forgot_password_email';
+  static const _otpKey = 'forgot_password_otp';
+  static const _cooldownEndKey = 'forgot_password_cooldown_end';
   ForgotPasswordStep _currentStep = ForgotPasswordStep.enterEmail;
 
   final TextEditingController _emailController = TextEditingController();
@@ -53,6 +59,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _emailController.dispose();
     _otpController.dispose();
     _newPasswordController.dispose();
@@ -64,16 +71,70 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Listen to password changes to update validation UI
     _newPasswordController.addListener(() {
       if (mounted) setState(() {});
     });
+    _restoreState();
   }
 
-  void _startResendCooldown() {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      _saveState();
+    }
+  }
+
+  Future<void> _saveState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_stepKey, _currentStep.index);
+    await prefs.setString(_emailKey, _verifiedEmail ?? _emailController.text);
+    await prefs.setString(_otpKey, _otpController.text);
+    await prefs.setInt(
+      _cooldownEndKey,
+      DateTime.now()
+          .add(Duration(seconds: _resendCooldownSeconds))
+          .millisecondsSinceEpoch,
+    );
+  }
+
+  Future<void> _restoreState() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final savedStep = prefs.getInt(_stepKey);
+    final email = prefs.getString(_emailKey) ?? '';
+    final otp = prefs.getString(_otpKey) ?? '';
+    final cooldownEnd = prefs.getInt(_cooldownEndKey) ?? 0;
+    final remaining =
+        ((cooldownEnd - DateTime.now().millisecondsSinceEpoch) / 1000).ceil();
+
+    if (savedStep == ForgotPasswordStep.enterOtp.index && email.isNotEmpty) {
+      _emailController.text = email;
+      _otpController.text = otp;
+      _verifiedEmail = email;
+      _currentStep = ForgotPasswordStep.enterOtp;
+      if (remaining > 0) {
+        _startResendCooldown(remaining);
+      }
+      setState(() {});
+    }
+  }
+
+  Future<void> _clearSavedState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_stepKey);
+    await prefs.remove(_emailKey);
+    await prefs.remove(_otpKey);
+    await prefs.remove(_cooldownEndKey);
+  }
+
+  void _startResendCooldown([int? seconds]) {
     setState(() {
-      _resendCooldownSeconds = _resendCooldownDuration;
+      _resendCooldownSeconds = seconds ?? _resendCooldownDuration;
     });
+    _saveState();
 
     _resendTimer?.cancel();
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -137,6 +198,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           _currentStep = ForgotPasswordStep.enterOtp;
           _verifiedEmail = email;
         });
+        _saveState();
       } else {
         ToastUtils.showError(res['message'] ?? 'Failed to send OTP');
       }
@@ -180,6 +242,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           _currentStep = ForgotPasswordStep.resetPassword;
           _resendCooldownSeconds = 0;
         });
+        _clearSavedState();
       } else {
         ToastUtils.showError(res['message'] ?? 'Invalid OTP');
       }
@@ -446,6 +509,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     _currentStep = ForgotPasswordStep.enterEmail;
                     _otpController.clear();
                   });
+                  _saveState();
                 },
           child: Text(
             _resendCooldownSeconds > 0

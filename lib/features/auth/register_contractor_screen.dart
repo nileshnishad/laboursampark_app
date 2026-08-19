@@ -1,7 +1,5 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
-import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:provider/provider.dart';
@@ -12,7 +10,6 @@ import '../../l10n/app_localizations.dart';
 import '../../core/app_state.dart';
 import '../../services/api_service.dart';
 import '../../services/business_type_service.dart';
-import '../../services/s3_upload_service.dart';
 import '../../utils/toast_utils.dart';
 import 'login_screen.dart';
 import 'package:flutter/services.dart';
@@ -145,20 +142,10 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
   String _experienceRange = _experienceOptions[3];
   String _teamSize = _teamSizeOptions[1];
 
-  // Company logo
-  Uint8List? _logoBytes;
-  String? _logoUrl;
-  bool _logoUploading = false;
-
-  // Business license
-  Uint8List? _licenseBytes;
-  String? _licenseUrl;
-  bool _licenseUploading = false;
-
   bool _submitting = false;
 
   DateTime? _selectedDob;
-  final List<String> _selectedLanguages = [];
+  final List<String> _selectedLanguages = ['Hindi'];
 
   // Password validation helpers
   bool _hasMinLength(String password) => password.length >= 8;
@@ -187,6 +174,8 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
   @override
   void initState() {
     super.initState();
+    _aboutController.text =
+        'We provide quality work and are looking to connect with skilled workers.';
     _passwordController.addListener(() {
       if (mounted) setState(() {});
     });
@@ -222,119 +211,7 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
     }
   }
 
-  Widget _buildPasswordRequirement(String text, bool isMet) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(
-            isMet ? Icons.check_circle : Icons.circle_outlined,
-            size: 16,
-            color: isMet ? Colors.green[700] : Colors.grey[600],
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 12,
-                color: isMet ? Colors.green[700] : Colors.grey[700],
-                fontWeight: isMet ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   // ── Helpers ────────────────────────────────────────────────────────────
-
-  String _mimeFromName(String name) {
-    final ext = name.split('.').last.toLowerCase();
-    switch (ext) {
-      case 'png':
-        return 'image/png';
-      case 'webp':
-        return 'image/webp';
-      case 'pdf':
-        return 'application/pdf';
-      default:
-        return 'image/jpeg';
-    }
-  }
-
-  Future<void> _pickLogo() async {
-    final picker = ImagePicker();
-    XFile? xFile;
-    try {
-      xFile = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
-      );
-    } catch (_) {
-      ToastUtils.showError('Could not open image picker');
-      return;
-    }
-    if (xFile == null) return;
-    final bytes = await xFile.readAsBytes();
-    final mime = _mimeFromName(xFile.name);
-    setState(() {
-      _logoBytes = bytes;
-      _logoUrl = null;
-      _logoUploading = true;
-    });
-    final url = await S3UploadService.upload(
-      bytes: bytes,
-      filename: 'company-logo-${xFile.name}',
-      contentType: mime,
-      folder: 'contractor',
-    );
-    if (!mounted) return;
-    setState(() => _logoUploading = false);
-    if (url != null) {
-      setState(() => _logoUrl = url);
-    } else {
-      ToastUtils.showError('Logo upload failed. Try again.');
-      setState(() => _logoBytes = null);
-    }
-  }
-
-  Future<void> _pickLicense() async {
-    final picker = ImagePicker();
-    XFile? xFile;
-    try {
-      xFile = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 85,
-      );
-    } catch (_) {
-      ToastUtils.showError('Could not open picker');
-      return;
-    }
-    if (xFile == null) return;
-    final bytes = await xFile.readAsBytes();
-    final mime = _mimeFromName(xFile.name);
-    setState(() {
-      _licenseBytes = bytes;
-      _licenseUrl = null;
-      _licenseUploading = true;
-    });
-    final url = await S3UploadService.upload(
-      bytes: bytes,
-      filename: 'business-license-${xFile.name}',
-      contentType: mime,
-      folder: 'contractor',
-    );
-    if (!mounted) return;
-    setState(() => _licenseUploading = false);
-    if (url != null) {
-      setState(() => _licenseUrl = url);
-    } else {
-      ToastUtils.showError('License upload failed. Try again.');
-      setState(() => _licenseBytes = null);
-    }
-  }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -354,14 +231,6 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
       ToastUtils.showError(AppLocalizations.of(context).pleaseAcceptTerms);
       return;
     }
-    if ((_logoBytes != null && _logoUrl == null) ||
-        (_licenseBytes != null && _licenseUrl == null)) {
-      ToastUtils.showError(
-        AppLocalizations.of(context).pleaseWaitFilesUploading,
-      );
-      return;
-    }
-
     setState(() => _submitting = true);
 
     final mobile = _mobileController.text.trim();
@@ -390,8 +259,6 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
       },
       if (_regNumberController.text.trim().isNotEmpty)
         'registrationNumber': _regNumberController.text.trim(),
-      if (_logoUrl != null) 'companyLogoUrl': _logoUrl,
-      if (_licenseUrl != null) 'businessLicenseUrl': _licenseUrl,
       if (_selectedDob != null) 'dob': _selectedDob!.toIso8601String(),
       'preferredLanguages': _selectedLanguages,
     };
@@ -422,49 +289,28 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
     required Color color,
     required List<Widget> children,
   }) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outline),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Icon(icon, size: 16, color: color),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 19, color: color),
+            const SizedBox(width: 9),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: color,
               ),
-              const SizedBox(width: 10),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...children,
-        ],
-      ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Divider(color: color.withValues(alpha: 0.2), height: 1),
+        const SizedBox(height: 16),
+        ...children,
+      ],
     );
   }
 
@@ -503,103 +349,6 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
     fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
   );
 
-  // Upload tile widget
-  Widget _uploadTile({
-    required String label,
-    required String hint,
-    required IconData icon,
-    required bool hasFile,
-    required bool uploading,
-    required String? url,
-    required VoidCallback onTap,
-  }) {
-    final done = url != null;
-    final cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: (uploading) ? null : onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-        decoration: BoxDecoration(
-          color: done
-              ? const Color(0xFFF0FDF4)
-              : hasFile
-              ? const Color(0xFFFFF7ED)
-              : cs.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: done
-                ? const Color(0xFF059669)
-                : hasFile
-                ? const Color(0xFFF59E0B)
-                : cs.outline,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              done
-                  ? Icons.check_circle_rounded
-                  : uploading
-                  ? Icons.hourglass_top_rounded
-                  : icon,
-              size: 20,
-              color: done
-                  ? const Color(0xFF059669)
-                  : uploading
-                  ? const Color(0xFFF59E0B)
-                  : const Color(0xFF9CA3AF),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: done ? const Color(0xFF059669) : cs.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    uploading
-                        ? AppLocalizations.of(context).uploading
-                        : done
-                        ? AppLocalizations.of(context).uploaded
-                        : hint,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: done
-                          ? const Color(0xFF059669)
-                          : const Color(0xFF9CA3AF),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (uploading)
-              const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Color(0xFFF59E0B),
-                ),
-              )
-            else
-              Icon(
-                done ? Icons.edit_outlined : Icons.upload_rounded,
-                size: 18,
-                color: done ? const Color(0xFF059669) : const Color(0xFF6B7280),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -624,98 +373,12 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
       body: SafeArea(
         top: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          padding: const EdgeInsets.all(25),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── Company Logo ────────────────────────────────
-                Center(
-                  child: GestureDetector(
-                    onTap: _logoUploading ? null : _pickLogo,
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color(0xFFECFDF5),
-                            border: Border.all(
-                              color: _logoUrl != null
-                                  ? _primary
-                                  : _primary.withValues(alpha: 0.4),
-                              width: 2,
-                            ),
-                          ),
-                          child: ClipOval(
-                            child: _logoBytes != null
-                                ? Image.memory(_logoBytes!, fit: BoxFit.cover)
-                                : const Icon(
-                                    Icons.business_center_rounded,
-                                    size: 42,
-                                    color: _primary,
-                                  ),
-                          ),
-                        ),
-                        if (_logoUploading)
-                          Positioned.fill(
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0x80000000),
-                              ),
-                              child: const Center(
-                                child: SizedBox(
-                                  width: 28,
-                                  height: 28,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        Positioned(
-                          bottom: 2,
-                          right: 2,
-                          child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: const BoxDecoration(
-                              color: _primary,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt_rounded,
-                              size: 15,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Center(
-                  child: Text(
-                    _logoUrl != null
-                        ? AppLocalizations.of(context).companyLogoUploaded
-                        : AppLocalizations.of(context).tapToAddCompanyLogo,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: _logoUrl != null
-                          ? _primary
-                          : const Color(0xFF6B7280),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
                 // ── Personal Info ───────────────────────────────
                 _sectionCard(
                   title: AppLocalizations.of(context).personalInformation,
@@ -752,50 +415,26 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
                         if (picked != null)
                           setState(() => _selectedDob = picked);
                       },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.outline.withValues(alpha: 0.4),
+                      child: InputDecorator(
+                        decoration: _dec(
+                          '${AppLocalizations.of(context).dateOfBirth} *',
+                          prefix: const Icon(Icons.cake_outlined, size: 20),
+                          suffix: const Icon(
+                            Icons.calendar_today_outlined,
+                            size: 18,
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.cake_outlined,
-                              size: 20,
-                              color: Color(0xFF2563EB),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                _selectedDob == null
-                                    ? AppLocalizations.of(context).dateOfBirth
-                                    : '${_selectedDob!.day.toString().padLeft(2, '0')}/${_selectedDob!.month.toString().padLeft(2, '0')}/${_selectedDob!.year}',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: _selectedDob == null
-                                      ? Theme.of(context).colorScheme.onSurface
-                                            .withValues(alpha: 0.4)
-                                      : Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                            ),
-                            Icon(
-                              Icons.calendar_today_outlined,
-                              size: 16,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.4),
-                            ),
-                          ],
+                        child: Text(
+                          _selectedDob == null
+                              ? 'Select date of birth'
+                              : '${_selectedDob!.day.toString().padLeft(2, '0')}/${_selectedDob!.month.toString().padLeft(2, '0')}/${_selectedDob!.year}',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: _selectedDob == null
+                                ? Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.45)
+                                : Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
                       ),
                     ),
@@ -849,57 +488,15 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // ── Account Security ────────────────────────────
-                _sectionCard(
-                  title: AppLocalizations.of(context).accountSecurity,
-                  icon: Icons.lock_outline_rounded,
-                  color: const Color(0xFF7C3AED),
+                // ── Password ───────────────────────────────────
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.security,
-                                size: 16,
-                                color: Colors.blue[700],
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                AppLocalizations.of(
-                                  context,
-                                ).passwordRequirementsLabel,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue[900],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          _buildPasswordRequirement(
-                            AppLocalizations.of(context).atLeast8Chars,
-                            _hasMinLength(_passwordController.text),
-                          ),
-                        ],
-                      ),
-                    ),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       decoration: _dec(
                         '${AppLocalizations.of(context).password} *',
-                        hint: AppLocalizations.of(context).passwordHint,
                         prefix: const Icon(
                           Icons.lock_outline_rounded,
                           size: 20,
@@ -1174,13 +771,7 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
                                                                 12,
                                                               ),
                                                           border: Border.all(
-                                                            color: isSelected
-                                                                ? _primary
-                                                                : Theme.of(
-                                                                        context,
-                                                                      )
-                                                                      .colorScheme
-                                                                      .outline,
+                                                            color: Colors.black,
                                                             width: isSelected
                                                                 ? 1.5
                                                                 : 1,
@@ -1332,11 +923,7 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
                             context,
                           ).colorScheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: _selectedBusinessTypeIds.isEmpty
-                                ? Theme.of(context).colorScheme.outline
-                                : _primary,
-                          ),
+                          border: Border.all(color: Colors.black),
                         ),
                         child: Row(
                           children: [
@@ -1495,7 +1082,7 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
-                            vertical: 10,
+                            vertical: 12,
                           ),
                         ),
                       ),
@@ -1560,24 +1147,6 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // ── Documents ───────────────────────────────────
-                _sectionCard(
-                  title: AppLocalizations.of(context).documents,
-                  icon: Icons.folder_outlined,
-                  color: const Color(0xFF2563EB),
-                  children: [
-                    _uploadTile(
-                      label: AppLocalizations.of(context).businessLicense,
-                      hint: AppLocalizations.of(context).tapToUploadLicense,
-                      icon: Icons.description_outlined,
-                      hasFile: _licenseBytes != null,
-                      uploading: _licenseUploading,
-                      url: _licenseUrl,
-                      onTap: _pickLicense,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
                 LanguageSelectorField(
                   selected: _selectedLanguages,
                   onChanged: (v) => setState(() {
@@ -1640,10 +1209,7 @@ class _RegisterContractorScreenState extends State<RegisterContractorScreen> {
                 SizedBox(
                   height: 54,
                   child: ElevatedButton.icon(
-                    onPressed:
-                        (_submitting || _logoUploading || _licenseUploading)
-                        ? null
-                        : _submit,
+                    onPressed: _submitting ? null : _submit,
                     icon: _submitting
                         ? const SizedBox(
                             width: 18,

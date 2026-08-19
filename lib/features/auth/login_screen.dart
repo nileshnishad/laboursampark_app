@@ -209,7 +209,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (!mounted) return;
 
-        if (otpStatus == 'inactive') {
+        final normalizedOtpStatus = otpStatus.trim().toLowerCase();
+        final mobileVerified =
+            profile['mobileVerified'] == true || user['mobileVerified'] == true;
+        final otpVerified =
+            mobileVerified ||
+            const {
+              'active',
+              'verified',
+              'approved',
+              'true',
+              '1',
+            }.contains(normalizedOtpStatus);
+
+        if (!otpVerified) {
           final phone =
               (profile['phone'] ??
                       profile['mobile'] ??

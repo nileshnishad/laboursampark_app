@@ -1,13 +1,10 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../common/models/skill_model.dart';
 import '../../common/widgets/language_picker.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
-import '../../services/s3_upload_service.dart';
 import '../../services/skills_service.dart';
 import '../../utils/toast_utils.dart';
 import 'login_screen.dart';
@@ -39,7 +36,6 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
   final _mobileController = TextEditingController();
   final _passwordController = TextEditingController();
   final _cityController = TextEditingController();
@@ -56,12 +52,9 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
   final List<String> _selectedSkillIds = [];
   bool _skillsLoading = true;
 
-  final List<String> _selectedLanguages = [];
+  final List<String> _selectedLanguages = ['Hindi'];
   DateTime? _selectedDob;
 
-  Uint8List? _photoBytes;
-  String? _photoUrl;
-  bool _photoUploading = false;
   bool _submitting = false;
   bool _fetchingLocation = false;
 
@@ -72,7 +65,6 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _emailController.dispose();
     _mobileController.dispose();
     _passwordController.dispose();
     _cityController.dispose();
@@ -86,6 +78,8 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
   @override
   void initState() {
     super.initState();
+    _bioController.text =
+        'I am a skilled worker looking for suitable work opportunities.';
     _passwordController.addListener(() {
       if (mounted) setState(() {});
     });
@@ -209,32 +203,6 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
       setState(() => _fetchingLocation = false);
       ToastUtils.showError('Failed to fetch location: ${e.toString()}');
     }
-  }
-
-  Widget _buildPasswordRequirement(String text, bool isMet) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(
-            isMet ? Icons.check_circle : Icons.circle_outlined,
-            size: 16,
-            color: isMet ? Colors.green[700] : Colors.grey[600],
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 12,
-                color: isMet ? Colors.green[700] : Colors.grey[700],
-                fontWeight: isMet ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   void _toggleSkill(String skillId) {
@@ -463,60 +431,6 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
     );
   }
 
-  String _mimeFromName(String name) {
-    final ext = name.split('.').last.toLowerCase();
-    switch (ext) {
-      case 'png':
-        return 'image/png';
-      case 'webp':
-        return 'image/webp';
-      default:
-        return 'image/jpeg';
-    }
-  }
-
-  Future<void> _pickPhoto() async {
-    final picker = ImagePicker();
-    XFile? xFile;
-    try {
-      xFile = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
-      );
-    } catch (_) {
-      ToastUtils.showError('Could not open image picker');
-      return;
-    }
-    if (xFile == null) return;
-
-    final bytes = await xFile.readAsBytes();
-    final mime = _mimeFromName(xFile.name);
-    setState(() {
-      _photoBytes = bytes;
-      _photoUrl = null;
-      _photoUploading = true;
-    });
-
-    final url = await S3UploadService.upload(
-      bytes: bytes,
-      filename: xFile.name,
-      contentType: mime,
-      folder: 'labour',
-    );
-
-    if (!mounted) return;
-    setState(() => _photoUploading = false);
-
-    if (url != null) {
-      setState(() => _photoUrl = url);
-    } else {
-      ToastUtils.showError('Photo upload failed. Try again.');
-      setState(() {
-        _photoBytes = null;
-      });
-    }
-  }
-
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedSkillIds.isEmpty) {
@@ -533,23 +447,16 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
       ToastUtils.showError(AppLocalizations.of(context).pleaseAcceptTerms);
       return;
     }
-    if (_photoBytes != null && _photoUrl == null) {
-      ToastUtils.showError('Please wait — profile photo is still uploading');
-      return;
-    }
-
     setState(() => _submitting = true);
 
     final mobile = _mobileController.text.trim();
     final normalizedMobile = mobile.startsWith('+') ? mobile : '+91$mobile';
-    final email = _emailController.text.trim().toLowerCase();
 
     final body = <String, dynamic>{
       'userType': 'labour',
       'fullName': _nameController.text.trim(),
       if (_selectedDob != null) 'dob': _selectedDob!.toIso8601String(),
       'mobile': normalizedMobile,
-      if (email.isNotEmpty) 'email': email,
       'password': _passwordController.text.trim(),
       'experience': _experience,
       'skills': _selectedSkillIds,
@@ -563,7 +470,6 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
         'country': 'India',
         'address': _addressController.text.trim(),
       },
-      if (_photoUrl != null) 'profilePhotoUrl': _photoUrl,
     };
 
     final result = await ApiService.registerUser(body);
@@ -590,49 +496,29 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
     required Color color,
     required List<Widget> children,
   }) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outline),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Icon(icon, size: 16, color: color),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 19, color: color),
+            const SizedBox(width: 9),
+
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: color,
               ),
-              const SizedBox(width: 10),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...children,
-        ],
-      ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Divider(color: color.withValues(alpha: 0.2), height: 1),
+        const SizedBox(height: 16),
+        ...children,
+      ],
     );
   }
 
@@ -696,98 +582,13 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
       body: SafeArea(
         top: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          padding: const EdgeInsets.all(25),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── Profile Photo ─────────────────────────────
-                Center(
-                  child: GestureDetector(
-                    onTap: _photoUploading ? null : _pickPhoto,
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color(0xFFEFF6FF),
-                            border: Border.all(
-                              color: _photoUrl != null
-                                  ? const Color(0xFF059669)
-                                  : _primary.withValues(alpha: 0.4),
-                              width: 2,
-                            ),
-                          ),
-                          child: ClipOval(
-                            child: _photoBytes != null
-                                ? Image.memory(_photoBytes!, fit: BoxFit.cover)
-                                : const Icon(
-                                    Icons.person_outline_rounded,
-                                    size: 44,
-                                    color: _primary,
-                                  ),
-                          ),
-                        ),
-                        if (_photoUploading)
-                          Positioned.fill(
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0x80000000),
-                              ),
-                              child: const Center(
-                                child: SizedBox(
-                                  width: 28,
-                                  height: 28,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        Positioned(
-                          bottom: 2,
-                          right: 2,
-                          child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: const BoxDecoration(
-                              color: _primary,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt_rounded,
-                              size: 15,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Center(
-                  child: Text(
-                    _photoUrl != null
-                        ? AppLocalizations.of(context).companyLogoUploaded
-                        : AppLocalizations.of(context).tapToAddCompanyLogo,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: _photoUrl != null
-                          ? const Color(0xFF059669)
-                          : const Color(0xFF6B7280),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
+                const SizedBox(height: 18),
                 // ── Personal Information ───────────────────────
                 _sectionCard(
                   title: AppLocalizations.of(context).personalInformation,
@@ -824,75 +625,28 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                         if (picked != null)
                           setState(() => _selectedDob = picked);
                       },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.outline.withValues(alpha: 0.4),
+                      child: InputDecorator(
+                        decoration: _dec(
+                          '${AppLocalizations.of(context).dateOfBirth} *',
+                          prefix: const Icon(Icons.cake_outlined, size: 20),
+                          suffix: const Icon(
+                            Icons.calendar_today_outlined,
+                            size: 18,
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.cake_outlined,
-                              size: 20,
-                              color: Color(0xFF2563EB),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                _selectedDob == null
-                                    ? '${AppLocalizations.of(context).dateOfBirth} *'
-                                    : '${_selectedDob!.day.toString().padLeft(2, '0')}/${_selectedDob!.month.toString().padLeft(2, '0')}/${_selectedDob!.year}',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: _selectedDob == null
-                                      ? Theme.of(context).colorScheme.onSurface
-                                            .withValues(alpha: 0.4)
-                                      : Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                            ),
-                            Icon(
-                              Icons.calendar_today_outlined,
-                              size: 16,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.4),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: _dec(
-                        AppLocalizations.of(context).email,
-                        hint: AppLocalizations.of(context).emailExampleHint,
-                        prefix: const Icon(Icons.email_outlined, size: 20),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                      inputFormatters: [
-                        TextInputFormatter.withFunction(
-                          (oldValue, newValue) => newValue.copyWith(
-                            text: newValue.text.toLowerCase(),
+                        child: Text(
+                          _selectedDob == null
+                              ? 'Select date of birth'
+                              : '${_selectedDob!.day.toString().padLeft(2, '0')}/${_selectedDob!.month.toString().padLeft(2, '0')}/${_selectedDob!.year}',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: _selectedDob == null
+                                ? Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.45)
+                                : Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
-                      ],
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) return null;
-                        if (!v.contains('@'))
-                          return AppLocalizations.of(context).enterValidEmail;
-                        return null;
-                      },
+                      ),
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
@@ -922,51 +676,10 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // ── Account Security ───────────────────────────
-                _sectionCard(
-                  title: 'Account Security',
-                  icon: Icons.lock_outline_rounded,
-                  color: const Color(0xFF7C3AED),
+                // ── Password ──────────────────────────────────
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.security,
-                                size: 16,
-                                color: Colors.blue[700],
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                AppLocalizations.of(
-                                  context,
-                                ).passwordRequirementsLabel,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue[900],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          _buildPasswordRequirement(
-                            AppLocalizations.of(context).atLeast8Chars,
-                            _hasMinLength(_passwordController.text),
-                          ),
-                        ],
-                      ),
-                    ),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
@@ -1005,7 +718,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                 _sectionCard(
                   title: 'Address & Location',
                   icon: Icons.location_on_outlined,
-                  color: const Color(0xFFF59E0B),
+                  color: const Color(0xFF7C3AED),
                   children: [
                     // Use Current Location Button
                     OutlinedButton.icon(
@@ -1026,12 +739,15 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFF59E0B),
+                        foregroundColor: const Color(0xFF7C3AED),
                         side: const BorderSide(
-                          color: Color(0xFFF59E0B),
+                          color: Color(0xFF7C3AED),
                           width: 1.5,
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -1101,7 +817,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                 _sectionCard(
                   title: 'Work Information',
                   icon: Icons.work_outline_rounded,
-                  color: const Color(0xFF059669),
+                  color: const Color(0xFF7C3AED),
                   children: [
                     DropdownButtonFormField<String>(
                       value: _experience,
@@ -1347,9 +1063,7 @@ class _RegisterLabourScreenState extends State<RegisterLabourScreen> {
                 SizedBox(
                   height: 54,
                   child: ElevatedButton.icon(
-                    onPressed: (_submitting || _photoUploading)
-                        ? null
-                        : _submit,
+                    onPressed: _submitting ? null : _submit,
                     icon: _submitting
                         ? const SizedBox(
                             width: 18,

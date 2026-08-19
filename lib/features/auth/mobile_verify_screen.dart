@@ -120,7 +120,23 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
     );
     final res = await ApiService.verifyOtp(_currentPhone, _otp);
     if (!mounted) return;
-    if (res['success'] == true) {
+    final verificationStatus =
+        (res['status'] ??
+                res['verificationStatus'] ??
+                res['data']?['status'] ??
+                '')
+            .toString()
+            .trim()
+            .toLowerCase();
+    final explicitlyRejected = const {
+      'denied',
+      'failed',
+      'invalid',
+      'pending',
+      'rejected',
+      'unverified',
+    }.contains(verificationStatus);
+    if (res['success'] == true && !explicitlyRejected) {
       await AuthService.setOtpVerified(true);
       await AppLogger.instance.info(
         'otp_verified',
@@ -215,10 +231,27 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
   }
 
   void _onOtpDigit(int index, String value) {
-    if (value.isNotEmpty && index < 5) {
+    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length > 1) {
+      final remaining = 6 - index;
+      final pasted = digits.substring(
+        0,
+        digits.length.clamp(0, remaining).toInt(),
+      );
+      for (var offset = 0; offset < pasted.length; offset++) {
+        _controllers[index + offset].text = pasted[offset];
+      }
+      final nextIndex = (index + pasted.length).clamp(0, 5).toInt();
+      _focusNodes[nextIndex].requestFocus();
+      setState(() {});
+      if (_otp.length == 6) _verifyOtp();
+      return;
+    }
+
+    if (digits.isNotEmpty && index < 5) {
       _focusNodes[index + 1].requestFocus();
     }
-    if (value.isNotEmpty) setState(() {});
+    if (digits.isNotEmpty) setState(() {});
     if (_otp.length == 6) _verifyOtp();
   }
 
@@ -443,7 +476,6 @@ class _MobileVerifyScreenState extends State<MobileVerifyScreen> {
                           textAlign: TextAlign.center,
                           textAlignVertical: TextAlignVertical.center,
                           keyboardType: TextInputType.number,
-                          maxLength: 1,
                           inputFormatters: [
                             FilteringTextInputFormatter.digitsOnly,
                           ],
