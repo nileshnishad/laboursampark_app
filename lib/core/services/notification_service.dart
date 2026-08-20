@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import '../../firebase_options.dart';
 import '../../features/auth/login_screen.dart';
@@ -115,11 +115,20 @@ class NotificationService {
 
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     final notification = message.notification;
-    if (notification == null) return;
+    final android = notification?.android;
+    final title =
+        notification?.title ??
+        message.data['title']?.toString() ??
+        message.data['notificationTitle']?.toString() ??
+        'Labour Sampark';
+    final body =
+        notification?.body ??
+        message.data['body']?.toString() ??
+        message.data['message']?.toString() ??
+        message.data['notificationBody']?.toString() ??
+        'You have a new update';
 
-    final android = message.notification?.android;
-    final title = notification.title ?? 'Labour Sampark';
-    final body = notification.body ?? 'You have a new update';
+    if (title.trim().isEmpty && body.trim().isEmpty) return;
 
     await _localNotifications.show(
       message.hashCode,
@@ -132,7 +141,18 @@ class NotificationService {
           channelDescription: _channel.description,
           importance: Importance.high,
           priority: Priority.high,
+          category: AndroidNotificationCategory.message,
+          visibility: NotificationVisibility.public,
+          color: const Color(0xFF2563EB),
+          ticker: title,
           icon: android?.smallIcon ?? '@mipmap/ic_launcher',
+          styleInformation: BigTextStyleInformation(
+            body,
+            contentTitle: title,
+            summaryText: 'Labour Sampark',
+            htmlFormatContent: false,
+            htmlFormatTitle: false,
+          ),
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,

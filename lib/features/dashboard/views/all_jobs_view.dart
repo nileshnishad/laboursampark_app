@@ -543,33 +543,31 @@ class _AllJobsViewState extends State<AllJobsView> {
                 const SizedBox(height: 10),
                 _buildAppliedSubTabs(),
               ],
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Container(
-                    width: 4,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: isAvailable
-                          ? const Color(0xFF2563EB)
-                          : _appliedSubTabColor(_appliedSubTab),
-                      borderRadius: BorderRadius.circular(4),
+              if (!isAvailable) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: _appliedSubTabColor(_appliedSubTab),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    isAvailable
-                        ? '${loc.availableJobsUppercase} (${_jobs.length})'
-                        : '${_appliedTabTitle(loc, _appliedSubTab)} (${_appliedSubTabCount()})',
-                    style: TextStyle(
-                      fontSize: _LabourTextScale.section,
-                      fontWeight: FontWeight.w800,
-                      color: Theme.of(context).colorScheme.onSurface,
-                      letterSpacing: 0.5,
+                    const SizedBox(width: 10),
+                    Text(
+                      '${_appliedTabTitle(loc, _appliedSubTab)} (${_appliedSubTabCount()})',
+                      style: TextStyle(
+                        fontSize: _LabourTextScale.section,
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -613,6 +611,20 @@ class _AllJobsViewState extends State<AllJobsView> {
   }
 
   // ── Main tab bar: Available | Applied ──────────────────────────────────────
+  Color _mainTabBackground({required bool available, required bool selected}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final base = available ? const Color(0xFFF59E0B) : const Color(0xFF059669);
+    return base.withValues(
+      alpha: isDark ? (selected ? 0.72 : 0.28) : (selected ? 0.22 : 0.1),
+    );
+  }
+
+  Color _mainTabForeground({required bool available, required bool selected}) {
+    if (Theme.of(context).brightness == Brightness.dark) return Colors.white;
+    final base = available ? const Color(0xFFB45309) : const Color(0xFF047857);
+    return selected ? base : Theme.of(context).colorScheme.onSurface;
+  }
+
   Widget _buildMainTabBar() {
     final loc = AppLocalizations.of(context);
     final isAvailable = _mainTab == 'available';
@@ -641,17 +653,16 @@ class _AllJobsViewState extends State<AllJobsView> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: isAvailable
-                      ? const Color(0xFF2563EB).withValues(alpha: 0.07)
-                      : Colors.transparent,
+                  color: _mainTabBackground(
+                    available: true,
+                    selected: isAvailable,
+                  ),
                   borderRadius: const BorderRadius.horizontal(
                     left: Radius.circular(11),
                   ),
                   border: Border(
                     bottom: BorderSide(
-                      color: isAvailable
-                          ? const Color(0xFF2563EB)
-                          : Colors.transparent,
+                      color: const Color(0xFFF59E0B),
                       width: 2,
                     ),
                   ),
@@ -661,12 +672,15 @@ class _AllJobsViewState extends State<AllJobsView> {
                     Container(
                       padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                        color: _mainTabBackground(
+                          available: true,
+                          selected: isAvailable,
+                        ),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
                         Icons.work_outline_rounded,
-                        color: Color(0xFF2563EB),
+                        color: Color(0xFFF59E0B),
                         size: 17,
                       ),
                     ),
@@ -679,18 +693,20 @@ class _AllJobsViewState extends State<AllJobsView> {
                           style: TextStyle(
                             fontSize: _LabourTextScale.display,
                             fontWeight: FontWeight.w800,
-                            color: isAvailable
-                                ? const Color(0xFF2563EB)
-                                : Theme.of(context).colorScheme.onSurface,
+                            color: _mainTabForeground(
+                              available: true,
+                              selected: isAvailable,
+                            ),
                           ),
                         ),
                         Text(
                           loc.available,
                           style: TextStyle(
                             fontSize: _LabourTextScale.caption,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.55),
+                            color: _mainTabForeground(
+                              available: true,
+                              selected: isAvailable,
+                            ).withValues(alpha: 0.82),
                           ),
                         ),
                       ],
@@ -715,17 +731,16 @@ class _AllJobsViewState extends State<AllJobsView> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: !isAvailable
-                      ? const Color(0xFF059669).withValues(alpha: 0.07)
-                      : Colors.transparent,
+                  color: _mainTabBackground(
+                    available: false,
+                    selected: !isAvailable,
+                  ),
                   borderRadius: const BorderRadius.horizontal(
                     right: Radius.circular(11),
                   ),
                   border: Border(
                     bottom: BorderSide(
-                      color: !isAvailable
-                          ? const Color(0xFF059669)
-                          : Colors.transparent,
+                      color: const Color(0xFF059669),
                       width: 2,
                     ),
                   ),
@@ -735,7 +750,10 @@ class _AllJobsViewState extends State<AllJobsView> {
                     Container(
                       padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF059669).withValues(alpha: 0.1),
+                        color: _mainTabBackground(
+                          available: false,
+                          selected: !isAvailable,
+                        ),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
@@ -758,18 +776,20 @@ class _AllJobsViewState extends State<AllJobsView> {
                           style: TextStyle(
                             fontSize: _LabourTextScale.display,
                             fontWeight: FontWeight.w800,
-                            color: !isAvailable
-                                ? const Color(0xFF059669)
-                                : Theme.of(context).colorScheme.onSurface,
+                            color: _mainTabForeground(
+                              available: false,
+                              selected: !isAvailable,
+                            ),
                           ),
                         ),
                         Text(
                           loc.applied,
                           style: TextStyle(
                             fontSize: _LabourTextScale.caption,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.55),
+                            color: _mainTabForeground(
+                              available: false,
+                              selected: !isAvailable,
+                            ).withValues(alpha: 0.82),
                           ),
                         ),
                       ],
