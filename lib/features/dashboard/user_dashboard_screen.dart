@@ -10,6 +10,7 @@ import '../../core/auth_service.dart';
 import '../../core/app_state.dart';
 import '../../core/services/app_logger.dart';
 import '../../core/services/permission_service.dart';
+import '../../common/widgets/app_network_image.dart';
 import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
 import 'package:get/get.dart';
@@ -293,16 +294,16 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                                     MediaQuery.of(dialogContext).size.height *
                                     0.62,
                               ),
-                              child: Image.network(
-                                imageUrl,
+                              child: AppNetworkImage(
+                                url: imageUrl,
                                 width: double.infinity,
                                 fit: BoxFit.contain,
-                                errorBuilder: (_, err, st) => Container(
+                                placeholder: const SizedBox(
                                   height: 160,
-                                  alignment: Alignment.center,
-                                  child: const Icon(
-                                    Icons.image_not_supported_outlined,
-                                    color: Color(0xFF64748B),
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   ),
                                 ),
                               ),

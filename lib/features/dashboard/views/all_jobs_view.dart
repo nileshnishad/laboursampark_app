@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../common/models/skill_model.dart';
 import '../../../common/utils/skill_display_utils.dart';
+import '../../../common/widgets/app_network_image.dart';
 import '../../../common/widgets/loading_skeleton.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/api_service.dart';
@@ -245,11 +246,15 @@ class AllJobsView extends StatefulWidget {
 }
 
 class _AllJobsViewState extends State<AllJobsView> {
+  final ScrollController _jobsScrollController = ScrollController();
   List<SkillModel> _allSkills = [];
 
   // Available jobs
   List<_JobListing> _jobs = [];
   bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMoreJobs = true;
+  int _jobsPage = 1;
   String? _error;
   int _total = 0;
 
@@ -279,11 +284,30 @@ class _AllJobsViewState extends State<AllJobsView> {
   @override
   void initState() {
     super.initState();
+    _jobsScrollController.addListener(_onJobsScroll);
     _loadSkills();
     _loadAvailable();
     _loadPending();
     _loadAccepted();
     _loadCompleted();
+  }
+
+  @override
+  void dispose() {
+    _jobsScrollController.dispose();
+    super.dispose();
+  }
+
+  void _onJobsScroll() {
+    if (!_jobsScrollController.hasClients ||
+        _jobsScrollController.position.extentAfter > 500 ||
+        _loading ||
+        _loadingMore ||
+        !_hasMoreJobs ||
+        _mainTab != 'available') {
+      return;
+    }
+    _loadAvailable(loadMore: true);
   }
 
   // ── Loaders ──────────────────────────────────────────────────────────────────
@@ -305,23 +329,44 @@ class _AllJobsViewState extends State<AllJobsView> {
     }
   }
 
-  Future<void> _loadAvailable() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    final result = await ApiService.fetchAllJobs(widget.token);
+  Future<void> _loadAvailable({bool loadMore = false}) async {
+    if (loadMore) {
+      if (_loadingMore || !_hasMoreJobs) return;
+      setState(() => _loadingMore = true);
+    } else {
+      setState(() {
+        _loading = true;
+        _error = null;
+        _loadingMore = false;
+        _jobsPage = 1;
+        _hasMoreJobs = true;
+      });
+    }
+
+    final result = await ApiService.fetchAllJobs(
+      widget.token,
+      page: _jobsPage,
+      limit: 10,
+    );
     if (!mounted) return;
     if (result['success'] == true) {
       final data = result['data'] as Map<String, dynamic>?;
       final jobsList = (data?['jobs'] as List? ?? []);
       final pagination = data?['pagination'] as Map<String, dynamic>?;
+      final loadedJobs = jobsList
+          .map((j) => _JobListing.fromJson(j as Map<String, dynamic>))
+          .toList();
+      final currentPage = (pagination?['page'] as num?)?.toInt() ?? _jobsPage;
+      final total = (pagination?['total'] as num?)?.toInt();
       setState(() {
-        _jobs = jobsList
-            .map((j) => _JobListing.fromJson(j as Map<String, dynamic>))
-            .toList();
-        _total = (pagination?['total'] as num?)?.toInt() ?? _jobs.length;
+        _jobs = loadMore ? [..._jobs, ...loadedJobs] : loadedJobs;
+        _total = total ?? _jobs.length;
         _loading = false;
+        _loadingMore = false;
+        _jobsPage = currentPage + 1;
+        _hasMoreJobs = total == null
+            ? loadedJobs.length >= 10
+            : _jobs.length < total;
       });
     } else {
       setState(() {
@@ -329,6 +374,7 @@ class _AllJobsViewState extends State<AllJobsView> {
             (result['message'] ?? AppLocalizations.of(context).failedToLoadJobs)
                 .toString();
         _loading = false;
+        _loadingMore = false;
       });
     }
   }
@@ -578,6 +624,7 @@ class _AllJobsViewState extends State<AllJobsView> {
             color: const Color(0xFF2563EB),
             onRefresh: _onRefresh,
             child: ListView(
+              controller: _jobsScrollController,
               padding: const EdgeInsets.fromLTRB(
                 AppCardMetrics.pageHorizontal,
                 4,
@@ -589,6 +636,13 @@ class _AllJobsViewState extends State<AllJobsView> {
                   ..._buildAvailableContent()
                 else
                   ..._buildAppliedSubTabContent(),
+                if (isAvailable && _loadingMore)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 18),
+                    child: Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -1018,13 +1072,15 @@ class _AllJobsViewState extends State<AllJobsView> {
     }
     return _jobs
         .map(
-          (job) => _JobCard(
-            job: job,
-            subscriptionActive: widget.subscriptionActive,
-            availableSkills: _allSkills,
-            localeCode: localeCode,
-            token: widget.token,
-            onApplied: _refreshAfterApply,
+          (job) => RepaintBoundary(
+            child: _JobCard(
+              job: job,
+              subscriptionActive: widget.subscriptionActive,
+              availableSkills: _allSkills,
+              localeCode: localeCode,
+              token: widget.token,
+              onApplied: _refreshAfterApply,
+            ),
           ),
         )
         .toList();
@@ -1948,41 +2004,12 @@ class _AppliedJobCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 itemCount: entry.images.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 8),
-                itemBuilder: (_, i) => ClipRRect(
+                itemBuilder: (_, i) => AppNetworkImage(
+                  url: entry.images[i],
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
                   borderRadius: BorderRadius.circular(10),
-                  child: Image.network(
-                    entry.images[i],
-                    width: 80,
-                    height: 80,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
-                      width: 80,
-                      height: 80,
-                      color: cs.onSurface.withValues(alpha: 0.08),
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        color: cs.onSurface.withValues(alpha: 0.3),
-                        size: 24,
-                      ),
-                    ),
-                    loadingBuilder: (_, child, progress) => progress == null
-                        ? child
-                        : Container(
-                            width: 80,
-                            height: 80,
-                            color: cs.onSurface.withValues(alpha: 0.08),
-                            child: Center(
-                              child: SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: primaryColor,
-                                ),
-                              ),
-                            ),
-                          ),
-                  ),
                 ),
               ),
             ),
@@ -3016,10 +3043,10 @@ class _AvailableJobDetailScreen extends StatelessWidget {
                       job.postedByPhoto != null && job.postedByPhoto!.isNotEmpty
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(11),
-                          child: Image.network(
-                            job.postedByPhoto!,
+                          child: AppNetworkImage(
+                            url: job.postedByPhoto!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => Center(
+                            placeholder: Center(
                               child: Text(
                                 initials,
                                 style: TextStyle(

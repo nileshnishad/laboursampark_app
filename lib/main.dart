@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -36,8 +38,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Logger.level = Level.debug;
   final logger = Logger();
-  await AppLogger.instance.info('app_started', message: 'App launched');
-  await AppLogger.instance.sendTestLog();
+  unawaited(AppLogger.instance.info('app_started', message: 'App launched'));
+  unawaited(AppLogger.instance.sendTestLog());
   if (!kIsWeb && _isFirebaseConfigured) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -73,7 +75,7 @@ void main() async {
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    await NotificationService.instance.initialize();
+    unawaited(NotificationService.instance.initialize());
   } else if (!kIsWeb) {
     debugPrint(
       'Firebase is not configured for ${defaultTargetPlatform.name}; skipping iOS-only Firebase setup.',
