@@ -1,27 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:async';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../services/api_service.dart';
+
 import '../../common/widgets/app_primary_button.dart';
 import '../../common/widgets/app_text_field.dart';
+import '../../services/api_service.dart';
 import '../../utils/toast_utils.dart';
-
-/// Custom formatter to convert input to uppercase
-class UpperCaseTextFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    return TextEditingValue(
-      text: newValue.text.toUpperCase(),
-      selection: newValue.selection,
-    );
-  }
-}
-
-enum ForgotPasswordStep { enterEmail, enterOtp, resetPassword }
+import 'login_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -30,623 +14,47 @@ class ForgotPasswordScreen extends StatefulWidget {
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
-    with WidgetsBindingObserver {
-  static const _stepKey = 'forgot_password_step';
-  static const _emailKey = 'forgot_password_email';
-  static const _otpKey = 'forgot_password_otp';
-  static const _cooldownEndKey = 'forgot_password_cooldown_end';
-  ForgotPasswordStep _currentStep = ForgotPasswordStep.enterEmail;
-
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _otpController = TextEditingController();
-  final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
-
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  final TextEditingController _mobileController = TextEditingController();
   bool _isLoading = false;
-  bool _autoValidate = false;
-  bool _obscureNewPassword = true;
-  bool _obscureConfirmPassword = true;
-
-  String? _userId;
-  String? _verifiedEmail;
-
-  // Timer for resend OTP cooldown
-  Timer? _resendTimer;
-  int _resendCooldownSeconds = 0;
-  static const int _resendCooldownDuration = 600; // 10 minutes in seconds
+  bool _linkSent = false;
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _emailController.dispose();
-    _otpController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
-    _resendTimer?.cancel();
+    _mobileController.dispose();
     super.dispose();
   }
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    // Listen to password changes to update validation UI
-    _newPasswordController.addListener(() {
-      if (mounted) setState(() {});
-    });
-    _restoreState();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused) {
-      _saveState();
-    }
-  }
-
-  Future<void> _saveState() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_stepKey, _currentStep.index);
-    await prefs.setString(_emailKey, _verifiedEmail ?? _emailController.text);
-    await prefs.setString(_otpKey, _otpController.text);
-    await prefs.setInt(
-      _cooldownEndKey,
-      DateTime.now()
-          .add(Duration(seconds: _resendCooldownSeconds))
-          .millisecondsSinceEpoch,
-    );
-  }
-
-  Future<void> _restoreState() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    final savedStep = prefs.getInt(_stepKey);
-    final email = prefs.getString(_emailKey) ?? '';
-    final otp = prefs.getString(_otpKey) ?? '';
-    final cooldownEnd = prefs.getInt(_cooldownEndKey) ?? 0;
-    final remaining =
-        ((cooldownEnd - DateTime.now().millisecondsSinceEpoch) / 1000).ceil();
-
-    if (savedStep == ForgotPasswordStep.enterOtp.index && email.isNotEmpty) {
-      _emailController.text = email;
-      _otpController.text = otp;
-      _verifiedEmail = email;
-      _currentStep = ForgotPasswordStep.enterOtp;
-      if (remaining > 0) {
-        _startResendCooldown(remaining);
-      }
-      setState(() {});
-    }
-  }
-
-  Future<void> _clearSavedState() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_stepKey);
-    await prefs.remove(_emailKey);
-    await prefs.remove(_otpKey);
-    await prefs.remove(_cooldownEndKey);
-  }
-
-  void _startResendCooldown([int? seconds]) {
-    setState(() {
-      _resendCooldownSeconds = seconds ?? _resendCooldownDuration;
-    });
-    _saveState();
-
-    _resendTimer?.cancel();
-    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_resendCooldownSeconds > 0) {
-        setState(() {
-          _resendCooldownSeconds--;
-        });
-      } else {
-        timer.cancel();
-      }
-    });
-  }
-
-  String _formatCooldownTime() {
-    final minutes = (_resendCooldownSeconds / 60).floor();
-    final seconds = _resendCooldownSeconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  // Password validation helper
-  bool _hasMinLength(String password) => password.length >= 8;
-
-  bool _isPasswordValid(String password) => _hasMinLength(password);
-
-  String? _getPasswordError(String password) {
-    if (password.isEmpty) return null;
-    if (_hasMinLength(password)) return null;
-    return 'Password must be at least 8 characters';
-  }
-
-  Future<void> _sendOtp() async {
-    final email = _emailController.text.trim().toLowerCase();
-
-    if (email.isEmpty) {
-      ToastUtils.showError('Please enter your email');
-      return;
-    }
-
-    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
-      ToastUtils.showError('Please enter a valid email');
-      return;
-    }
-
-    // Check if cooldown is still active
-    if (_resendCooldownSeconds > 0) {
-      ToastUtils.showError(
-        'Please wait ${_formatCooldownTime()} before requesting another OTP',
-      );
+  Future<void> _sendResetLink() async {
+    final mobile = _mobileController.text.trim();
+    if (!RegExp(r'^\d{10}$').hasMatch(mobile)) {
+      ToastUtils.showError('Enter a valid 10-digit mobile number');
       return;
     }
 
     setState(() => _isLoading = true);
-
     try {
-      final res = await ApiService.sendPasswordResetOtp(email);
+      final result = await ApiService.sendPasswordResetLink(mobile);
+      if (!mounted) return;
 
-      if (res['success'] == true) {
-        ToastUtils.showSuccess(res['message'] ?? 'OTP sent to your email');
-        _startResendCooldown(); // Start 10-minute cooldown
-        setState(() {
-          _currentStep = ForgotPasswordStep.enterOtp;
-          _verifiedEmail = email;
-        });
-        _saveState();
+      if (result['success'] == true) {
+        setState(() => _linkSent = true);
       } else {
-        ToastUtils.showError(res['message'] ?? 'Failed to send OTP');
+        ToastUtils.showError(
+          result['message']?.toString() ?? 'Could not send reset link',
+        );
       }
     } catch (e) {
-      ToastUtils.showError('Failed to send OTP: $e');
+      if (mounted) ToastUtils.showError('Could not send reset link: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _verifyOtp() async {
-    final otp = _otpController.text.trim().toUpperCase();
-
-    if (otp.isEmpty) {
-      ToastUtils.showError('Please enter the OTP');
-      return;
-    }
-
-    if (otp.length < 6) {
-      ToastUtils.showError('Please enter a valid 6-character OTP');
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      final res = await ApiService.verifyPasswordResetOtp(_verifiedEmail!, otp);
-
-      if (res['success'] == true && res['data'] != null) {
-        final data = res['data'] as Map<String, dynamic>;
-        _userId = data['userId'] as String?;
-
-        if (_userId == null) {
-          ToastUtils.showError('Invalid response from server');
-          return;
-        }
-
-        ToastUtils.showSuccess(res['message'] ?? 'OTP verified successfully');
-        _resendTimer?.cancel(); // Cancel timer on successful verification
-        setState(() {
-          _currentStep = ForgotPasswordStep.resetPassword;
-          _resendCooldownSeconds = 0;
-        });
-        _clearSavedState();
-      } else {
-        ToastUtils.showError(res['message'] ?? 'Invalid OTP');
-      }
-    } catch (e) {
-      ToastUtils.showError('Failed to verify OTP: $e');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _resetPassword() async {
-    final newPassword = _newPasswordController.text.trim();
-    final confirmPassword = _confirmPasswordController.text.trim();
-
-    setState(() => _autoValidate = true);
-
-    if (newPassword.isEmpty) {
-      ToastUtils.showError('Please enter new password');
-      return;
-    }
-
-    if (!_isPasswordValid(newPassword)) {
-      ToastUtils.showError('Password does not meet requirements');
-      return;
-    }
-
-    if (confirmPassword.isEmpty) {
-      ToastUtils.showError('Please confirm your password');
-      return;
-    }
-
-    if (newPassword != confirmPassword) {
-      ToastUtils.showError('Passwords do not match');
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      final res = await ApiService.resetPassword(
-        _userId!,
-        newPassword,
-        confirmPassword,
-      );
-
-      if (res['success'] == true) {
-        ToastUtils.showSuccess(res['message'] ?? 'Password reset successfully');
-
-        // Navigate back to login screen
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
-      } else {
-        ToastUtils.showError(res['message'] ?? 'Failed to reset password');
-      }
-    } catch (e) {
-      ToastUtils.showError('Failed to reset password: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Widget _buildPasswordRequirement(String text, bool isMet) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(
-            isMet ? Icons.check_circle : Icons.circle_outlined,
-            size: 16,
-            color: isMet ? Colors.green[700] : Colors.grey[600],
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 12,
-                color: isMet ? Colors.green[700] : Colors.grey[700],
-                fontWeight: isMet ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmailStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Icon(Icons.email_outlined, size: 80, color: Colors.blue),
-        const SizedBox(height: 24),
-        Text(
-          'Forgot Password?',
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Enter your registered email address and we\'ll send you an OTP to reset your password.',
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue.withOpacity(0.3)),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Note: You can resend OTP after 10 minutes',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.blue[900],
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 32),
-        AppTextField(
-          controller: _emailController,
-          label: 'Email Address',
-          hint: 'Enter your email',
-          prefixIcon: Icons.email,
-          keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _sendOtp(),
-          inputFormatters: [
-            TextInputFormatter.withFunction(
-              (oldValue, newValue) =>
-                  newValue.copyWith(text: newValue.text.toLowerCase()),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        AppPrimaryButton(
-          label: _resendCooldownSeconds > 0
-              ? 'Wait ${_formatCooldownTime()}'
-              : 'Send OTP',
-          icon: Icons.send,
-          isLoading: _isLoading,
-          onPressed: _resendCooldownSeconds > 0 ? null : _sendOtp,
-        ),
-        if (_resendCooldownSeconds > 0)
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Text(
-              'Please wait before requesting another OTP',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.orange[700],
-                fontSize: 12,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildOtpStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Icon(Icons.lock_outline, size: 80, color: Colors.blue),
-        const SizedBox(height: 24),
-        Text(
-          'Enter OTP',
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'We\'ve sent a 6-character OTP to\n$_verifiedEmail',
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-        ),
-        const SizedBox(height: 32),
-        AppTextField(
-          controller: _otpController,
-          label: 'OTP Code',
-          hint: 'Enter 6-character OTP (e.g., K9M3P7)',
-          prefixIcon: Icons.pin,
-          keyboardType: TextInputType.text,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _verifyOtp(),
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
-            LengthLimitingTextInputFormatter(6),
-            UpperCaseTextFormatter(),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Didn\'t receive OTP? ',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            if (_resendCooldownSeconds > 0)
-              Text(
-                'Resend in ${_formatCooldownTime()}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[600],
-                ),
-              )
-            else
-              TextButton(
-                onPressed: _isLoading ? null : _sendOtp,
-                child: const Text(
-                  'Resend',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-          ],
-        ),
-        if (_resendCooldownSeconds > 0)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              'You can request a new OTP after the timer expires',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
-            ),
-          ),
-        const SizedBox(height: 24),
-        AppPrimaryButton(
-          label: 'Verify OTP',
-          icon: Icons.check_circle,
-          isLoading: _isLoading,
-          onPressed: _verifyOtp,
-        ),
-        const SizedBox(height: 12),
-        TextButton(
-          onPressed: _resendCooldownSeconds > 0
-              ? null
-              : () {
-                  setState(() {
-                    _currentStep = ForgotPasswordStep.enterEmail;
-                    _otpController.clear();
-                  });
-                  _saveState();
-                },
-          child: Text(
-            _resendCooldownSeconds > 0
-                ? 'Cannot change email during cooldown'
-                : 'Change Email',
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildResetPasswordStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Icon(Icons.lock_reset, size: 80, color: Colors.blue),
-        const SizedBox(height: 24),
-        Text(
-          'Reset Password',
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Create a strong password',
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue.withOpacity(0.3)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Password Requirements:',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue[900],
-                ),
-              ),
-              const SizedBox(height: 8),
-              _buildPasswordRequirement(
-                'At least 8 characters',
-                _hasMinLength(_newPasswordController.text),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 32),
-        AppTextField(
-          controller: _newPasswordController,
-          label: 'New Password',
-          hint: 'Enter new password',
-          prefixIcon: Icons.lock,
-          obscureText: _obscureNewPassword,
-          textInputAction: TextInputAction.next,
-          suffixIcon: IconButton(
-            onPressed: () {
-              setState(() {
-                _obscureNewPassword = !_obscureNewPassword;
-              });
-            },
-            icon: Icon(
-              _obscureNewPassword
-                  ? Icons.visibility_outlined
-                  : Icons.visibility_off_outlined,
-            ),
-          ),
-          errorText: _autoValidate && _newPasswordController.text.isNotEmpty
-              ? _getPasswordError(_newPasswordController.text.trim())
-              : null,
-        ),
-        const SizedBox(height: 16),
-        AppTextField(
-          controller: _confirmPasswordController,
-          label: 'Confirm Password',
-          hint: 'Re-enter new password',
-          prefixIcon: Icons.lock,
-          obscureText: _obscureConfirmPassword,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _resetPassword(),
-          suffixIcon: IconButton(
-            onPressed: () {
-              setState(() {
-                _obscureConfirmPassword = !_obscureConfirmPassword;
-              });
-            },
-            icon: Icon(
-              _obscureConfirmPassword
-                  ? Icons.visibility_outlined
-                  : Icons.visibility_off_outlined,
-            ),
-          ),
-          errorText:
-              _autoValidate &&
-                  _confirmPasswordController.text.isNotEmpty &&
-                  _confirmPasswordController.text.trim() !=
-                      _newPasswordController.text.trim()
-              ? 'Passwords do not match'
-              : null,
-        ),
-        const SizedBox(height: 24),
-        AppPrimaryButton(
-          label: 'Reset Password',
-          icon: Icons.check,
-          isLoading: _isLoading,
-          onPressed:
-              _isPasswordValid(_newPasswordController.text.trim()) &&
-                  _newPasswordController.text.trim() ==
-                      _confirmPasswordController.text.trim()
-              ? _resetPassword
-              : null,
-        ),
-        if (!_isPasswordValid(_newPasswordController.text.trim()) &&
-            _newPasswordController.text.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Text(
-              'Password must be at least 8 characters',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.orange[700],
-                fontSize: 12,
-              ),
-            ),
-          ),
-      ],
+  void _backToLogin() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
     );
   }
 
@@ -657,19 +65,91 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              if (_currentStep == ForgotPasswordStep.enterEmail)
-                _buildEmailStep()
-              else if (_currentStep == ForgotPasswordStep.enterOtp)
-                _buildOtpStep()
-              else
-                _buildResetPasswordStep(),
-            ],
-          ),
+          child: _linkSent ? _buildSuccess() : _buildForm(),
         ),
       ),
+    );
+  }
+
+  Widget _buildForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 24),
+        const Icon(Icons.lock_reset_rounded, size: 76, color: Colors.blue),
+        const SizedBox(height: 20),
+        Text(
+          'Reset your password',
+          textAlign: TextAlign.center,
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Enter your registered mobile number and we will send you a password reset link.',
+          textAlign: TextAlign.center,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+        ),
+        const SizedBox(height: 32),
+        AppTextField(
+          controller: _mobileController,
+          label: 'Mobile Number',
+          hint: 'Enter your 10-digit mobile number',
+          prefixIcon: Icons.phone_outlined,
+          keyboardType: TextInputType.phone,
+          textInputAction: TextInputAction.done,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(10),
+          ],
+          onSubmitted: (_) => _sendResetLink(),
+        ),
+        const SizedBox(height: 24),
+        AppPrimaryButton(
+          label: 'Send Reset Link',
+          icon: Icons.link_rounded,
+          isLoading: _isLoading,
+          onPressed: _sendResetLink,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuccess() {
+    return Column(
+      children: [
+        const SizedBox(height: 64),
+        const Icon(
+          Icons.mark_email_read_rounded,
+          size: 82,
+          color: Colors.green,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Reset link sent',
+          textAlign: TextAlign.center,
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Password reset link has been sent to your mobile number.',
+          textAlign: TextAlign.center,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+        ),
+        const SizedBox(height: 32),
+        AppPrimaryButton(
+          label: 'Back to Login',
+          icon: Icons.login_rounded,
+          onPressed: _backToLogin,
+        ),
+      ],
     );
   }
 }
