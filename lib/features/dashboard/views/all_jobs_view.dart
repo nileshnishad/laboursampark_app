@@ -703,8 +703,8 @@ class _AllJobsViewState extends State<AllJobsView> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
+                  horizontal: 12,
+                  vertical: 8,
                 ),
                 decoration: BoxDecoration(
                   color: _mainTabBackground(
@@ -730,40 +730,38 @@ class _AllJobsViewState extends State<AllJobsView> {
                           available: true,
                           selected: isAvailable,
                         ),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(7),
                       ),
                       child: const Icon(
                         Icons.work_outline_rounded,
                         color: Color(0xFFF59E0B),
-                        size: 17,
+                        size: 18,
                       ),
                     ),
-                    const SizedBox(width: 9),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _loading ? '—' : _total.toString(),
-                          style: TextStyle(
-                            fontSize: _LabourTextScale.display,
-                            fontWeight: FontWeight.w800,
-                            color: _mainTabForeground(
-                              available: true,
-                              selected: isAvailable,
-                            ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        loc.available,
+                        style: TextStyle(
+                          fontSize: _LabourTextScale.section,
+                          fontWeight: FontWeight.w800,
+                          color: _mainTabForeground(
+                            available: true,
+                            selected: isAvailable,
                           ),
                         ),
-                        Text(
-                          loc.available,
-                          style: TextStyle(
-                            fontSize: _LabourTextScale.caption,
-                            color: _mainTabForeground(
-                              available: true,
-                              selected: isAvailable,
-                            ).withValues(alpha: 0.82),
-                          ),
+                      ),
+                    ),
+                    Text(
+                      _loading ? '—' : _total.toString(),
+                      style: TextStyle(
+                        fontSize: _LabourTextScale.section,
+                        fontWeight: FontWeight.w900,
+                        color: _mainTabForeground(
+                          available: true,
+                          selected: isAvailable,
                         ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
@@ -772,7 +770,7 @@ class _AllJobsViewState extends State<AllJobsView> {
           ),
           Container(
             width: 1,
-            height: 52,
+            height: 38,
             color: Theme.of(context).colorScheme.outlineVariant,
           ),
           Expanded(
@@ -781,8 +779,8 @@ class _AllJobsViewState extends State<AllJobsView> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
+                  horizontal: 12,
+                  vertical: 8,
                 ),
                 decoration: BoxDecoration(
                   color: _mainTabBackground(
@@ -808,45 +806,43 @@ class _AllJobsViewState extends State<AllJobsView> {
                           available: false,
                           selected: !isAvailable,
                         ),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(7),
                       ),
                       child: const Icon(
                         Icons.send_rounded,
                         color: Color(0xFF059669),
-                        size: 17,
+                        size: 18,
                       ),
                     ),
-                    const SizedBox(width: 9),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          (_appliedTotal > 0
-                                  ? _appliedTotal
-                                  : _pendingJobs.length +
-                                        _acceptedJobs.length +
-                                        _completedJobs.length)
-                              .toString(),
-                          style: TextStyle(
-                            fontSize: _LabourTextScale.display,
-                            fontWeight: FontWeight.w800,
-                            color: _mainTabForeground(
-                              available: false,
-                              selected: !isAvailable,
-                            ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        loc.applied,
+                        style: TextStyle(
+                          fontSize: _LabourTextScale.section,
+                          fontWeight: FontWeight.w800,
+                          color: _mainTabForeground(
+                            available: false,
+                            selected: !isAvailable,
                           ),
                         ),
-                        Text(
-                          loc.applied,
-                          style: TextStyle(
-                            fontSize: _LabourTextScale.caption,
-                            color: _mainTabForeground(
-                              available: false,
-                              selected: !isAvailable,
-                            ).withValues(alpha: 0.82),
-                          ),
+                      ),
+                    ),
+                    Text(
+                      (_appliedTotal > 0
+                              ? _appliedTotal
+                              : _pendingJobs.length +
+                                    _acceptedJobs.length +
+                                    _completedJobs.length)
+                          .toString(),
+                      style: TextStyle(
+                        fontSize: _LabourTextScale.section,
+                        fontWeight: FontWeight.w900,
+                        color: _mainTabForeground(
+                          available: false,
+                          selected: !isAvailable,
                         ),
-                      ],
+                      ),
                     ),
                   ],
                 ),

@@ -182,106 +182,46 @@ class _MyJobsViewState extends State<MyJobsView> {
       );
     }
 
-    return RefreshIndicator(
-      color: _primaryColor,
-      onRefresh: _load,
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(
-          AppCardMetrics.pageHorizontal,
-          12,
-          AppCardMetrics.pageHorizontal,
-          AppCardMetrics.pageBottom,
-        ),
-        // slots: 0=header, 1=gap, 2=section row, 3=gap, 4..N=cards (or 1 empty state)
-        itemCount: 4 + (_filtered.isEmpty ? 1 : _filtered.length),
-        itemBuilder: (context, index) {
-          if (index == 0) return _buildHeader(loc);
-          if (index == 1) return const SizedBox(height: 12);
-          if (index == 2) return _buildSectionRow(loc);
-          if (index == 3) return const SizedBox(height: 10);
-          if (_filtered.isEmpty) return _buildEmptyState(loc);
-          return _buildJobCard(_filtered[index - 4]);
-        },
-      ),
-    );
-  }
-
-  // ── Header ──────────────────────────────────────────────────────────────────
-
-  Widget _buildHeader(AppLocalizations loc) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    final canCreateJob = widget.userType != 'labour';
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: RefreshIndicator(
+        color: _primaryColor,
+        onRefresh: _load,
+        child: ListView.builder(
+          padding: const EdgeInsets.fromLTRB(
+            AppCardMetrics.pageHorizontal,
+            12,
+            AppCardMetrics.pageHorizontal,
+            AppCardMetrics.pageBottom + 72,
           ),
-        ],
+          // slots: 0=section row, 1=gap, 2..N=cards (or empty state)
+          itemCount: 2 + (_filtered.isEmpty ? 1 : _filtered.length),
+          itemBuilder: (context, index) {
+            if (index == 0) return _buildSectionRow(loc);
+            if (index == 1) return const SizedBox(height: 10);
+            if (_filtered.isEmpty) return _buildEmptyState(loc);
+            return _buildJobCard(_filtered[index - 2]);
+          },
+        ),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  loc.postNew,
-                  style: TextStyle(
-                    fontSize: AppFontScale.display,
-                    fontWeight: FontWeight.w800,
-                    color: Theme.of(context).colorScheme.onSurface,
+      floatingActionButton: canCreateJob
+          ? FloatingActionButton(
+              heroTag: 'create-job-fab-${widget.userType}',
+              onPressed: () async {
+                final created = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => CreateJobScreen(userType: widget.userType),
                   ),
-                ),
-                Text(
-                  loc.requirement,
-                  style: TextStyle(
-                    fontSize: AppFontScale.display,
-                    fontWeight: FontWeight.w800,
-                    color: _primaryColor,
-                  ),
-                ),
-                const SizedBox(height: 4),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          ElevatedButton.icon(
-            onPressed: () async {
-              final created = await Navigator.of(context).push<bool>(
-                MaterialPageRoute(
-                  builder: (_) => CreateJobScreen(userType: widget.userType),
-                ),
-              );
-              if (created == true) _load();
-            },
-            icon: const Icon(Icons.upload_rounded, size: 16),
-            label: Text(
-              loc.createNewJob,
-              style: const TextStyle(
-                fontSize: AppFontScale.button,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
+                );
+                if (created == true) _load();
+              },
               backgroundColor: _primaryColor,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              elevation: 0,
-            ),
-          ),
-        ],
-      ),
+              tooltip: loc.createNewJob,
+              child: const Icon(Icons.add_rounded, size: 30),
+            )
+          : null,
     );
   }
 
