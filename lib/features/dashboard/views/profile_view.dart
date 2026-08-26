@@ -19,7 +19,7 @@ class ProfileView extends StatefulWidget {
   final Map<String, dynamic>? subscriptionPlan;
   final VoidCallback onRetry;
   final void Function(Map<String, dynamic>? plan) onShowSubscription;
-  final Future<void> Function(String code)? onAddReferralCode;
+  final Future<void> Function(String code) onAddReferralCode;
   final Future<void> Function() onShareReferral;
   final VoidCallback onSettings;
   final VoidCallback onLogout;
@@ -38,7 +38,7 @@ class ProfileView extends StatefulWidget {
     required this.subscriptionPlan,
     required this.onRetry,
     required this.onShowSubscription,
-    this.onAddReferralCode,
+    required this.onAddReferralCode,
     required this.onShareReferral,
     required this.onSettings,
     required this.onLogout,
@@ -188,6 +188,16 @@ class _ProfileViewState extends State<ProfileView> {
     return '$day/$month/$year $hour:$minute';
   }
 
+  Future<void> _showReferralCodeDialog() async {
+    final code = await showDialog<String>(
+      context: context,
+      builder: (_) => const _ReferralCodeDialog(),
+    );
+    if (code != null && code.isNotEmpty && mounted) {
+      await widget.onAddReferralCode(code.toUpperCase());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -247,6 +257,45 @@ class _ProfileViewState extends State<ProfileView> {
               ? 'ID: #${rawId.substring(0, 6).toUpperCase()}'
               : (rawId.isNotEmpty ? 'ID: #$rawId' : ''));
     final copyableId = userCode.isNotEmpty ? userCode : rawId;
+
+    final referralStatus = (widget.profileData?['referralStatus'] ?? '')
+        .toString()
+        .toUpperCase();
+    final referredBy = widget.profileData?['referredBy'];
+    final referredByMap = referredBy is Map<String, dynamic>
+        ? referredBy
+        : null;
+    final referralUserCode =
+        (widget.profileData?['referralUserCode'] ??
+                widget.profileData?['referredByCode'] ??
+                widget.profileData?['referredByUserCode'] ??
+                referredByMap?['userCode'] ??
+                referredByMap?['user_code'] ??
+                referredByMap?['referralCode'] ??
+                (referredBy is String ? referredBy : null) ??
+                '')
+            .toString()
+            .trim()
+            .toUpperCase();
+    final referredByName =
+        (referredByMap?['fullName'] ??
+                referredByMap?['name'] ??
+                widget.profileData?['referredByFullName'] ??
+                '')
+            .toString()
+            .trim();
+    final referredByUserId =
+        (widget.profileData?['referredByUserId'] ??
+                referredByMap?['userId'] ??
+                referredByMap?['_id'] ??
+                '')
+            .toString()
+            .trim();
+    final isReferralApplied =
+        referralStatus == 'REFERRED' ||
+        referralUserCode.isNotEmpty ||
+        referredByUserId.isNotEmpty ||
+        referredBy != null;
 
     final displayVerified = (widget.profileData?['display'] as bool?) ?? false;
     final emailVerified =
@@ -1471,6 +1520,32 @@ class _ProfileViewState extends State<ProfileView> {
                       color: ics.outline.withValues(alpha: 0.2),
                     ),
                   ],
+                  if (isReferralApplied)
+                    ProfileActionTile(
+                      icon: Icons.card_giftcard_outlined,
+                      label: referralUserCode.isNotEmpty
+                          ? (referredByName.isNotEmpty
+                                ? 'Applied Referral Code: $referralUserCode ($referredByName)'
+                                : 'Applied Referral Code: $referralUserCode')
+                          : 'Referral Code Applied',
+                      onTap: () {},
+                      trailing: const Icon(
+                        Icons.check_circle_outline,
+                        color: Color(0xFF059669),
+                      ),
+                    )
+                  else
+                    ProfileActionTile(
+                      icon: Icons.card_giftcard_outlined,
+                      label: 'Add Referral Code',
+                      onTap: _showReferralCodeDialog,
+                      trailing: const Icon(Icons.add_rounded),
+                    ),
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    color: ics.outline.withValues(alpha: 0.2),
+                  ),
                   ProfileActionTile(
                     icon: Icons.settings_outlined,
                     label: 'Settings',
@@ -1539,6 +1614,92 @@ class _ProfileViewState extends State<ProfileView> {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _ReferralCodeDialog extends StatefulWidget {
+  const _ReferralCodeDialog();
+
+  @override
+  State<_ReferralCodeDialog> createState() => _ReferralCodeDialogState();
+}
+
+class _ReferralCodeDialogState extends State<_ReferralCodeDialog> {
+  final _controller = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add Referral Code'),
+      content: Form(
+        key: _formKey,
+        child: TextFormField(
+          controller: _controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.characters,
+          inputFormatters: [
+            LengthLimitingTextInputFormatter(12),
+            _UpperCaseTextFormatter(),
+          ],
+          decoration: const InputDecoration(
+            labelText: 'Referral code',
+            hintText: 'Enter 10 to 12 characters',
+            prefixIcon: Icon(Icons.card_giftcard_outlined),
+          ),
+          validator: (value) {
+            final length = value?.trim().length ?? 0;
+            if (length < 10 || length > 12) {
+              return 'Referral code must be 10 to 12 characters';
+            }
+            return null;
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: _controller,
+          builder: (context, value, _) {
+            final canAdd = value.text.trim().length >= 10;
+            return FilledButton(
+              onPressed: canAdd
+                  ? () {
+                      if (_formKey.currentState!.validate()) {
+                        Navigator.of(context).pop(_controller.text.trim());
+                      }
+                    }
+                  : null,
+              child: const Text('Add'),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final upperCaseText = newValue.text.toUpperCase();
+    return newValue.copyWith(
+      text: upperCaseText,
+      selection: TextSelection.collapsed(offset: upperCaseText.length),
+      composing: TextRange.empty,
     );
   }
 }
