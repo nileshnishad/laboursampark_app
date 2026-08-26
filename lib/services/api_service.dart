@@ -247,6 +247,122 @@ class ApiService {
     }
   }
 
+  /// GET /api/referrals/my-code — fetch the user's own referral details.
+  static Future<Map<String, dynamic>> fetchReferralDetails(String token) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.get(
+        '${Env.baseUrl}/api/referrals/my-code',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) return body;
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  /// GET /api/referrals/status — fetch the current user's referral status.
+  static Future<Map<String, dynamic>> fetchReferralStatus(String token) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+    try {
+      final response = await _dio.get(
+        '${Env.baseUrl}/api/referrals/status',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) return body;
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  /// POST /api/referrals/validate — check whether a referral code can be used.
+  static Future<Map<String, dynamic>> validateReferralCode({
+    required String referralCode,
+    required String token,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/referrals/validate',
+        data: jsonEncode({'referralCode': referralCode}),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) return body;
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
+  /// POST /api/referrals/apply — apply and lock a validated referral code.
+  static Future<Map<String, dynamic>> applyReferralCode({
+    required String referralCode,
+    required String token,
+  }) async {
+    final hasInternet = await NetworkService.hasInternet();
+    if (!hasInternet) {
+      return {'success': false, 'message': ErrorMessages.noInternet};
+    }
+
+    try {
+      final response = await _dio.post(
+        '${Env.baseUrl}/api/referrals/apply',
+        data: jsonEncode({'referralCode': referralCode}),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) return body;
+      return {
+        'success': false,
+        'message': AppError.fromDioException(e).userMessage,
+      };
+    } catch (_) {
+      return {'success': false, 'message': ErrorMessages.unknown};
+    }
+  }
+
   static Future<Map<String, dynamic>> fetchSubscriptionPlan(
     String userType,
     String token,

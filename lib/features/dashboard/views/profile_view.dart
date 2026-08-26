@@ -19,6 +19,8 @@ class ProfileView extends StatefulWidget {
   final Map<String, dynamic>? subscriptionPlan;
   final VoidCallback onRetry;
   final void Function(Map<String, dynamic>? plan) onShowSubscription;
+  final Future<void> Function(String code)? onAddReferralCode;
+  final Future<void> Function() onShareReferral;
   final VoidCallback onSettings;
   final VoidCallback onLogout;
   final VoidCallback onUpdateProfile;
@@ -36,6 +38,8 @@ class ProfileView extends StatefulWidget {
     required this.subscriptionPlan,
     required this.onRetry,
     required this.onShowSubscription,
+    this.onAddReferralCode,
+    required this.onShareReferral,
     required this.onSettings,
     required this.onLogout,
     required this.onUpdateProfile,
@@ -1436,6 +1440,37 @@ class _ProfileViewState extends State<ProfileView> {
               ),
               child: Column(
                 children: [
+                  if (userCode.isNotEmpty) ...[
+                    ProfileActionTile(
+                      icon: Icons.card_giftcard_outlined,
+                      label: 'Your Referral Code: $userCode',
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: userCode));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Referral code copied')),
+                        );
+                      },
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'Share referral code',
+                            onPressed: widget.onShareReferral,
+                            icon: const Icon(Icons.share_outlined, size: 20),
+                            padding: const EdgeInsets.all(6),
+                            constraints: const BoxConstraints(),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.copy_outlined),
+                        ],
+                      ),
+                    ),
+                    Divider(
+                      height: 1,
+                      indent: 56,
+                      color: ics.outline.withValues(alpha: 0.2),
+                    ),
+                  ],
                   ProfileActionTile(
                     icon: Icons.settings_outlined,
                     label: 'Settings',

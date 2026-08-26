@@ -245,6 +245,7 @@ class ProfileActionTile extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final Color? color;
+  final Widget? trailing;
 
   const ProfileActionTile({
     super.key,
@@ -252,6 +253,7 @@ class ProfileActionTile extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.color,
+    this.trailing,
   });
 
   @override
@@ -284,11 +286,12 @@ class ProfileActionTile extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: cs.outline.withValues(alpha: 0.6),
-              size: 20,
-            ),
+            trailing ??
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: cs.outline.withValues(alpha: 0.6),
+                  size: 20,
+                ),
           ],
         ),
       ),

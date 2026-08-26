@@ -142,7 +142,6 @@ class _LoginScreenState extends State<LoginScreen> {
       await AppLogger.instance.info(
         'login_attempt',
         message: 'Login attempted',
-        data: {'identifier': emailOrMobile},
       );
       final res = await ApiService.login(emailOrMobile, password);
 

@@ -190,10 +190,35 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
         response['data'] is Map<String, dynamic>) {
       final profile = response['data'] as Map<String, dynamic>;
       final userType = (profile['userType'] ?? '').toString();
-      userController.setUser(profile, token);
+      final referralStatusResponse = await ApiService.fetchReferralStatus(
+        token,
+      );
+      final referralStatusData = referralStatusResponse['data'];
+      final referralStatusMap = referralStatusData is Map<String, dynamic>
+          ? referralStatusData
+          : const <String, dynamic>{};
+      await AppLogger.instance.info(
+        'referral_status_loaded',
+        message: 'Referral status received from backend',
+        data: {
+          'success': referralStatusResponse['success'],
+          'message': referralStatusResponse['message'],
+          'referralStatus': referralStatusMap['referralStatus'],
+          'referralCodeLocked': referralStatusMap['referralCodeLocked'],
+          'referralCodeEnteredAt': referralStatusMap['referralCodeEnteredAt'],
+          'referralExpiryTime': referralStatusMap['referralExpiryTime'],
+          'hasReferredBy': referralStatusMap['referredBy'] != null,
+        },
+      );
+      final profileWithReferralStatus =
+          referralStatusData is Map<String, dynamic>
+          ? {...profile, ...referralStatusData}
+          : profile;
+      userController.setUser(profileWithReferralStatus, token);
 
       setState(() {
-        _subscriptionActive = (profile['display'] as bool?) ?? false;
+        _subscriptionActive =
+            (profileWithReferralStatus['display'] as bool?) ?? false;
         // Admin users never need to subscribe
         if (userType.toLowerCase() == 'admin') _subscriptionActive = true;
         _profileLoading = false;
@@ -212,6 +237,62 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
         _subscriptionActive = false;
         _subscriptionStatusLoaded = true;
       });
+    }
+  }
+
+  Future<void> _addReferralCode(String code) async {
+    final userController = Get.find<UserController>();
+    final token =
+        userController.token.value ?? await AuthService.getAuthToken() ?? '';
+    if (token.isEmpty) return;
+
+    final normalizedCode = code.trim().toUpperCase();
+    final validation = await ApiService.validateReferralCode(
+      referralCode: normalizedCode,
+      token: token,
+    );
+    if (!mounted) return;
+
+    final validationData = validation['data'];
+    final eligible =
+        validation['success'] == true &&
+        validationData is Map<String, dynamic> &&
+        validationData['eligible'] == true;
+    if (!eligible) {
+      final reason = validationData is Map<String, dynamic>
+          ? validationData['reason']
+          : null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            (reason ?? validation['message'] ?? 'Referral code is not valid')
+                .toString(),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final response = await ApiService.applyReferralCode(
+      referralCode: normalizedCode,
+      token: token,
+    );
+    if (!mounted) return;
+
+    if (response['success'] == true) {
+      await _loadProfileStatus();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Referral code added successfully')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            (response['message'] ?? 'Could not add referral code').toString(),
+          ),
+        ),
+      );
     }
   }
 
@@ -613,20 +694,83 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
     final userCode = (user['userCode'] ?? user['user_code'] ?? '')
         .toString()
         .trim();
+    final token = Get.find<UserController>().token.value ?? '';
+    final referralDetails = await ApiService.fetchReferralDetails(token);
+    final referralDetailsData = referralDetails['data'];
+    final shareLink = referralDetailsData is Map<String, dynamic>
+        ? (referralDetailsData['shareLink'] ?? '').toString()
+        : '';
+    final referralLink = shareLink.isNotEmpty
+        ? shareLink
+        : (userCode.isNotEmpty
+              ? 'https://laboursampark.com/ref/$userCode'
+              : '');
 
     final lines = <String>[
-      'LabourSampark Profile',
+      'Join me on LabourSampark',
       'Name: $fullName',
       'Role: $userType',
-      if (userCode.isNotEmpty) 'User Code: $userCode',
+      if (userCode.isNotEmpty) 'Referral Code: $userCode',
+      if (referralLink.isNotEmpty) 'Open app: $referralLink',
       if (city.isNotEmpty) 'City: $city',
       if (mobile.isNotEmpty) 'Contact: $mobile',
     ];
 
     await Share.share(
       lines.join('\n'),
-      subject: 'LabourSampark Profile - $fullName',
+      subject: 'Join LabourSampark with my referral code',
     );
+  }
+
+  Future<void> _shareReferralCode() async {
+    final user = Get.find<UserController>().user.value;
+    if (user == null) return;
+
+    final userCode = (user['userCode'] ?? user['user_code'] ?? '')
+        .toString()
+        .trim()
+        .toUpperCase();
+    if (userCode.isEmpty) return;
+
+    const appLink =
+        'https://play.google.com/store/apps/details?id=com.laboursampark.app&hl=en_IN';
+    final languageCode = context.read<AppState>().locale?.languageCode ?? 'en';
+    final message = [
+      'LabourSampark',
+      'Hi! I have shared LabourSampark with you to help you find trusted job opportunities.',
+      'Download the app and use my referral code while joining.',
+      '',
+      'नमस्ते! मैंने आपके लिए LabourSampark app share किया है।',
+      'इस app से जुड़कर job opportunities पाएं और मेरा referral code इस्तेमाल करें।',
+      if (languageCode == 'mr') ...[
+        '',
+        'नमस्कार! मी तुमच्यासोबत LabourSampark app share केले आहे.',
+        'App download करून job opportunities मिळवा आणि माझा referral code वापरा.',
+      ],
+      '',
+      'Referral Code: $userCode',
+      'Download App: $appLink',
+    ].join('\n');
+
+    try {
+      final logoData = await rootBundle.load('assets/logo.jpg');
+      await Share.shareXFiles(
+        [
+          XFile.fromData(
+            logoData.buffer.asUint8List(),
+            name: 'laboursampark-logo.jpg',
+            mimeType: 'image/jpeg',
+          ),
+        ],
+        text: message,
+        subject: 'Join LabourSampark with my referral code',
+      );
+    } catch (_) {
+      await Share.share(
+        message,
+        subject: 'Join LabourSampark with my referral code',
+      );
+    }
   }
 
   void _showSettingsSheet(BuildContext context) {
@@ -842,6 +986,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             onRetry: _loadProfileStatus,
             onShowSubscription: (plan) =>
                 _showSubscriptionDetails(context, plan),
+            onAddReferralCode: _addReferralCode,
+            onShareReferral: _shareReferralCode,
             onSettings: () => _showSettingsSheet(context),
             onLogout: _logout,
             onUpdateProfile: () =>
@@ -884,6 +1030,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             onRetry: _loadProfileStatus,
             onShowSubscription: (plan) =>
                 _showSubscriptionDetails(context, plan),
+            onAddReferralCode: _addReferralCode,
+            onShareReferral: _shareReferralCode,
             onSettings: () => _showSettingsSheet(context),
             onLogout: _logout,
             onUpdateProfile: () =>
@@ -920,6 +1068,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             onRetry: _loadProfileStatus,
             onShowSubscription: (plan) =>
                 _showSubscriptionDetails(context, plan),
+            onAddReferralCode: _addReferralCode,
+            onShareReferral: _shareReferralCode,
             onSettings: () => _showSettingsSheet(context),
             onLogout: _logout,
             onUpdateProfile: () =>
@@ -949,6 +1099,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             onRetry: _loadProfileStatus,
             onShowSubscription: (plan) =>
                 _showSubscriptionDetails(context, plan),
+            onAddReferralCode: _addReferralCode,
+            onShareReferral: _shareReferralCode,
             onSettings: () => _showSettingsSheet(context),
             onLogout: _logout,
             onUpdateProfile: () =>

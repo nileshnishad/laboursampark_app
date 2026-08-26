@@ -34,14 +34,14 @@ class AppLogger {
   // Call this after login
 
   void setUserContext({
-    required String email,
-    String? phone,
+    required String fullName,
+    String? userCode,
     String? userId, // optional if you have it
     String? userRole,
   }) {
     _userContext = {
-      'userEmail': email,
-      ...?(phone != null ? {'userPhone': phone} : null),
+      'fullName': fullName,
+      ...?(userCode != null ? {'userCode': userCode} : null),
       ...?(userId != null ? {'userId': userId} : null),
       ...?(userRole != null ? {'userRole': userRole} : null),
     };
@@ -116,9 +116,8 @@ class AppLogger {
       return {};
     }
 
-    final email = (user['email'] ?? user['userEmail'] ?? '').toString().trim();
-    final mobile =
-        (user['mobile'] ?? user['phone'] ?? user['mobileNumber'] ?? '')
+    final fullName =
+        (user['fullName'] ?? user['name'] ?? user['userName'] ?? '')
             .toString()
             .trim();
     final userId = (user['_id'] ?? user['id'] ?? '').toString().trim();
@@ -129,11 +128,8 @@ class AppLogger {
             .trim();
 
     final userContext = <String, dynamic>{};
-    if (email.isNotEmpty) {
-      userContext['userEmail'] = email;
-    }
-    if (mobile.isNotEmpty) {
-      userContext['userMobile'] = mobile;
+    if (fullName.isNotEmpty) {
+      userContext['fullName'] = fullName;
     }
     if (userId.isNotEmpty) {
       userContext['userId'] = userId;
@@ -312,6 +308,12 @@ class AppLogger {
     for (final entry in data.entries) {
       final key = entry.key.toString();
       final lower = key.toLowerCase();
+      if (lower.contains('email') ||
+          lower.contains('mobile') ||
+          lower.contains('phone') ||
+          lower == 'identifier') {
+        continue;
+      }
       if (lower.contains('token') ||
           lower.contains('password') ||
           lower.contains('authorization') ||
