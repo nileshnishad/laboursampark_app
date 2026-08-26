@@ -1,7 +1,7 @@
 name: laboursampark_app
 description: "Labour Sampark - Connecting labourers and contractors seamlessly."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 1.0.17+25
+version: 1.0.17+26
 
 environment:
   sdk: ^3.10.4
